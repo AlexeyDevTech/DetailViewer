@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Prism.Unity" Version="8.1.97" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DetailViewer.Core\DetailViewer.Core.csproj" />
+    <ProjectReference Include="..\DetailViewer.Global\DetailViewer.Global.csproj" />
+    <ProjectReference Include="..\DetailViewer.Modules.Dialogs\DetailViewer.Modules.Dialogs.csproj" />
+    <ProjectReference Include="..\DetailViewer.Modules.Explorer\DetailViewer.Modules.Explorer.csproj" />
+  </ItemGroup>
+</Project>
