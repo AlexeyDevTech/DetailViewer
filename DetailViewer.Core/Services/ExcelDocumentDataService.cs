@@ -32,7 +32,7 @@ namespace DetailViewer.Core.Services
                 throw new FileNotFoundException("Excel file not found", filePath);
 
             using var package = new ExcelPackage(new FileInfo(filePath));
-            var worksheet = package.Workbook.Worksheets[0];
+            var worksheet = package.Workbook.Worksheets[3];
 
             int rowCount = worksheet.Dimension?.Rows ?? 0;
             if (rowCount < 2) return records; // Пропускаем заголовок
@@ -51,46 +51,50 @@ namespace DetailViewer.Core.Services
                     string productName = null;
                     string fullName = null;
 
-                    try { date = worksheet.Cells[row, 1].GetValue<DateTime>(); }
+                    try { date = worksheet.Cells[row, 2].GetValue<DateTime>(); }
                     catch (Exception ex) { Console.WriteLine($"Error reading Date at row {row}, column 1: {ex.Message}"); continue; }
 
-                    try { eskdNumber = worksheet.Cells[row, 2].GetValue<string>(); }
+                    try { eskdNumber = worksheet.Cells[row, 3].GetValue<string>(); }
                     catch (Exception ex) { Console.WriteLine($"Error reading ESKDNumber at row {row}, column 2: {ex.Message}"); continue; }
 
-                    try { yastCode = worksheet.Cells[row, 3].GetValue<string>(); }
+                    try { yastCode = worksheet.Cells[row, 4].GetValue<string>(); }
                     catch (Exception ex) { Console.WriteLine($"Error reading YASTCode at row {row}, column 3: {ex.Message}"); continue; }
 
-                    try { name = worksheet.Cells[row, 4].GetValue<string>(); }
+                    try { name = worksheet.Cells[row, 5].GetValue<string>(); }
                     catch (Exception ex) { Console.WriteLine($"Error reading Name at row {row}, column 4: {ex.Message}"); continue; }
 
-                    try { assemblyNumber = worksheet.Cells[row, 5].GetValue<string>(); }
+                    try { assemblyNumber = worksheet.Cells[row, 6].GetValue<string>(); }
                     catch (Exception ex) { Console.WriteLine($"Error reading AssemblyNumber at row {row}, column 5: {ex.Message}"); continue; }
 
-                    try { assemblyName = worksheet.Cells[row, 6].GetValue<string>(); }
+                    try { assemblyName = worksheet.Cells[row, 7].GetValue<string>(); }
                     catch (Exception ex) { Console.WriteLine($"Error reading AssemblyName at row {row}, column 6: {ex.Message}"); continue; }
 
-                    try { productNumber = worksheet.Cells[row, 7].GetValue<string>(); }
+                    try { productNumber = worksheet.Cells[row, 8].GetValue<string>(); }
                     catch (Exception ex) { Console.WriteLine($"Error reading ProductNumber at row {row}, column 7: {ex.Message}"); continue; }
 
-                    try { productName = worksheet.Cells[row, 8].GetValue<string>(); }
+                    try { productName = worksheet.Cells[row, 9].GetValue<string>(); }
                     catch (Exception ex) { Console.WriteLine($"Error reading ProductName at row {row}, column 8: {ex.Message}"); continue; }
 
-                    try { fullName = worksheet.Cells[row, 9].GetValue<string>(); }
+                    try { fullName = worksheet.Cells[row, 10].GetValue<string>(); }
                     catch (Exception ex) { Console.WriteLine($"Error reading FullName at row {row}, column 9: {ex.Message}"); continue; }
 
-                    var record = new DocumentRecord
+                    if(!string.IsNullOrEmpty(eskdNumber))
                     {
-                        Date = date,
-                        ESKDNumber = new ESKDNumber().SetCode(worksheet.Cells[row, 2].GetValue<string>()),
-                        YASTCode = yastCode,
-                        Name = name,
-                        AssemblyNumber = assemblyNumber,
-                        AssemblyName = assemblyName,
-                        ProductNumber = productNumber,
-                        ProductName = productName,
-                        FullName = fullName
-                    };
-                    records.Add(record);
+                        var record = new DocumentRecord
+                        {
+                            Date = date,
+                            ESKDNumber = new ESKDNumber().SetCode(eskdNumber),
+                            YASTCode = yastCode,
+                            Name = name,
+                            AssemblyNumber = assemblyNumber,
+                            AssemblyName = assemblyName,
+                            ProductNumber = productNumber,
+                            ProductName = productName,
+                            FullName = fullName
+                        };
+                        records.Add(record);
+                    }
+                    
                 }
                 catch (ArgumentException ex)
                 {

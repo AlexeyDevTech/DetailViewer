@@ -20,9 +20,9 @@ namespace DetailViewer.Core.Models
     public class ESKDNumber
     {
         // строка-константа для компании "ДТМЛ"
-        public string CompanyCode { get; set; }
+        public string CompanyCode { get; set; } = "ДТМЛ";
         // номер классификатор (ХХХХХХ)
-        public Classifier ClassNumber { get; set; }
+        public Classifier ClassNumber { get; set; } = new();
         // номер-идентификатор детали (ХХХ)
         public int DetailNumber { get; set; } 
         public string FullCode => $"{CompanyCode}.{ClassNumber.Number.ToString("D6")}.{DetailNumber.ToString("D3")}";
