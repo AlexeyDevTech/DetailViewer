@@ -6,6 +6,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
+using Google.Apis.Sheets.v4;
+using Google.Apis.Sheets.v4.Data;
 
 namespace DetailViewer.Core.Services
 {
@@ -51,7 +55,7 @@ namespace DetailViewer.Core.Services
                 }
 
                 // Performance optimization: Read all data into an array
-                var data = worksheet.Cells[1, 1, rowCount, colCount].LoadFromText();
+                var data = worksheet.Cells[1, 1, rowCount, colCount].Value as object[,];
 
                 for (int row = 1; row < data.GetLength(0); row++) // Start from 1 to skip header row in data array
                 {

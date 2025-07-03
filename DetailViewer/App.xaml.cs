@@ -1,6 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Reflection;
 using System.Windows;
 using DetailViewer.Core.Interfaces;
+using DetailViewer.Core.Models;
 using DetailViewer.Core.Services;
 using DetailViewer.Views;
 using Prism.Ioc;
@@ -20,8 +23,8 @@ namespace DetailViewer
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            string logFilePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Logs", "app.log");
-            containerRegistry.RegisterSingleton<ILogger, FileLogger>(() => new FileLogger(logFilePath));
+            string logFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Logs", "app.log");
+            containerRegistry.RegisterSingleton<ILogger>(() => new FileLogger(logFilePath));
             containerRegistry.RegisterSingleton<IDocumentDataService, ExcelDocumentDataService>();
             containerRegistry.RegisterSingleton<IDocumentFilterService, DocumentFilterService>();
             containerRegistry.RegisterSingleton<ICsvExportService, CsvExportService>();

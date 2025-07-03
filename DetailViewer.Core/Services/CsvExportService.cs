@@ -49,7 +49,7 @@ namespace DetailViewer.Core.Services
             // If the field contains a comma, double quote, or newline, enclose it in double quotes
             if (field.Contains(",") || field.Contains("\"") || field.Contains("\n") || field.Contains("\r"))
             {
-                return "\"" + field.Replace("\"", """") + "\"";
+                return $"\"{field.Replace("\"", "\"\"")}\"";
             }
             return field;
         }

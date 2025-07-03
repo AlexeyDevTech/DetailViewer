@@ -79,7 +79,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             }
         }
 
-        private async void FillForm()
+        private void FillForm()
         {
             _dialogService.ShowDialog("DocumentRecordForm", new DialogParameters(), async r =>
             {
