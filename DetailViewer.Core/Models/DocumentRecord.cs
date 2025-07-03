@@ -36,14 +36,12 @@ namespace DetailViewer.Core.Models
             {
                 if (string.IsNullOrEmpty(code) || code.Length != 15)
                 {
-                    Debug.WriteLine($"Invalid ESKD number format: '{code}'. Expected length 15.");
-                    return new ESKDNumber { CompanyCode = "", ClassNumber = new Classifier { Number = 0 }, DetailNumber = 0 };
+                    throw new ArgumentException($"Invalid ESKD number format: '{code}'. Expected length 15.");
                 }
                 var parts = code.Split('.');
                 if (parts.Length != 3 || parts[0] != "ДТМЛ")
                 {
-                    Debug.WriteLine($"Invalid ESKD number parts: '{code}'. Expected 3 parts, first part 'ДТМЛ'.");
-                    return new ESKDNumber { CompanyCode = "", ClassNumber = new Classifier { Number = 0 }, DetailNumber = 0 };
+                    throw new ArgumentException($"Invalid ESKD number parts: '{code}'. Expected 3 parts, first part 'ДТМЛ'.");
                 }
                 CompanyCode = parts[0];
                 ClassNumber = new Classifier { Number = int.Parse(parts[1]) };
