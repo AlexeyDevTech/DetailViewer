@@ -72,7 +72,7 @@
 
 ## Roadmap
 
-Для отслеживания прогресса и планирования будущих задач, пожалуйста, обращайтесь к [GitHub Issues](https://github.com/<ВАШ_ОРГАНИЗАЦИЯ>/DetailViewer/issues) и [GitHub Projects/Kanban Board](https://github.com/<ВАШ_ОРГАНИЗАЦИЯ>/DetailViewer/projects) (если настроено).
+Для отслеживания прогресса и планирования будущих задач, пожалуйста, обращайтесь к [GitHub Issues](https://github.com/AlexeyDevTech/DetailViewer/issues) и [GitHub Projects/Kanban Board](https://github.com/AlexeyDevTech/DetailViewer/projects) (если настроено).
 
 Ниже представлен список ключевых задач, которые предстоит выполнить для завершения проекта и его дальнейшего развития:
 
