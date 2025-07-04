@@ -24,8 +24,10 @@ namespace DetailViewer.Core.Models
         // номер классификатор (ХХХХХХ)
         public Classifier ClassNumber { get; set; } = new();
         // номер-идентификатор детали (ХХХ)
-        public int DetailNumber { get; set; } 
-        public string FullCode => $"{CompanyCode}.{ClassNumber.Number.ToString("D6")}.{DetailNumber.ToString("D3")}";
+        public int DetailNumber { get; set; }
+        // версия детали (ХХ)
+        public int? Version { get; set; }
+        public string FullCode => Version.HasValue ? $"{CompanyCode}.{ClassNumber.Number.ToString("D6")}.{DetailNumber.ToString("D3")}-{Version.Value.ToString("D2")}" : $"{CompanyCode}.{ClassNumber.Number.ToString("D6")}.{DetailNumber.ToString("D3")}";
         public string GetCode()
         {
             return FullCode;
@@ -34,9 +36,10 @@ namespace DetailViewer.Core.Models
         {
             try
             {
-                if (string.IsNullOrEmpty(code) || code.Length != 15)
+                code = code.Replace(" ", ""); // Удаляем пробелы
+                if (string.IsNullOrEmpty(code) || (code.Length != 15 && code.Length != 18))
                 {
-                    throw new ArgumentException($"Invalid ESKD number format: '{code}'. Expected length 15.");
+                    throw new ArgumentException($"Invalid ESKD number format: '{code}'. Expected length 15 or 18.");
                 }
                 var parts = code.Split('.');
                 if (parts.Length != 3 || parts[0] != "ДТМЛ")
@@ -45,7 +48,12 @@ namespace DetailViewer.Core.Models
                 }
                 CompanyCode = parts[0];
                 ClassNumber = new Classifier { Number = int.Parse(parts[1]) };
-                DetailNumber = int.Parse(parts[2]);
+                var detailParts = parts[2].Split('-');
+                DetailNumber = int.Parse(detailParts[0]);
+                if (detailParts.Length > 1)
+                {
+                    Version = int.Parse(detailParts[1]);
+                }
                 return this;
             }
             catch (Exception ex)
