@@ -11,5 +11,7 @@ namespace DetailViewer.Core.Interfaces
     {
         Task<List<DocumentRecord>> ReadRecordsAsync(string source, string sheetName = null);
         Task WriteRecordsAsync(string source, List<DocumentRecord> records, string sheetName = null);
+        Task<List<DocumentRecord>> ReadRecordsAsync(Uri googleSheetUrl);
+        Task WriteRecordsAsync(Uri googleSheetUrl, List<DocumentRecord> records);
     }
 }

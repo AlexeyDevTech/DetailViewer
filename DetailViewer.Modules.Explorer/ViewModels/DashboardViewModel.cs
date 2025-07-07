@@ -21,6 +21,20 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private AppSettings _appSettings;
         private ILogger _logger;
 
+        private string _statusText;
+        public string StatusText
+        {
+            get { return _statusText; }
+            set { SetProperty(ref _statusText, value); }
+        }
+
+        private bool _isBusy;
+        public bool IsBusy
+        {
+            get { return _isBusy; }
+            set { SetProperty(ref _isBusy, value); }
+        }
+
         private DataSourceType _selectedDataSourceType;
         public DataSourceType SelectedDataSourceType
         {
@@ -50,26 +64,14 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             }
         }
 
-        private string _googleSheetId;
-        public string GoogleSheetId
+        private string _googleSheetUrl;
+        public string GoogleSheetUrl
         {
-            get { return _googleSheetId; }
+            get { return _googleSheetUrl; }
             set
             {
-                SetProperty(ref _googleSheetId, value);
-                _appSettings.LastUsedGoogleSheetId = value;
-                _settingsService.SaveSettingsAsync(_appSettings);
-            }
-        }
-
-        private string _googleSheetName;
-        public string GoogleSheetName
-        {
-            get { return _googleSheetName; }
-            set
-            {
-                SetProperty(ref _googleSheetName, value);
-                _appSettings.LastUsedGoogleSheetName = value;
+                SetProperty(ref _googleSheetUrl, value);
+                _appSettings.LastUsedGoogleSheetUrl = value;
                 _settingsService.SaveSettingsAsync(_appSettings);
             }
         }
@@ -96,12 +98,12 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             _logger = logger;
 
             DocumentRecords = new ObservableCollection<DocumentRecord>();
+            StatusText = "Готово";
 
             // Load settings
             SelectedDataSourceType = _appSettings.CurrentDataSourceType;
             ExcelFilePath = _appSettings.LastUsedExcelFilePath;
-            GoogleSheetId = _appSettings.LastUsedGoogleSheetId;
-            GoogleSheetName = _appSettings.LastUsedGoogleSheetName;
+            GoogleSheetUrl = _appSettings.LastUsedGoogleSheetUrl;
 
             FillFormCommand = new DelegateCommand(FillForm);
             OpenTableCommand = new DelegateCommand(async () => await OpenTable());
@@ -112,6 +114,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private async Task SaveData()
         {
+            IsBusy = true;
+            StatusText = "Сохранение данных...";
             try
             {
                 var documentDataService = _documentDataServiceFactory.CreateService(SelectedDataSourceType);
@@ -131,6 +135,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                         }
                         else
                         {
+                            StatusText = "Сохранение отменено.";
                             return; // User cancelled
                         }
                     }
@@ -138,18 +143,31 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 }
                 else if (SelectedDataSourceType == DataSourceType.GoogleSheets)
                 {
-                    if (string.IsNullOrEmpty(GoogleSheetId) || string.IsNullOrEmpty(GoogleSheetName))
+                    if (string.IsNullOrEmpty(GoogleSheetUrl))
                     {
-                        _logger.LogWarning("Google Sheet ID and Sheet Name must be provided to save data.");
+                        _logger.LogWarning("Google Sheet URL must be provided to save data.");
+                        StatusText = "Ошибка: укажите URL Google таблицы.";
                         return;
                     }
-                    await documentDataService.WriteRecordsAsync(GoogleSheetId, DocumentRecords.ToList(), GoogleSheetName);
+                    if (!Uri.TryCreate(GoogleSheetUrl, UriKind.Absolute, out Uri uriResult))
+                    {
+                        _logger.LogError($"Invalid Google Sheet URL: {GoogleSheetUrl}");
+                        StatusText = "Ошибка: некорректный URL Google таблицы.";
+                        return;
+                    }
+                    await documentDataService.WriteRecordsAsync(uriResult, DocumentRecords.ToList());
                 }
+                StatusText = $"Данные успешно сохранены. Записей: {DocumentRecords.Count}";
                 _logger.LogInformation("Data saved successfully.");
             }
             catch (Exception ex)
             {
+                StatusText = "Ошибка при сохранении данных.";
                 _logger.LogError($"Error saving data: {ex.Message}", ex);
+            }
+            finally
+            {
+                IsBusy = false;
             }
         }
 
@@ -173,6 +191,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private async Task LoadData()
         {
+            IsBusy = true;
+            StatusText = "Загрузка данных...";
             try
             {
                 var documentDataService = _documentDataServiceFactory.CreateService(SelectedDataSourceType);
@@ -183,18 +203,29 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                     if (string.IsNullOrEmpty(ExcelFilePath))
                     {
                         BrowseExcelFile();
-                        if (string.IsNullOrEmpty(ExcelFilePath)) return; // User cancelled
+                        if (string.IsNullOrEmpty(ExcelFilePath))
+                        {
+                            StatusText = "Загрузка отменена.";
+                            return; // User cancelled
+                        }
                     }
                     records = await documentDataService.ReadRecordsAsync(ExcelFilePath);
                 }
                 else if (SelectedDataSourceType == DataSourceType.GoogleSheets)
                 {
-                    if (string.IsNullOrEmpty(GoogleSheetId) || string.IsNullOrEmpty(GoogleSheetName))
+                    if (string.IsNullOrEmpty(GoogleSheetUrl))
                     {
-                        _logger.LogWarning("Google Sheet ID and Sheet Name must be provided to load data.");
+                        _logger.LogWarning("Google Sheet URL must be provided to load data.");
+                        StatusText = "Ошибка: укажите URL Google таблицы.";
                         return;
                     }
-                    records = await documentDataService.ReadRecordsAsync(GoogleSheetId, GoogleSheetName);
+                    if (!Uri.TryCreate(GoogleSheetUrl, UriKind.Absolute, out Uri uriResult))
+                    {
+                        _logger.LogError($"Invalid Google Sheet URL: {GoogleSheetUrl}");
+                        StatusText = "Ошибка: некорректный URL Google таблицы.";
+                        return;
+                    }
+                    records = await documentDataService.ReadRecordsAsync(uriResult);
                 }
 
                 DocumentRecords.Clear();
@@ -202,11 +233,17 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 {
                     DocumentRecords.Add(record);
                 }
+                StatusText = $"Данные успешно загружены. Записей: {DocumentRecords.Count}";
                 _logger.LogInformation("Data loaded successfully.");
             }
             catch (Exception ex)
             {
+                StatusText = "Ошибка при загрузке данных.";
                 _logger.LogError($"Error loading data: {ex.Message}", ex);
+            }
+            finally
+            {
+                IsBusy = false;
             }
         }
 

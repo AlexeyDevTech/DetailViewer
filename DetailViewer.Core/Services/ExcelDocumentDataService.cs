@@ -213,5 +213,15 @@ namespace DetailViewer.Core.Services
                 package?.Dispose();
             }
         }
+
+        public Task<List<DocumentRecord>> ReadRecordsAsync(Uri excelFileUrl)
+        {
+            throw new NotSupportedException("Reading Excel records from a URL is not supported.");
+        }
+
+        public Task WriteRecordsAsync(Uri excelFileUrl, List<DocumentRecord> records)
+        {
+            throw new NotSupportedException("Writing Excel records to a URL is not supported.");
+        }
     }
 }

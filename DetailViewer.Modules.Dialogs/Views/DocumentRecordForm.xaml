@@ -9,20 +9,12 @@
     d:DesignHeight="950"
     d:DesignWidth="800"
     prism:ViewModelLocator.AutoWireViewModel="True"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    Background="{StaticResource BackgroundLightBrush}">
     <UserControl.Resources>
         <local:ImagePathConverter x:Key="ImagePathConverter" />
-        <!--  Style for Excel-like TextBox cells  -->
-        <Style x:Key="ExcelTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Padding" Value="5" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="BorderBrush" Value="#FFDDDDDD" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Margin" Value="5" />
-            <Setter Property="Background" Value="White" />
-        </Style>
     </UserControl.Resources>
-    <Grid Margin="10" Background="White">
+    <Grid Margin="10" Background="{StaticResource BackgroundWhiteBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -47,7 +39,6 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="Дата:" />
         <DatePicker
             Grid.Row="0"
@@ -60,7 +51,6 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="ЕСКД номер:" />
         <StackPanel
             Grid.Row="1"
@@ -69,7 +59,6 @@
             <TextBox
                 Width="50"
                 IsReadOnly="True"
-                Style="{StaticResource ExcelTextBoxStyle}"
                 Text="{Binding CompanyCode}" />
             <TextBlock
                 Margin="2,0"
@@ -77,7 +66,6 @@
                 Text="." />
             <TextBox
                 Width="80"
-                Style="{StaticResource ExcelTextBoxStyle}"
                 Text="{Binding ClassNumberString, UpdateSourceTrigger=PropertyChanged}" />
             <TextBlock
                 Margin="2,0"
@@ -85,7 +73,6 @@
                 Text="." />
             <TextBox
                 Width="50"
-                Style="{StaticResource ExcelTextBoxStyle}"
                 Text="{Binding DetailNumber, UpdateSourceTrigger=PropertyChanged}" />
             <TextBlock
                 Margin="2,0"
@@ -93,7 +80,6 @@
                 Text="-" />
             <TextBox
                 Width="50"
-                Style="{StaticResource ExcelTextBoxStyle}"
                 Text="{Binding Version, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
 
@@ -142,12 +128,10 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="ЯСТ код:" />
         <TextBox
             Grid.Row="3"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
             Text="{Binding DocumentRecord.YASTCode}" />
 
         <TextBlock
@@ -155,12 +139,10 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="Имя:" />
         <TextBox
             Grid.Row="4"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
             Text="{Binding DocumentRecord.Name}" />
 
         <TextBlock
@@ -168,12 +150,10 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="Номер сборки:" />
         <TextBox
             Grid.Row="5"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
             Text="{Binding DocumentRecord.AssemblyNumber}" />
 
         <TextBlock
@@ -181,12 +161,10 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="Имя сборки:" />
         <TextBox
             Grid.Row="6"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
             Text="{Binding DocumentRecord.AssemblyName}" />
 
         <TextBlock
@@ -194,12 +172,10 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="Номер продукта:" />
         <TextBox
             Grid.Row="7"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
             Text="{Binding DocumentRecord.ProductNumber}" />
 
         <TextBlock
@@ -207,12 +183,10 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="Имя продукта:" />
         <TextBox
             Grid.Row="8"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
             Text="{Binding DocumentRecord.ProductName}" />
 
         <TextBlock
@@ -220,12 +194,10 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="ФИО:" />
         <TextBox
             Grid.Row="9"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
             Text="{Binding DocumentRecord.FullName}" />
 
         <StackPanel
@@ -235,8 +207,8 @@
             Margin="5"
             HorizontalAlignment="Right"
             Orientation="Horizontal">
-            <Button Command="{Binding SaveCommand}" Content="Сохранить" />
-            <Button Command="{Binding CancelCommand}" Content="Отмена" />
+            <Button Command="{Binding SaveCommand}" Content="Сохранить" Style="{StaticResource PrimaryButtonStyle}" />
+            <Button Command="{Binding CancelCommand}" Content="Отмена" Style="{StaticResource SecondaryButtonStyle}" />
         </StackPanel>
     </Grid>
 </UserControl>

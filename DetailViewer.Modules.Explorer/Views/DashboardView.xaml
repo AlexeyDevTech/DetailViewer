@@ -8,125 +8,105 @@
              xmlns:converters="clr-namespace:DetailViewer.Modules.Explorer.Converters"
              prism:ViewModelLocator.AutoWireViewModel="True"
              mc:Ignorable="d"
-             d:DesignHeight="600" d:DesignWidth="1000">
+             d:DesignHeight="600" d:DesignWidth="1000"
+             Background="{StaticResource BackgroundLightBrush}">
     <UserControl.Resources>
         <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <Style x:Key="ExcelCellBorderStyle" TargetType="Border">
-            <Setter Property="BorderBrush" Value="#FFDDDDDD"/>
-            <Setter Property="BorderThickness" Value="0,0,1,1"/>
-        </Style>
-        <Style x:Key="ExcelHeaderCellStyle" TargetType="TextBlock">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="5"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-        </Style>
-        <Style x:Key="ExcelDataCellStyle" TargetType="TextBlock">
-            <Setter Property="Padding" Value="5"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/> <!-- Header row -->
-            <RowDefinition Height="*"/>    <!-- ItemsControl for data -->
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="10">
-            <Button Content="Fill Form" Command="{Binding FillFormCommand}"/>
-            <Button Content="Открыть таблицу" Command="{Binding OpenTableCommand}"/>
-            <Button Content="Загрузить данные" Command="{Binding LoadDataCommand}"/>
-            <Button Content="Сохранить данные" Command="{Binding SaveDataCommand}"/>
-        </StackPanel>
-
-        <StackPanel Grid.Row="1" Margin="10">
-            <StackPanel Orientation="Horizontal" Margin="0,5">
-                <RadioButton Content="Excel File" GroupName="DataSource" IsChecked="{Binding SelectedDataSourceType, ConverterParameter={x:Static models:DataSourceType.Excel}, Converter={StaticResource EnumToBooleanConverter}}" Margin="0,0,10,0"/>
-                <RadioButton Content="Google Sheets" GroupName="DataSource" IsChecked="{Binding SelectedDataSourceType, ConverterParameter={x:Static models:DataSourceType.GoogleSheets}, Converter={StaticResource EnumToBooleanConverter}}"/>
-            </StackPanel>
-
-            <StackPanel Orientation="Vertical" Margin="0,5">
-                <StackPanel Orientation="Horizontal" Visibility="{Binding IsExcelSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <TextBlock Text="Excel File Path:" Width="120" VerticalAlignment="Center"/>
-                    <TextBox Text="{Binding ExcelFilePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="5,0"/>
-                    <Button Content="Browse..." Command="{Binding BrowseExcelFileCommand}"/>
+        <!-- 1. Панель инструментов -->
+        <ToolBar Grid.Row="0" Padding="5">
+            <Button Style="{StaticResource ToolBarButtonStyle}" Command="{Binding FillFormCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl Content="{StaticResource IconAdd}" Width="16" Height="16" Margin="0,0,5,0"/>
+                    <TextBlock Text="Заполнить форму" VerticalAlignment="Center"/>
                 </StackPanel>
-
-                <StackPanel Orientation="Vertical" Visibility="{Binding IsGoogleSheetsSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="Google Sheet ID:" Width="120" VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding GoogleSheetId, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="5,0"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="Google Sheet Name:" Width="120" VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding GoogleSheetName, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="5,0"/>
-                    </StackPanel>
+            </Button>
+            <Button Style="{StaticResource ToolBarButtonStyle}" Command="{Binding OpenTableCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl Content="{StaticResource IconFolderOpen}" Width="16" Height="16" Margin="0,0,5,0"/>
+                    <TextBlock Text="Открыть таблицу" VerticalAlignment="Center"/>
                 </StackPanel>
-            </StackPanel>
-        </StackPanel>
+            </Button>
+            <Button Style="{StaticResource ToolBarButtonStyle}" Command="{Binding LoadDataCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl Content="{StaticResource IconLoad}" Width="16" Height="16" Margin="0,0,5,0"/>
+                    <TextBlock Text="Загрузить данные" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource ToolBarButtonStyle}" Command="{Binding SaveDataCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl Content="{StaticResource IconSave}" Width="16" Height="16" Margin="0,0,5,0"/>
+                    <TextBlock Text="Сохранить данные" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </ToolBar>
 
-        <!-- Header Row -->
-        <Grid Grid.Row="2" Background="#FFEEEEEE">
+        <!-- 2. Основная рабочая область -->
+        <Grid Grid.Row="1" Margin="5">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="100"/>
-                <ColumnDefinition Width="150"/>
-                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="350"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="150"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="150"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="150"/>
             </Grid.ColumnDefinitions>
-            <Border Grid.Column="0" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="Дата" Style="{StaticResource ExcelHeaderCellStyle}"/></Border>
-            <Border Grid.Column="1" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="ЕСКД номер" Style="{StaticResource ExcelHeaderCellStyle}"/></Border>
-            <Border Grid.Column="2" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="ЯСТ код" Style="{StaticResource ExcelHeaderCellStyle}"/></Border>
-            <Border Grid.Column="3" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="Имя" Style="{StaticResource ExcelHeaderCellStyle}"/></Border>
-            <Border Grid.Column="4" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="Номер сборки" Style="{StaticResource ExcelHeaderCellStyle}"/></Border>
-            <Border Grid.Column="5" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="Имя сборки" Style="{StaticResource ExcelHeaderCellStyle}"/></Border>
-            <Border Grid.Column="6" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="Номер продукта" Style="{StaticResource ExcelHeaderCellStyle}"/></Border>
-            <Border Grid.Column="7" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="Имя продукта" Style="{StaticResource ExcelHeaderCellStyle}"/></Border>
-            <Border Grid.Column="8" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="Полное имя" Style="{StaticResource ExcelHeaderCellStyle}"/></Border>
+
+            <!-- Левая панель с настройками -->
+            <GroupBox Grid.Column="0" Header="Источник данных">
+                <TabControl>
+                    <!-- Вкладка Excel -->
+                    <TabItem Header="Excel">
+                        <StackPanel Margin="10">
+                            <TextBlock Text="Путь к файлу Excel:" Margin="0,0,0,5"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Text="{Binding ExcelFilePath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Content="..." Command="{Binding BrowseExcelFileCommand}" Style="{StaticResource PrimaryButtonStyle}" Padding="10,5" Margin="5,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </TabItem>
+                    <!-- Вкладка Google Sheets -->
+                    <TabItem Header="Google Sheets">
+                        <StackPanel Margin="10">
+                            <TextBlock Text="URL Google таблицы:" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding GoogleSheetUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
+                        </StackPanel>
+                    </TabItem>
+                </TabControl>
+            </GroupBox>
+
+            <!-- Правая панель с данными -->
+            <DataGrid Grid.Column="1" ItemsSource="{Binding DocumentRecords}" Margin="5,0,0,0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Дата" Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}" Width="100"/>
+                    <DataGridTextColumn Header="ЕСКД номер" Binding="{Binding ESKDNumber.FullCode}" Width="150"/>
+                    <DataGridTextColumn Header="ЯСТ код" Binding="{Binding YASTCode}" Width="100"/>
+                    <DataGridTextColumn Header="Имя" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="Номер сборки" Binding="{Binding AssemblyNumber}" Width="150"/>
+                    <DataGridTextColumn Header="Имя сборки" Binding="{Binding AssemblyName}" Width="*"/>
+                    <DataGridTextColumn Header="Номер продукта" Binding="{Binding ProductNumber}" Width="150"/>
+                    <DataGridTextColumn Header="Имя продукта" Binding="{Binding ProductName}" Width="*"/>
+                    <DataGridTextColumn Header="Полное имя" Binding="{Binding FullName}" Width="150"/>
+                </DataGrid.Columns>
+            </DataGrid>
         </Grid>
 
-        <!-- ItemsControl for data rows -->
-        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding DocumentRecords}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Vertical"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="150"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}" Style="{StaticResource ExcelDataCellStyle}"/></Border>
-                            <Border Grid.Column="1" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="{Binding ESKDNumber.FullCode}" Style="{StaticResource ExcelDataCellStyle}"/></Border>
-                            <Border Grid.Column="2" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="{Binding YASTCode}" Style="{StaticResource ExcelDataCellStyle}"/></Border>
-                            <Border Grid.Column="3" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="{Binding Name}" Style="{StaticResource ExcelDataCellStyle}"/></Border>
-                            <Border Grid.Column="4" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="{Binding AssemblyNumber}" Style="{StaticResource ExcelDataCellStyle}"/></Border>
-                            <Border Grid.Column="5" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="{Binding AssemblyName}" Style="{StaticResource ExcelDataCellStyle}"/></Border>
-                            <Border Grid.Column="6" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="{Binding ProductNumber}" Style="{StaticResource ExcelDataCellStyle}"/></Border>
-                            <Border Grid.Column="7" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="{Binding ProductName}" Style="{StaticResource ExcelDataCellStyle}"/></Border>
-                            <Border Grid.Column="8" Style="{StaticResource ExcelCellBorderStyle}"><TextBlock Text="{Binding FullName}" Style="{StaticResource ExcelDataCellStyle}"/></Border>
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <!-- 3. Статус бар -->
+        <StatusBar Grid.Row="2">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusText}"/>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <ProgressBar IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}" Width="100" Height="15"/>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </UserControl>

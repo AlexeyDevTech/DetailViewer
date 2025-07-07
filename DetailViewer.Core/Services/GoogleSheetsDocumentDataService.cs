@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Web;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
@@ -147,6 +148,88 @@ namespace DetailViewer.Core.Services
             {
                 _logger.LogError($"Error writing to Google Sheet {spreadsheetId}: {ex.Message}", ex);
                 throw; // Re-throw to propagate the error
+            }
+        }
+
+        public async Task<List<DocumentRecord>> ReadRecordsAsync(Uri googleSheetUrl)
+        {
+            var (spreadsheetId, gid) = ParseGoogleSheetUrl(googleSheetUrl);
+            string sheetName = "Sheet1"; // Default fallback
+            if (!string.IsNullOrEmpty(gid))
+            {
+                sheetName = await GetSheetNameFromGid(spreadsheetId, gid);
+            }
+            return await ReadRecordsAsync(spreadsheetId, sheetName);
+        }
+
+        public async Task WriteRecordsAsync(Uri googleSheetUrl, List<DocumentRecord> records)
+        {
+            var (spreadsheetId, gid) = ParseGoogleSheetUrl(googleSheetUrl);
+            string sheetName = "Sheet1"; // Default fallback
+            if (!string.IsNullOrEmpty(gid))
+            {
+                sheetName = await GetSheetNameFromGid(spreadsheetId, gid);
+            }
+            await WriteRecordsAsync(spreadsheetId, records, sheetName);
+        }
+
+        private (string spreadsheetId, string gid) ParseGoogleSheetUrl(Uri url)
+        {
+            string spreadsheetId = null;
+            string gid = null;
+
+            // Extract spreadsheetId
+            var pathSegments = url.Segments;
+            for (int i = 0; i < pathSegments.Length; i++)
+            {
+                if (pathSegments[i] == "d/" && i + 1 < pathSegments.Length)
+                {
+                    spreadsheetId = pathSegments[i + 1].Replace("/", "");
+                    break;
+                }
+            }
+
+            // Extract gid from fragment
+            if (!string.IsNullOrEmpty(url.Fragment))
+            {
+                var fragment = url.Fragment.TrimStart('#');
+                var queryParams = HttpUtility.ParseQueryString(fragment);
+                gid = queryParams["gid"];
+            }
+
+            if (string.IsNullOrEmpty(spreadsheetId))
+            {
+                throw new ArgumentException("Could not extract spreadsheet ID from the Google Sheet URL.", nameof(url));
+            }
+
+            return (spreadsheetId, gid);
+        }
+
+        private async Task<string> GetSheetNameFromGid(string spreadsheetId, string gid)
+        {
+            try
+            {
+                _logger.LogInformation($"Attempting to get sheet name for spreadsheetId: {spreadsheetId}, gid: {gid}");
+                var request = _sheetsService.Spreadsheets.Get(spreadsheetId);
+                var spreadsheet = await request.ExecuteAsync();
+
+                if (spreadsheet?.Sheets != null)
+                {
+                    foreach (var sheet in spreadsheet.Sheets)
+                    {
+                        if (sheet.Properties?.SheetId.ToString() == gid)
+                        {
+                            return sheet.Properties.Title;
+                        }
+                    }
+                }
+                _logger.LogWarning($"Sheet with gid {gid} not found in spreadsheet {spreadsheetId}. Defaulting to 'Sheet1'.");
+                return "Sheet1"; // Fallback if gid not found
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting sheet name for gid {gid} in spreadsheet {spreadsheetId}: {ex.Message}", ex);
+                return "Sheet1"; // Fallback on error
             }
         }
 
