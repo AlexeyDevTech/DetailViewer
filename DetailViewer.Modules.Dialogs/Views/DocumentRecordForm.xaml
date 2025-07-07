@@ -6,7 +6,7 @@
     xmlns:local="clr-namespace:DetailViewer.Modules.Dialogs.Converters"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:prism="http://prismlibrary.com/"
-    d:DesignHeight="450"
+    d:DesignHeight="950"
     d:DesignWidth="800"
     prism:ViewModelLocator.AutoWireViewModel="True"
     mc:Ignorable="d">
@@ -22,7 +22,7 @@
             <Setter Property="Background" Value="White" />
         </Style>
     </UserControl.Resources>
-    <Grid Margin="10">
+    <Grid Margin="10" Background="White">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -221,7 +221,7 @@
             Margin="5"
             VerticalAlignment="Center"
             Style="{StaticResource ExcelCellStyle}"
-            Text="Полное имя:" />
+            Text="ФИО:" />
         <TextBox
             Grid.Row="9"
             Grid.Column="1"

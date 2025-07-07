@@ -4,10 +4,14 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:prism="http://prismlibrary.com/"
+             xmlns:models="clr-namespace:DetailViewer.Core.Models;assembly=DetailViewer.Core"
+             xmlns:converters="clr-namespace:DetailViewer.Modules.Explorer.Converters"
              prism:ViewModelLocator.AutoWireViewModel="True"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="1000">
     <UserControl.Resources>
+        <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <Style x:Key="ExcelCellBorderStyle" TargetType="Border">
             <Setter Property="BorderBrush" Value="#FFDDDDDD"/>
             <Setter Property="BorderThickness" Value="0,0,1,1"/>
@@ -26,6 +30,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/> <!-- Header row -->
             <RowDefinition Height="*"/>    <!-- ItemsControl for data -->
         </Grid.RowDefinitions>
@@ -37,8 +42,34 @@
             <Button Content="Сохранить данные" Command="{Binding SaveDataCommand}"/>
         </StackPanel>
 
+        <StackPanel Grid.Row="1" Margin="10">
+            <StackPanel Orientation="Horizontal" Margin="0,5">
+                <RadioButton Content="Excel File" GroupName="DataSource" IsChecked="{Binding SelectedDataSourceType, ConverterParameter={x:Static models:DataSourceType.Excel}, Converter={StaticResource EnumToBooleanConverter}}" Margin="0,0,10,0"/>
+                <RadioButton Content="Google Sheets" GroupName="DataSource" IsChecked="{Binding SelectedDataSourceType, ConverterParameter={x:Static models:DataSourceType.GoogleSheets}, Converter={StaticResource EnumToBooleanConverter}}"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Vertical" Margin="0,5">
+                <StackPanel Orientation="Horizontal" Visibility="{Binding IsExcelSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock Text="Excel File Path:" Width="120" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding ExcelFilePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="5,0"/>
+                    <Button Content="Browse..." Command="{Binding BrowseExcelFileCommand}"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Vertical" Visibility="{Binding IsGoogleSheetsSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <TextBlock Text="Google Sheet ID:" Width="120" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding GoogleSheetId, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="5,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <TextBlock Text="Google Sheet Name:" Width="120" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding GoogleSheetName, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="5,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+
         <!-- Header Row -->
-        <Grid Grid.Row="1" Background="#FFEEEEEE">
+        <Grid Grid.Row="2" Background="#FFEEEEEE">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="100"/>
                 <ColumnDefinition Width="150"/>
@@ -62,7 +93,7 @@
         </Grid>
 
         <!-- ItemsControl for data rows -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding DocumentRecords}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>

@@ -5,7 +5,7 @@ namespace DetailViewer.Core.Interfaces
 {
     public interface ISettingsService
     {
-        Task<AppSettings> LoadSettingsAsync();
+        AppSettings LoadSettings();
         Task SaveSettingsAsync(AppSettings settings);
     }
 }

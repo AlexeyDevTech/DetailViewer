@@ -23,7 +23,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
-        public async Task<AppSettings> LoadSettingsAsync()
+        public AppSettings LoadSettings()
         {
             if (!File.Exists(_settingsFilePath))
             {
@@ -33,7 +33,7 @@ namespace DetailViewer.Core.Services
 
             try
             {
-                var json = await File.ReadAllTextAsync(_settingsFilePath);
+                var json = File.ReadAllText(_settingsFilePath);
                 var settings = JsonSerializer.Deserialize<AppSettings>(json);
                 _logger.LogInformation($"Settings loaded from {_settingsFilePath}.");
                 return settings ?? new AppSettings();

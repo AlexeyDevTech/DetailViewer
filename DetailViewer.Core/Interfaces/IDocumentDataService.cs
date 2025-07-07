@@ -9,7 +9,7 @@ namespace DetailViewer.Core.Interfaces
 {
     public interface IDocumentDataService
     {
-        Task<List<DocumentRecord>> ReadRecordsAsync(string source);
-        Task WriteRecordsAsync(string source, List<DocumentRecord> records);
+        Task<List<DocumentRecord>> ReadRecordsAsync(string source, string sheetName = null);
+        Task WriteRecordsAsync(string source, List<DocumentRecord> records, string sheetName = null);
     }
 }

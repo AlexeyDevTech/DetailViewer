@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using Unity;
 
 namespace DetailViewer.Core.Models
 {
@@ -20,7 +21,7 @@ namespace DetailViewer.Core.Models
     public class ESKDNumber
     {
         // строка-константа для компании "ДТМЛ"
-        public string CompanyCode { get; set; } = "ДТМЛ";
+        public string CompanyCode { get; set; } = "ДТМЛ"; //заменить на подгрузку из настроек
         // номер классификатор (ХХХХХХ)
         public Classifier ClassNumber { get; set; } = new();
         // номер-идентификатор детали (ХХХ)
@@ -28,6 +29,11 @@ namespace DetailViewer.Core.Models
         // версия детали (ХХ)
         public int? Version { get; set; }
         public string FullCode => Version.HasValue ? $"{CompanyCode}.{ClassNumber.Number.ToString("D6")}.{DetailNumber.ToString("D3")}-{Version.Value.ToString("D2")}" : $"{CompanyCode}.{ClassNumber.Number.ToString("D6")}.{DetailNumber.ToString("D3")}";
+
+        public ESKDNumber()
+        {
+          
+        }
         public string GetCode()
         {
             return FullCode;
@@ -62,6 +68,7 @@ namespace DetailViewer.Core.Models
                 return new ESKDNumber { CompanyCode = "", ClassNumber = new Classifier { Number = 0 }, DetailNumber = 0 };
             }
         }
+
     }
 
     public class Classifier
