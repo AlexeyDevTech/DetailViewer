@@ -1,14 +1,15 @@
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using System.Web;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Web;
 
 namespace DetailViewer.Core.Services
 {
@@ -44,7 +45,7 @@ namespace DetailViewer.Core.Services
         public async Task<List<DocumentRecord>> ReadRecordsAsync(string spreadsheetId, string sheetName)
         {
             var records = new List<DocumentRecord>();
-            var range = $"{sheetName}!A1:I";
+            var range = $"{sheetName}!A1:J"; // Ожидается 9 колонок (A–I)
 
             try
             {
@@ -58,37 +59,39 @@ namespace DetailViewer.Core.Services
                     return records;
                 }
 
-                for (int i = 1; i < values.Count; i++)
+                // Вспомогательная функция для безопасного доступа к ячейке по индексу
+                string GetValue(IList<object> row, int index)
+                    => index < row.Count ? row[index]?.ToString() : null;
+
+                for (int i = 1; i < values.Count; i++) // пропускаем заголовок
                 {
                     var row = values[i];
-                    if (row.Count < 9)
-                    {
-                        _logger.LogWarning($"Row {i + 1} in Google Sheet has insufficient columns. Skipping.");
-                        continue;
-                    }
+
+                    _logger.LogInformation($"Row {i + 1}: {string.Join(" | ", row.Select(c => c?.ToString() ?? "NULL"))}");
 
                     try
                     {
                         DateTime date = default;
-                        if (!DateTime.TryParse(row[0]?.ToString(), out date))
+                        var dateStr = GetValue(row, 1);
+                        if (!DateTime.TryParse(dateStr, out date))
                         {
-                            _logger.LogWarning($"Could not parse Date at row {i + 1}, column 1. Using default value.");
+                            _logger.LogWarning($"Could not parse Date at row {i + 1}, column 2. Using default value.");
                         }
 
-                        string eskdNumber = row[1]?.ToString();
+                        string eskdNumber = GetValue(row, 2);
                         if (!string.IsNullOrEmpty(eskdNumber))
                         {
                             var record = new DocumentRecord
                             {
                                 Date = date,
                                 ESKDNumber = new ESKDNumber().SetCode(eskdNumber),
-                                YASTCode = row[2]?.ToString(),
-                                Name = row[3]?.ToString(),
-                                AssemblyNumber = row[4]?.ToString(),
-                                AssemblyName = row[5]?.ToString(),
-                                ProductNumber = row[6]?.ToString(),
-                                ProductName = row[7]?.ToString(),
-                                FullName = row[8]?.ToString()
+                                YASTCode = GetValue(row, 3),
+                                Name = GetValue(row, 4),
+                                AssemblyNumber = GetValue(row, 5),
+                                AssemblyName = GetValue(row, 6),
+                                ProductNumber = GetValue(row, 7),
+                                ProductName = GetValue(row, 8),
+                                FullName = GetValue(row, 9)
                             };
                             records.Add(record);
                         }
@@ -99,18 +102,18 @@ namespace DetailViewer.Core.Services
                     }
                     catch (ArgumentException ex)
                     {
-                        _logger.LogError($"Validation error for ESKDNumber at row {i + 1}: {row[1]?.ToString()}. {ex.Message}", ex);
+                        _logger.LogError($"Validation error for ESKDNumber at row {i + 1}: {GetValue(row, 2)}. {ex.Message}", ex);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError($"An unexpected error occurred while processing record at row {i + 1} from Google Sheet: {ex.Message}", ex);
+                        _logger.LogError($"Unexpected error while processing row {i + 1}: {ex.Message}", ex);
                     }
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error reading Google Sheet {spreadsheetId}: {ex.Message}", ex);
-                throw; // Re-throw to propagate the error
+                throw;
             }
 
             _logger.LogInformation($"Successfully read {records.Count} records from Google Sheet {spreadsheetId}.");
