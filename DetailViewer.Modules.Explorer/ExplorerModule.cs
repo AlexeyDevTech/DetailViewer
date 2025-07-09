@@ -1,4 +1,4 @@
-﻿using DetailViewer.Modules.Explorer.Views;
+using DetailViewer.Modules.Explorer.Views;
 using Prism.Ioc;
 using Prism.Modularity;
 using Prism.Regions;
@@ -9,7 +9,7 @@ namespace DetailViewer.Modules.Explorer
     {
         public void OnInitialized(IContainerProvider containerProvider)
         {
-            containerProvider.Resolve<IRegionManager>().RegisterViewWithRegion("ContentRegion", typeof(Views.DashboardView));
+            containerProvider.Resolve<IRegionManager>().RequestNavigate("ContentRegion", "DashboardView");
         }
 
         public void RegisterTypes(IContainerRegistry containerRegistry)

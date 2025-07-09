@@ -5,6 +5,32 @@
         prism:ViewModelLocator.AutoWireViewModel="True"
         Title="{Binding Title}" Height="550" Width="1225" Background="{StaticResource BackgroundLightBrush}" >
     <Grid>
-        <ContentControl prism:RegionManager.RegionName="ContentRegion" />
+        <DockPanel>
+            <Grid DockPanel.Dock="Top" Background="{StaticResource BackgroundDarkBrush}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Dashboard" Command="{Binding NavigateCommand}" CommandParameter="DashboardView" Margin="5"/>
+                </StackPanel>
+                <Button Grid.Column="1" Margin="5" Width="30" Height="30">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <Ellipse Fill="Gray"/>
+                                <TextBlock Text="A" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Settings" Command="{Binding ShowSettingsCommand}"/>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+            </Grid>
+            <ContentControl prism:RegionManager.RegionName="ContentRegion" />
+        </DockPanel>
     </Grid>
 </Window>

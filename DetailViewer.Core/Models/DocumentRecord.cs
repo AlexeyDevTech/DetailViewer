@@ -1,4 +1,6 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using Unity;
 
@@ -6,10 +8,20 @@ namespace DetailViewer.Core.Models
 {
     public class DocumentRecord
     {
+        [Key]
+        public int Id { get; set; }
         public DateTime Date { get; set; }
-        //в идеале имеет маску "ДТМЛ.ХХХХХХ.ХХХ"
-        //объект идентификатора детали
+
+        [NotMapped]
         public ESKDNumber ESKDNumber { get; set; }
+
+        // Flattened properties from ESKDNumber and Classifier
+        public string CompanyCode { get; set; }
+        public int ClassNumber { get; set; }
+        public string ClassifierName { get; set; }
+        public int DetailNumber { get; set; }
+        public int? Version { get; set; }
+
         public string YASTCode { get; set; }
         public string Name { get; set; }
         public string AssemblyNumber { get; set; }
@@ -18,6 +30,7 @@ namespace DetailViewer.Core.Models
         public string ProductName { get; set; }
         public string FullName { get; set; }
     }
+
     public class ESKDNumber
     {
         // строка-константа для компании "ДТМЛ"

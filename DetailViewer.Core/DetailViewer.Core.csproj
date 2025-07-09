@@ -9,5 +9,7 @@
     <PackageReference Include="Prism.Wpf" Version="8.1.97" />
     <PackageReference Include="System.Text.Json" Version="9.0.6" />
     <PackageReference Include="Unity" Version="5.11.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.7" />
   </ItemGroup>
 </Project>

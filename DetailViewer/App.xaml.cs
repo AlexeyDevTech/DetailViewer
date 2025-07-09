@@ -1,23 +1,16 @@
-﻿using System;
+﻿using DetailViewer.Core.Data;
+using DetailViewer.Core.Interfaces;
+using DetailViewer.Core.Services;
+using DetailViewer.Views;
+using Prism.Ioc;
+using Prism.Modularity;
 using System.IO;
 using System.Reflection;
 using System.Windows;
-using DetailViewer.Core.Interfaces;
-using DetailViewer.Core.Models;
-using DetailViewer.Core.Services;
-using DetailViewer.Views;
-using Google.Apis.Sheets.v4.Data;
-using Prism;
-using Prism.Ioc;
-using Prism.Modularity;
-using Prism.Unity;
 
 namespace DetailViewer
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : PrismApplication
+    public partial class App
     {
         protected override Window CreateShell()
         {
@@ -37,21 +30,14 @@ namespace DetailViewer
             var appSettings = settingsService.LoadSettings();
             containerRegistry.RegisterInstance(appSettings);
 
-            // Register ExcelDocumentDataService and GoogleSheetsDocumentDataService
-            containerRegistry.RegisterSingleton<ExcelDocumentDataService>();
-            containerRegistry.RegisterSingleton<GoogleSheetsDocumentDataService>();
+            // Register the DbContext
+            containerRegistry.RegisterSingleton<ApplicationDbContext>();
 
-            // Register the factory
-            containerRegistry.RegisterSingleton<IDocumentDataServiceFactory, DocumentDataServiceFactory>();
-
-            // Register IDocumentDataService using the factory
-            containerRegistry.RegisterSingleton<IDocumentDataService>(() =>
-            {
-                var factory = Container.Resolve<IDocumentDataServiceFactory>();
-                return factory.CreateService(appSettings.CurrentDataSourceType);
-            });
+            // Register the data service
+            containerRegistry.RegisterSingleton<IDocumentDataService, SqliteDocumentDataService>();
         }
-        protected override void ConfigureModuleCatalog(Prism.Modularity.IModuleCatalog moduleCatalog)
+
+        protected override void ConfigureModuleCatalog(IModuleCatalog moduleCatalog)
         {
             moduleCatalog.AddModule<Core.CoreModule>();
             moduleCatalog.AddModule<Modules.Dialogs.DialogsModule>();

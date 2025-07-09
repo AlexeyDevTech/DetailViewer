@@ -9,9 +9,11 @@ namespace DetailViewer.Core.Interfaces
 {
     public interface IDocumentDataService
     {
-        Task<List<DocumentRecord>> ReadRecordsAsync(string source, string sheetName = null);
-        Task WriteRecordsAsync(string source, List<DocumentRecord> records, string sheetName = null);
-        Task<List<DocumentRecord>> ReadRecordsAsync(Uri googleSheetUrl);
-        Task WriteRecordsAsync(Uri googleSheetUrl, List<DocumentRecord> records);
+        Task<List<DocumentRecord>> GetAllRecordsAsync();
+        Task AddRecordAsync(DocumentRecord record);
+        Task UpdateRecordAsync(DocumentRecord record);
+        Task DeleteRecordAsync(int recordId);
+        Task ImportFromExcelAsync(string filePath);
+        Task ExportToExcelAsync(string filePath);
     }
 }
