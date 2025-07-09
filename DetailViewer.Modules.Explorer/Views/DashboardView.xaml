@@ -1,111 +1,126 @@
-<UserControl x:Class="DetailViewer.Modules.Explorer.Views.DashboardView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:prism="http://prismlibrary.com/"
-             xmlns:models="clr-namespace:DetailViewer.Core.Models;assembly=DetailViewer.Core"
-             xmlns:converters="clr-namespace:DetailViewer.Modules.Explorer.Converters"
-             prism:ViewModelLocator.AutoWireViewModel="True"
-             mc:Ignorable="d"
-             d:DesignHeight="600" d:DesignWidth="1000"
-             Background="{StaticResource BackgroundLightBrush}">
+<UserControl
+    x:Class="DetailViewer.Modules.Explorer.Views.DashboardView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:DetailViewer.Modules.Explorer.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:DetailViewer.Core.Models;assembly=DetailViewer.Core"
+    xmlns:prism="http://prismlibrary.com/"
+    d:DesignHeight="600"
+    d:DesignWidth="1000"
+    prism:ViewModelLocator.AutoWireViewModel="True"
+    Background="{StaticResource BackgroundLightBrush}"
+    mc:Ignorable="d">
     <UserControl.Resources>
-        <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- 1. Панель инструментов -->
+        <!--  1. Панель инструментов  -->
         <ToolBar Grid.Row="0" Padding="5">
-            <Button Style="{StaticResource ToolBarButtonStyle}" Command="{Binding FillFormCommand}">
+            <Button Command="{Binding FillFormCommand}" Style="{StaticResource ToolBarButtonStyle}">
                 <StackPanel Orientation="Horizontal">
-                    <ContentControl Content="{StaticResource IconAdd}" Width="16" Height="16" Margin="0,0,5,0"/>
-                    <TextBlock Text="Заполнить форму" VerticalAlignment="Center"/>
+                    <ContentControl
+                        Width="16"
+                        Height="16"
+                        Margin="0,0,5,0"
+                        Content="{StaticResource IconAdd}" />
+                    <TextBlock VerticalAlignment="Center" Text="Заполнить форму" />
                 </StackPanel>
             </Button>
-            <Button Style="{StaticResource ToolBarButtonStyle}" Command="{Binding OpenTableCommand}">
+
+            <Button Command="{Binding LoadDataCommand}" Style="{StaticResource ToolBarButtonStyle}">
                 <StackPanel Orientation="Horizontal">
-                    <ContentControl Content="{StaticResource IconFolderOpen}" Width="16" Height="16" Margin="0,0,5,0"/>
-                    <TextBlock Text="Открыть таблицу" VerticalAlignment="Center"/>
+                    <ContentControl
+                        Width="16"
+                        Height="16"
+                        Margin="0,0,5,0"
+                        Content="{StaticResource IconLoad}" />
+                    <TextBlock VerticalAlignment="Center" Text="Загрузить данные" />
                 </StackPanel>
             </Button>
-            <Button Style="{StaticResource ToolBarButtonStyle}" Command="{Binding LoadDataCommand}">
+            <Button Command="{Binding SaveDataCommand}" Style="{StaticResource ToolBarButtonStyle}">
                 <StackPanel Orientation="Horizontal">
-                    <ContentControl Content="{StaticResource IconLoad}" Width="16" Height="16" Margin="0,0,5,0"/>
-                    <TextBlock Text="Загрузить данные" VerticalAlignment="Center"/>
-                </StackPanel>
-            </Button>
-            <Button Style="{StaticResource ToolBarButtonStyle}" Command="{Binding SaveDataCommand}">
-                <StackPanel Orientation="Horizontal">
-                    <ContentControl Content="{StaticResource IconSave}" Width="16" Height="16" Margin="0,0,5,0"/>
-                    <TextBlock Text="Сохранить данные" VerticalAlignment="Center"/>
+                    <ContentControl
+                        Width="16"
+                        Height="16"
+                        Margin="0,0,5,0"
+                        Content="{StaticResource IconSave}" />
+                    <TextBlock VerticalAlignment="Center" Text="Сохранить данные" />
                 </StackPanel>
             </Button>
         </ToolBar>
 
-        <!-- 2. Основная рабочая область -->
+        <!--  2. Основная рабочая область  -->
         <Grid Grid.Row="1" Margin="5">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="350"/>
-                <ColumnDefinition Width="*"/>
+
+                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-
-            <!-- Левая панель с настройками -->
-            <GroupBox Grid.Column="0" Header="Источник данных">
-                <TabControl>
-                    <!-- Вкладка Excel -->
-                    <TabItem Header="Excel">
-                        <StackPanel Margin="10">
-                            <TextBlock Text="Путь к файлу Excel:" Margin="0,0,0,5"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0" Text="{Binding ExcelFilePath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
-                                <Button Grid.Column="1" Content="..." Command="{Binding BrowseExcelFileCommand}" Style="{StaticResource PrimaryButtonStyle}" Padding="10,5" Margin="5,0,0,0"/>
-                            </Grid>
-                        </StackPanel>
-                    </TabItem>
-                    <!-- Вкладка Google Sheets -->
-                    <TabItem Header="Google Sheets">
-                        <StackPanel Margin="10">
-                            <TextBlock Text="URL Google таблицы:" Margin="0,0,0,5"/>
-                            <TextBox Text="{Binding GoogleSheetUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
-                        </StackPanel>
-                    </TabItem>
-                </TabControl>
-            </GroupBox>
-
-            <!-- Правая панель с данными -->
-            <DataGrid Grid.Column="1" ItemsSource="{Binding DocumentRecords}" Margin="5,0,0,0">
+            <!--  Правая панель с данными  -->
+            <DataGrid
+                Grid.Column="1"
+                Margin="5,0,0,0"
+                ItemsSource="{Binding DocumentRecords}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Дата" Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}" Width="100"/>
-                    <DataGridTextColumn Header="ЕСКД номер" Binding="{Binding ESKDNumber.FullCode}" Width="150"/>
-                    <DataGridTextColumn Header="ЯСТ код" Binding="{Binding YASTCode}" Width="100"/>
-                    <DataGridTextColumn Header="Имя" Binding="{Binding Name}" Width="*"/>
-                    <DataGridTextColumn Header="Номер сборки" Binding="{Binding AssemblyNumber}" Width="150"/>
-                    <DataGridTextColumn Header="Имя сборки" Binding="{Binding AssemblyName}" Width="*"/>
-                    <DataGridTextColumn Header="Номер продукта" Binding="{Binding ProductNumber}" Width="150"/>
-                    <DataGridTextColumn Header="Имя продукта" Binding="{Binding ProductName}" Width="*"/>
-                    <DataGridTextColumn Header="Полное имя" Binding="{Binding FullName}" Width="150"/>
+                    <DataGridTextColumn
+                        Width="100"
+                        Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}"
+                        Header="Дата" />
+                    <DataGridTextColumn
+                        Width="150"
+                        Binding="{Binding ESKDNumber.FullCode}"
+                        Header="ЕСКД номер" />
+                    <DataGridTextColumn
+                        Width="100"
+                        Binding="{Binding YASTCode}"
+                        Header="ЯСТ код" />
+                    <DataGridTextColumn
+                        Width="*"
+                        Binding="{Binding Name}"
+                        Header="Имя" />
+                    <DataGridTextColumn
+                        Width="150"
+                        Binding="{Binding AssemblyNumber}"
+                        Header="Номер сборки" />
+                    <DataGridTextColumn
+                        Width="*"
+                        Binding="{Binding AssemblyName}"
+                        Header="Имя сборки" />
+                    <DataGridTextColumn
+                        Width="150"
+                        Binding="{Binding ProductNumber}"
+                        Header="Номер продукта" />
+                    <DataGridTextColumn
+                        Width="*"
+                        Binding="{Binding ProductName}"
+                        Header="Имя продукта" />
+                    <DataGridTextColumn
+                        Width="150"
+                        Binding="{Binding FullName}"
+                        Header="Полное имя" />
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
 
-        <!-- 3. Статус бар -->
+        <!--  3. Статус бар  -->
         <StatusBar Grid.Row="2">
             <StatusBarItem>
-                <TextBlock Text="{Binding StatusText}"/>
+                <TextBlock Text="{Binding StatusText}" />
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
-                <ProgressBar IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}" Width="100" Height="15"/>
+                <ProgressBar
+                    Width="100"
+                    Height="15"
+                    IsIndeterminate="True"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}" />
             </StatusBarItem>
         </StatusBar>
     </Grid>
