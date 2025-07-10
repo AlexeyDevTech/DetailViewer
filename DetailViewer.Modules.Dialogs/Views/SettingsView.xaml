@@ -1,21 +1,75 @@
-<UserControl
-    x:Class="DetailViewer.Modules.Dialogs.Views.SettingsView"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:prism="http://prismlibrary.com/"
-    d:DesignHeight="300"
-    d:DesignWidth="300"
-    Height="400" Width="600"
-    prism:ViewModelLocator.AutoWireViewModel="True"
-    mc:Ignorable="d">
+<UserControl x:Class="DetailViewer.Modules.Dialogs.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:prism="http://prismlibrary.com/"
+             mc:Ignorable="d"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             d:DesignHeight="400" d:DesignWidth="600"
+             Background="{StaticResource BackgroundLightBrush}"
+             Padding="15">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/DetailViewer;component/ModernStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
     <Grid>
-        <StackPanel>
-            <TextBlock Text="Database Path:" />
-            <TextBox IsReadOnly="True" Text="{Binding DatabasePath}" />
-            <Button Command="{Binding ImportCommand}" Content="Import from Excel" />
-            <Button Command="{Binding ExportCommand}" Content="Export to Excel" />
-        </StackPanel>
+        <TabControl>
+            <TabItem Header="Основное">
+                <StackPanel>
+                    <GroupBox Header="База данных">
+                        <StackPanel>
+                            <TextBlock Text="Путь к базе данных:" Margin="0,0,0,5" />
+                            <TextBox Text="{Binding DatabasePath}" IsReadOnly="True" Margin="0,0,0,10" />
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="Импорт и экспорт">
+                        <StackPanel>
+                            <Button Content="Импорт из Excel" Command="{Binding ImportCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,5"/>
+                            <Button Content="Экспорт в Excel" Command="{Binding ExportCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,5"/>
+                            <ProgressBar Value="{Binding ImportProgress}" Maximum="100" Height="10" Margin="0,5" Visibility="{Binding IsImporting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Text="{Binding ImportStatus}" Margin="0,5"/>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Профиль">
+                <StackPanel>
+                    <GroupBox Header="Профили">
+                        <StackPanel>
+                            <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" DisplayMemberPath="FullName" Margin="0,0,0,10"/>
+                            <TextBlock Text="Фамилия"/>
+                            <TextBox Text="{Binding SelectedProfile.LastName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
+                            <TextBlock Text="Имя"/>
+                            <TextBox Text="{Binding SelectedProfile.FirstName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
+                            <TextBlock Text="Отчество"/>
+                            <TextBox Text="{Binding SelectedProfile.MiddleName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Сохранить" Command="{Binding SaveProfileCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,5,5,5"/>
+                                <Button Content="Удалить" Command="{Binding DeleteProfileCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,5"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Header="Новый профиль">
+                        <StackPanel>
+                            <TextBlock Text="Фамилия"/>
+                            <TextBox Text="{Binding NewProfileLastName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
+                            <TextBlock Text="Имя"/>
+                            <TextBox Text="{Binding NewProfileFirstName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
+                            <TextBlock Text="Отчество"/>
+                            <TextBox Text="{Binding NewProfileMiddleName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
+                            <Button Content="Добавить" Command="{Binding AddProfileCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,5"/>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
     </Grid>
 </UserControl>

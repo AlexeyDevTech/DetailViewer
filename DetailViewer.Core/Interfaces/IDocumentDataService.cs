@@ -13,7 +13,7 @@ namespace DetailViewer.Core.Interfaces
         Task AddRecordAsync(DocumentRecord record);
         Task UpdateRecordAsync(DocumentRecord record);
         Task DeleteRecordAsync(int recordId);
-        Task ImportFromExcelAsync(string filePath);
+        Task ImportFromExcelAsync(string filePath, IProgress<double> progress);
         Task ExportToExcelAsync(string filePath);
     }
 }

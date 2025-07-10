@@ -1,3 +1,4 @@
+using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Prism.Commands;
 using Prism.Mvvm;
@@ -101,11 +102,20 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public DelegateCommand SaveCommand { get; private set; }
         public DelegateCommand CancelCommand { get; private set; }
 
-        public DocumentRecordFormViewModel()
+        public DocumentRecordFormViewModel(IProfileService profileService, ISettingsService settingsService)
         {
-            DocumentRecord = new DocumentRecord { Date = DateTime.Now, ESKDNumber = new ESKDNumber() };
+            var settings = settingsService.LoadSettings();
+            var activeProfile = profileService.GetAllProfilesAsync().Result.FirstOrDefault(p => p.Id == settings.ActiveProfileId);
+
+            DocumentRecord = new DocumentRecord { Date = DateTime.Now, ESKDNumber = new ESKDNumber() { ClassNumber = new Classifier() } };
+            if (activeProfile != null)
+            {
+                DocumentRecord.FullName = $"{activeProfile.LastName} {activeProfile.FirstName.FirstOrDefault()}.{activeProfile.MiddleName.FirstOrDefault()}.";
+            }
+
             // Initialize new properties from DocumentRecord.ESKDNumber
             CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
+
             ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber.Number.ToString("D6");
             DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
             Version = DocumentRecord.ESKDNumber.Version;
@@ -132,7 +142,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             try
             {
                 // Assuming eskd_classifiers.json is in the root directory C:\AI
-                string jsonFilePath = "C:\\AI\\eskd_classifiers.json";
+                string jsonFilePath = "eskd_classifiers.json";
                 if (File.Exists(jsonFilePath))
                 {
                     string jsonContent = await File.ReadAllTextAsync(jsonFilePath);

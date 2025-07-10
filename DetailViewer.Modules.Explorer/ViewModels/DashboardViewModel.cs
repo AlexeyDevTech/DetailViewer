@@ -3,9 +3,10 @@ using DetailViewer.Core.Models;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Services.Dialogs;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using System.Linq;
+using System.Threading.Tasks;
 using System;
 
 namespace DetailViewer.Modules.Explorer.ViewModels
@@ -14,7 +15,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
     {
         private readonly IDocumentDataService _documentDataService;
         private readonly IDialogService _dialogService;
-        private ILogger _logger;
+        private readonly ILogger _logger;
+        private readonly IProfileService _profileService;
+        private readonly ISettingsService _settingsService;
 
         private string _statusText;
         public string StatusText
@@ -37,20 +40,86 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set { SetProperty(ref _documentRecords, value); }
         }
 
-        public DelegateCommand FillFormCommand { get; private set; }
-        public DelegateCommand LoadDataCommand { get; private set; }
+        private List<DocumentRecord> _allRecords;
 
-        public DashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger)
+        private string _eskdNumberFilter;
+        public string EskdNumberFilter
+        {
+            get { return _eskdNumberFilter; }
+            set { SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
+        }
+
+        private string _nameFilter;
+        public string NameFilter
+        {
+            get { return _nameFilter; }
+            set { SetProperty(ref _nameFilter, value, ApplyFilters); }
+        }
+
+        private string _assemblyNameFilter;
+        public string AssemblyNameFilter
+        {
+            get { return _assemblyNameFilter; }
+            set { SetProperty(ref _assemblyNameFilter, value, ApplyFilters); }
+        }
+
+        private string _productNameFilter;
+        public string ProductNameFilter
+        {
+            get { return _productNameFilter; }
+            set { SetProperty(ref _productNameFilter, value, ApplyFilters); }
+        }
+
+        private string _fullNameFilter;
+        public string FullNameFilter
+        {
+            get { return _fullNameFilter; }
+            set { SetProperty(ref _fullNameFilter, value, ApplyFilters); }
+        }
+
+        private string _yastCodeFilter;
+        public string YastCodeFilter
+        {
+            get { return _yastCodeFilter; }
+            set { SetProperty(ref _yastCodeFilter, value, ApplyFilters); }
+        }
+
+        private string _assemblyNumberFilter;
+        public string AssemblyNumberFilter
+        {
+            get { return _assemblyNumberFilter; }
+            set { SetProperty(ref _assemblyNumberFilter, value, ApplyFilters); }
+        }
+
+        private string _productNumberFilter;
+        public string ProductNumberFilter
+        {
+            get { return _productNumberFilter; }
+            set { SetProperty(ref _productNumberFilter, value, ApplyFilters); }
+        }
+
+        private bool _onlyMyRecordsFilter;
+        public bool OnlyMyRecordsFilter
+        {
+            get { return _onlyMyRecordsFilter; }
+            set { SetProperty(ref _onlyMyRecordsFilter, value, ApplyFilters); }
+        }
+
+        public DelegateCommand FillFormCommand { get; private set; }
+
+        public DashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger, IProfileService profileService, ISettingsService settingsService)
         {
             _documentDataService = documentDataService;
             _dialogService = dialogService;
             _logger = logger;
+            _profileService = profileService;
+            _settingsService = settingsService;
 
             DocumentRecords = new ObservableCollection<DocumentRecord>();
             StatusText = "Готово";
 
             FillFormCommand = new DelegateCommand(FillForm);
-            LoadDataCommand = new DelegateCommand(async () => await LoadData());
+            LoadData();
         }
 
         private void FillForm()
@@ -72,12 +141,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             StatusText = "Загрузка данных...";
             try
             {
-                var records = await _documentDataService.GetAllRecordsAsync();
-                DocumentRecords.Clear();
-                foreach (var record in records)
-                {
-                    DocumentRecords.Add(record);
-                }
+                _allRecords = await _documentDataService.GetAllRecordsAsync();
+                ApplyFilters();
                 StatusText = $"Данные успешно загружены. Записей: {DocumentRecords.Count}";
                 _logger.LogInformation("Data loaded successfully.");
             }
@@ -89,6 +154,70 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             finally
             {
                 IsBusy = false;
+            }
+        }
+
+        private void ApplyFilters()
+        {
+            if (_allRecords == null) return;
+
+            var filteredRecords = _allRecords.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(EskdNumberFilter))
+            {
+                filteredRecords = filteredRecords.Where(r => r.ESKDNumber != null && r.ESKDNumber.FullCode != null && r.ESKDNumber.FullCode.Contains(EskdNumberFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(YastCodeFilter))
+            {
+                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.YASTCode) && r.YASTCode.Contains(YastCodeFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(NameFilter))
+            {
+                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.Name) && r.Name.Contains(NameFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(AssemblyNumberFilter))
+            {
+                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.AssemblyNumber) && r.AssemblyNumber.Contains(AssemblyNumberFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(AssemblyNameFilter))
+            {
+                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.AssemblyName) && r.AssemblyName.Contains(AssemblyNameFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(ProductNumberFilter))
+            {
+                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.ProductNumber) && r.ProductNumber.Contains(ProductNumberFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(ProductNameFilter))
+            {
+                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.ProductName) && r.ProductName.Contains(ProductNameFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(FullNameFilter))
+            {
+                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.FullName) && r.FullName.Contains(FullNameFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (OnlyMyRecordsFilter)
+            {
+                var settings = _settingsService.LoadSettings();
+                var activeProfile = _profileService.GetAllProfilesAsync().Result.FirstOrDefault(p => p.Id == settings.ActiveProfileId);
+                if (activeProfile != null)
+                {
+                    var activeProfileFullName = $"{activeProfile.LastName} {activeProfile.FirstName.FirstOrDefault()}.{activeProfile.MiddleName.FirstOrDefault()}.";
+                    filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.FullName) && r.FullName == activeProfileFullName);
+                }
+            }
+
+            DocumentRecords.Clear();
+            foreach (var record in filteredRecords)
+            {
+                DocumentRecords.Add(record);
             }
         }
     }

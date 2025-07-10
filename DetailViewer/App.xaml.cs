@@ -35,6 +35,7 @@ namespace DetailViewer
 
             // Register the data service
             containerRegistry.RegisterSingleton<IDocumentDataService, SqliteDocumentDataService>();
+            containerRegistry.RegisterSingleton<IProfileService, ProfileService>();
         }
 
         protected override void ConfigureModuleCatalog(IModuleCatalog moduleCatalog)

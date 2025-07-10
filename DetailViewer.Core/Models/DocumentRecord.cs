@@ -2,6 +2,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using Unity;
 
 namespace DetailViewer.Core.Models
@@ -12,15 +14,8 @@ namespace DetailViewer.Core.Models
         public int Id { get; set; }
         public DateTime Date { get; set; }
 
-        [NotMapped]
+        public int ESKDNumberId { get; set; }
         public ESKDNumber ESKDNumber { get; set; }
-
-        // Flattened properties from ESKDNumber and Classifier
-        public string CompanyCode { get; set; }
-        public int ClassNumber { get; set; }
-        public string ClassifierName { get; set; }
-        public int DetailNumber { get; set; }
-        public int? Version { get; set; }
 
         public string YASTCode { get; set; }
         public string Name { get; set; }
@@ -33,15 +28,18 @@ namespace DetailViewer.Core.Models
 
     public class ESKDNumber
     {
+        [Key]
+        public int Id { get; set; }
         // строка-константа для компании "ДТМЛ"
         public string CompanyCode { get; set; } = "ДТМЛ"; //заменить на подгрузку из настроек
         // номер классификатор (ХХХХХХ)
-        public Classifier ClassNumber { get; set; } = new();
+        public int? ClassifierId { get; set; }
+        public Classifier? ClassNumber { get; set; }
         // номер-идентификатор детали (ХХХ)
         public int DetailNumber { get; set; }
         // версия детали (ХХ)
         public int? Version { get; set; }
-        public string FullCode => Version.HasValue ? $"{CompanyCode}.{ClassNumber.Number.ToString("D6")}.{DetailNumber.ToString("D3")}-{Version.Value.ToString("D2")}" : $"{CompanyCode}.{ClassNumber.Number.ToString("D6")}.{DetailNumber.ToString("D3")}";
+        public string FullCode => Version.HasValue ? $"{CompanyCode}.{(ClassNumber != null ? ClassNumber.Number.ToString("D6") : "000000")}.{DetailNumber.ToString("D3")}-{Version.Value.ToString("D2")}" : $"{CompanyCode}.{(ClassNumber != null ? ClassNumber.Number.ToString("D6") : "000000")}.{DetailNumber.ToString("D3")}";
 
         public ESKDNumber()
         {
@@ -58,12 +56,14 @@ namespace DetailViewer.Core.Models
                 code = code.Replace(" ", ""); // Удаляем пробелы
                 if (string.IsNullOrEmpty(code) || (code.Length != 15 && code.Length != 18))
                 {
-                    throw new ArgumentException($"Invalid ESKD number format: '{code}'. Expected length 15 or 18.");
+                    this.ClassNumber = null;
+                    return this;
                 }
                 var parts = code.Split('.');
                 if (parts.Length != 3 || parts[0] != "ДТМЛ")
                 {
-                    throw new ArgumentException($"Invalid ESKD number parts: '{code}'. Expected 3 parts, first part 'ДТМЛ'.");
+                    this.ClassNumber = null;
+                    return this;
                 }
                 CompanyCode = parts[0];
                 ClassNumber = new Classifier { Number = int.Parse(parts[1]) };
@@ -78,7 +78,7 @@ namespace DetailViewer.Core.Models
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error parsing ESKD number '{code}': {ex.Message}");
-                return new ESKDNumber { CompanyCode = "", ClassNumber = new Classifier { Number = 0 }, DetailNumber = 0 };
+                return new ESKDNumber { CompanyCode = "", ClassNumber = null, DetailNumber = 0 };
             }
         }
 
@@ -86,9 +86,14 @@ namespace DetailViewer.Core.Models
 
     public class Classifier
     {
+        [Key]
+        public int Id { get; set; }
         // имя классификатора детали 
         public string Name { get; set; }
         // номер классификатора детали
         public int Number { get; set; } // например, "000001", "000002" и т.д.
+        public string Description { get; set; }
+
+        public ICollection<ESKDNumber> ESKDNumbers { get; set; }
     }
 }

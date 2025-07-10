@@ -19,6 +19,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -36,16 +37,6 @@
                 </StackPanel>
             </Button>
 
-            <Button Command="{Binding LoadDataCommand}" Style="{StaticResource ToolBarButtonStyle}">
-                <StackPanel Orientation="Horizontal">
-                    <ContentControl
-                        Width="16"
-                        Height="16"
-                        Margin="0,0,5,0"
-                        Content="{StaticResource IconLoad}" />
-                    <TextBlock VerticalAlignment="Center" Text="Загрузить данные" />
-                </StackPanel>
-            </Button>
             <Button Command="{Binding SaveDataCommand}" Style="{StaticResource ToolBarButtonStyle}">
                 <StackPanel Orientation="Horizontal">
                     <ContentControl
@@ -58,17 +49,61 @@
             </Button>
         </ToolBar>
 
-        <!--  2. Основная рабочая область  -->
-        <Grid Grid.Row="1" Margin="5">
+        <!--  2. Панель фильтров  -->
+        <Grid Grid.Row="1" Margin="5,0,5,5">
             <Grid.ColumnDefinitions>
-
+                <ColumnDefinition Width="100" />
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="100" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="150" />
             </Grid.ColumnDefinitions>
-            <!--  Правая панель с данными  -->
-            <DataGrid
+            <TextBlock Text="Фильтры:" VerticalAlignment="Center"/>
+            <TextBox
                 Grid.Column="1"
-                Margin="5,0,0,0"
-                ItemsSource="{Binding DocumentRecords}">
+                Margin="0,0,5,0"
+                Text="{Binding EskdNumberFilter, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox
+                Grid.Column="2"
+                Margin="0,0,5,0"
+                Text="{Binding YastCodeFilter, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox
+                Grid.Column="3"
+                Margin="0,0,5,0"
+                Text="{Binding NameFilter, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox
+                Grid.Column="4"
+                Margin="0,0,5,0"
+                Text="{Binding AssemblyNumberFilter, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox
+                Grid.Column="5"
+                Margin="0,0,5,0"
+                Text="{Binding AssemblyNameFilter, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox
+                Grid.Column="6"
+                Margin="0,0,5,0"
+                Text="{Binding ProductNumberFilter, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox
+                Grid.Column="7"
+                Margin="0,0,5,0"
+                Text="{Binding ProductNameFilter, UpdateSourceTrigger=PropertyChanged}" />
+            <StackPanel Grid.Column="8" Orientation="Horizontal">
+                <CheckBox
+                    Margin="7,0"
+                    VerticalAlignment="Center"
+                    Content="Только мои"
+                    IsChecked="{Binding OnlyMyRecordsFilter}" />
+            </StackPanel>
+
+        </Grid>
+
+        <!--  3. Основная рабочая область  -->
+        <Grid Grid.Row="2" Margin="5,0,5,5">
+            <DataGrid ItemsSource="{Binding DocumentRecords}">
                 <DataGrid.Columns>
                     <DataGridTextColumn
                         Width="100"
@@ -105,13 +140,13 @@
                     <DataGridTextColumn
                         Width="150"
                         Binding="{Binding FullName}"
-                        Header="Полное имя" />
+                        Header="ФИО" />
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
 
-        <!--  3. Статус бар  -->
-        <StatusBar Grid.Row="2">
+        <!--  4. Статус бар  -->
+        <StatusBar Grid.Row="3">
             <StatusBarItem>
                 <TextBlock Text="{Binding StatusText}" />
             </StatusBarItem>
