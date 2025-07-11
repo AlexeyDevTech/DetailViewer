@@ -85,6 +85,26 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set => SetProperty(ref _filteredClassifiers, value);
         }
 
+        private bool _isManualNumber;
+        public bool IsManualNumber
+        {
+            get => _isManualNumber;
+            set
+            {
+                SetProperty(ref _isManualNumber, value);
+                if (value)
+                {
+                    // Clear classifier selection if switching to manual
+                    SelectedClassifier = null;
+                }
+                else
+                {
+                    // If switching to auto, try to find a classifier based on current ClassNumberString
+                    SelectedClassifier = AllClassifiers?.FirstOrDefault(c => c.Code == ClassNumberString);
+                }
+            }
+        }
+
         private ClassifierData _selectedClassifier;
         public ClassifierData SelectedClassifier
         {
@@ -92,7 +112,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set
             {
                 SetProperty(ref _selectedClassifier, value);
-                if (value != null)
+                if (value != null && !IsManualNumber)
                 {
                     ClassNumberString = value.Code;
                 }
@@ -119,6 +139,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber.Number.ToString("D6");
             DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
             Version = DocumentRecord.ESKDNumber.Version;
+
+            // Default to automatic number generation for new records
+            IsManualNumber = false;
 
             SaveCommand = new DelegateCommand(Save);
             CancelCommand = new DelegateCommand(Cancel);
@@ -247,6 +270,10 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber.Number.ToString("D6");
                 DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
                 Version = DocumentRecord.ESKDNumber.Version;
+
+                // If an existing record is opened, assume manual number for now
+                // The user can then switch to auto if they want to change the classifier
+                IsManualNumber = true;
             }
         }
     }

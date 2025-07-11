@@ -6,16 +6,21 @@
     xmlns:local="clr-namespace:DetailViewer.Modules.Dialogs.Converters"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:prism="http://prismlibrary.com/"
+    MaxWidth="1000"
     d:DesignHeight="950"
     d:DesignWidth="800"
     prism:ViewModelLocator.AutoWireViewModel="True"
-    mc:Ignorable="d"
-    Background="{StaticResource BackgroundLightBrush}">
+    Background="{StaticResource BackgroundLightBrush}"
+    mc:Ignorable="d">
     <UserControl.Resources>
         <local:ImagePathConverter x:Key="ImagePathConverter" />
+        <local:InvertBooleanConverter x:Key="InvertBooleanConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </UserControl.Resources>
     <Grid Margin="10" Background="{StaticResource BackgroundWhiteBrush}">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -73,14 +78,19 @@
                 Text="." />
             <TextBox
                 Width="50"
+                IsReadOnly="{Binding IsManualNumber, Converter={StaticResource InvertBooleanConverter}}"
                 Text="{Binding DetailNumber, UpdateSourceTrigger=PropertyChanged}" />
             <TextBlock
                 Margin="2,0"
                 VerticalAlignment="Center"
                 Text="-" />
-            <TextBox
-                Width="50"
-                Text="{Binding Version, UpdateSourceTrigger=PropertyChanged}" />
+            
+             <TextBox Width="50" Text="{Binding Version, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsNewVersionEnabled}" />
+            <CheckBox Margin="10,0,0,0" Content="Ручной ввод" IsChecked="{Binding IsManualNumber}" />
+            <CheckBox
+                Margin="10,0,0,0"
+                Content="Новое исполнение"
+                IsChecked="{Binding IsNewVersionEnabled}" />
         </StackPanel>
 
         <ListBox
@@ -123,92 +133,197 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
+        <Grid Grid.Row="3" Grid.ColumnSpan="2">
+            <CheckBox
+                Margin="5,0"
+                Content="Только мои записи"
+                IsChecked="{Binding FilterByFullName}" />
+            <TextBlock
+                Margin="5,0"
+                HorizontalAlignment="Right"
+                Text="Выберите базовую запись для создания нового исполнения:"
+                Visibility="{Binding IsNewVersionEnabled, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource PrimaryAccentRedBrush}" />
+                        <Style.Triggers>
+                            <Trigger Property="Visibility" Value="Visible">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation
+                                                Storyboard.TargetProperty="Opacity"
+                                                From="0.0"
+                                                To="1.0"
+                                                Duration="0:0:0.5" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+
+        <DataGrid
+            Grid.Row="4"
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            Height="150"
+            Margin="5"
+            AutoGenerateColumns="False"
+            IsReadOnly="{Binding IsNewVersionEnabled, Converter={StaticResource InvertBooleanConverter}}"
+            ItemsSource="{Binding FilteredDocumentRecords}"
+            SelectedItem="{Binding SelectedBaseRecord}">
+            <DataGrid.Columns>
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding ESKDNumber.FullCode}"
+                    Header="ЕСКД номер" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Name}"
+                    Header="Имя" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding FullName}"
+                    Header="ФИО" />
+            </DataGrid.Columns>
+        </DataGrid>
+
         <TextBlock
-            Grid.Row="3"
+            Grid.Row="5"
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
             Text="ЯСТ код:" />
         <TextBox
-            Grid.Row="3"
+            Grid.Row="5"
             Grid.Column="1"
             Text="{Binding DocumentRecord.YASTCode}" />
 
         <TextBlock
-            Grid.Row="4"
+            Grid.Row="6"
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
             Text="Имя:" />
         <TextBox
-            Grid.Row="4"
+            Grid.Row="6"
             Grid.Column="1"
             Text="{Binding DocumentRecord.Name}" />
 
         <TextBlock
-            Grid.Row="5"
+            Grid.Row="7"
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
             Text="Номер сборки:" />
-        <TextBox
-            Grid.Row="5"
+        <StackPanel
+            Grid.Row="7"
             Grid.Column="1"
-            Text="{Binding DocumentRecord.AssemblyNumber}" />
+            Orientation="Horizontal">
+            <TextBox
+                Width="50"
+                IsReadOnly="True"
+                Text="ДТМЛ" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="." />
+            <TextBox Width="80" Text="{Binding AssemblyNumberClassNumberString, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="." />
+            <TextBox Width="50" Text="{Binding AssemblyNumberDetailNumber, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="-" />
+            <TextBox Width="50" Text="{Binding AssemblyNumberVersion, UpdateSourceTrigger=PropertyChanged}" />
+        </StackPanel>
 
         <TextBlock
-            Grid.Row="6"
+            Grid.Row="8"
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
             Text="Имя сборки:" />
         <TextBox
-            Grid.Row="6"
+            Grid.Row="8"
             Grid.Column="1"
             Text="{Binding DocumentRecord.AssemblyName}" />
 
         <TextBlock
-            Grid.Row="7"
+            Grid.Row="9"
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
             Text="Номер продукта:" />
-        <TextBox
-            Grid.Row="7"
+        <StackPanel
+            Grid.Row="9"
             Grid.Column="1"
-            Text="{Binding DocumentRecord.ProductNumber}" />
+            Orientation="Horizontal">
+            <TextBox
+                Width="50"
+                IsReadOnly="True"
+                Text="ДТМЛ" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="." />
+            <TextBox Width="80" Text="{Binding ProductNumberClassNumberString, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="." />
+            <TextBox Width="50" Text="{Binding ProductNumberDetailNumber, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="-" />
+            <TextBox Width="50" Text="{Binding ProductNumberVersion, UpdateSourceTrigger=PropertyChanged}" />
+        </StackPanel>
 
         <TextBlock
-            Grid.Row="8"
+            Grid.Row="10"
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
             Text="Имя продукта:" />
         <TextBox
-            Grid.Row="8"
+            Grid.Row="10"
             Grid.Column="1"
             Text="{Binding DocumentRecord.ProductName}" />
 
         <TextBlock
-            Grid.Row="9"
+            Grid.Row="11"
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
             Text="ФИО:" />
         <TextBox
-            Grid.Row="9"
+            Grid.Row="11"
             Grid.Column="1"
             Text="{Binding DocumentRecord.FullName}" />
 
         <StackPanel
-            Grid.Row="10"
+            Grid.Row="12"
             Grid.Column="0"
             Grid.ColumnSpan="2"
             Margin="5"
             HorizontalAlignment="Right"
             Orientation="Horizontal">
-            <Button Command="{Binding SaveCommand}" Content="Сохранить" Style="{StaticResource PrimaryButtonStyle}" />
-            <Button Command="{Binding CancelCommand}" Content="Отмена" Style="{StaticResource SecondaryButtonStyle}" />
+            <Button
+                Command="{Binding SaveCommand}"
+                Content="Сохранить"
+                Style="{StaticResource PrimaryButtonStyle}" />
+            <Button
+                Command="{Binding CancelCommand}"
+                Content="Отмена"
+                Style="{StaticResource SecondaryButtonStyle}" />
         </StackPanel>
     </Grid>
 </UserControl>

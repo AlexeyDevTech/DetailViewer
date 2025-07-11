@@ -2,6 +2,8 @@
 
     <!--  1. Цветовая палитра и основные кисти (Todoist-like)  -->
     <SolidColorBrush x:Key="PrimaryAccentBrush" Color="#209CEE" />
+    <SolidColorBrush x:Key="PrimaryAccentRedBrush" Color="#FFEE4220" />
+
     <!--  Todoist Blue  -->
     <SolidColorBrush x:Key="PrimaryAccentForegroundBrush" Color="White" />
     <SolidColorBrush x:Key="BackgroundLightBrush" Color="#F9F9F9" />
@@ -17,22 +19,42 @@
     <!--  Light blue for selection  -->
 
     <!--  2. Векторные иконки (чистые, линейные)  -->
-    <Path
+    <Viewbox
         x:Key="IconFolderOpen"
-        Data="M19 20H5c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h10l4 4v10c0 1.1-.9 2-2 2z"
-        Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-    <Path
+        Width="16"
+        Height="16">
+        <Path Data="M19 20H5c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h10l4 4v10c0 1.1-.9 2-2 2z" Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+    </Viewbox>
+    <Viewbox
         x:Key="IconLoad"
-        Data="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"
-        Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-    <Path
+        Width="16"
+        Height="16">
+        <Path Data="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+    </Viewbox>
+    <Viewbox
         x:Key="IconSave"
-        Data="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
-        Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-    <Path
+        Width="16"
+        Height="16">
+        <Path Data="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+    </Viewbox>
+    <Viewbox
         x:Key="IconAdd"
-        Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
-        Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        Width="16"
+        Height="16">
+        <Path Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+    </Viewbox>
+    <Viewbox
+        x:Key="IconCopy"
+        Width="16"
+        Height="16">
+        <Path Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+    </Viewbox>
+    <Viewbox
+        x:Key="IconEdit"
+        Width="16"
+        Height="16">
+        <Path Data="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+    </Viewbox>
 
     <!--  3. Базовые стили для элементов управления  -->
 
