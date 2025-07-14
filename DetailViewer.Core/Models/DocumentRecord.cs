@@ -24,6 +24,7 @@ namespace DetailViewer.Core.Models
         public string ProductNumber { get; set; }
         public string ProductName { get; set; }
         public string FullName { get; set; }
+        public bool IsManualDetailNumber { get; set; }
     }
 
     public class ESKDNumber
