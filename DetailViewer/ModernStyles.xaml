@@ -16,22 +16,30 @@
     <SolidColorBrush x:Key="SelectionBrush" Color="#E6F2FF" />
     <!--  Light blue for selection  -->
 
-    <!--  2. Векторные иконки (чистые, линейные)  -->
+    <!--  2. Векторные иконки (чистые, линейные, для 16x16)  -->
     <Path
         x:Key="IconFolderOpen"
-        Data="M19 20H5c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h10l4 4v10c0 1.1-.9 2-2 2z"
+        Data="M2 3 V13 H14 V5 H8 L6 3 H2 Z"
         Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
     <Path
         x:Key="IconLoad"
-        Data="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"
+        Data="M8 4 L12 8 H9 V12 H7 V8 H4 Z M3 14 H13 V15 H3 Z"
         Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
     <Path
         x:Key="IconSave"
-        Data="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
+        Data="M2 2 H14 V14 H2 Z M4 3 H12 V9 H4 Z M5 10 H11 V13 H5 Z"
         Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
     <Path
         x:Key="IconAdd"
-        Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+        Data="M7 2 V7 H2 V9 H7 V14 H9 V9 H14 V7 H9 V2 Z"
+        Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+    <Path
+        x:Key="IconCopy"
+        Data="M4 4 H12 V12 H4 Z M2 2 H10 V10 H2 Z"
+        Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+    <Path
+        x:Key="IconEdit"
+        Data="M3 10 L10 3 L13 6 L6 13 H3 Z"
         Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
 
     <!--  3. Базовые стили для элементов управления  -->
@@ -88,7 +96,7 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{StaticResource ForegroundMediumBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Padding" Value="5,2" />
         <Setter Property="Margin" Value="2" />
         <Setter Property="Template">
             <Setter.Value>
