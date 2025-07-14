@@ -125,26 +125,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set => SetProperty(ref _filteredClassifiers, value);
         }
 
-        private bool _isManualNumber;
-        public bool IsManualNumber
-        {
-            get => _isManualNumber;
-            set
-            {
-                SetProperty(ref _isManualNumber, value);
-                if (value)
-                {
-                    // Clear classifier selection if switching to manual
-                    SelectedClassifier = null;
-                }
-                else
-                {
-                    // If switching to auto, try to find a classifier based on current ClassNumberString
-                    SelectedClassifier = AllClassifiers?.FirstOrDefault(c => c.Code == ClassNumberString);
-                }
-            }
-        }
-
         private ClassifierData _selectedClassifier;
         public ClassifierData SelectedClassifier
         {
@@ -152,7 +132,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set
             {
                 SetProperty(ref _selectedClassifier, value);
-                if (value != null && !IsManualNumber)
+                if (value != null)
                 {
                     ClassNumberString = value.Code;
                 }
@@ -210,9 +190,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
             Version = DocumentRecord.ESKDNumber.Version;
 
-            // Default to automatic number generation for new records
-            IsManualNumber = false;
-
             SaveCommand = new DelegateCommand(Save);
             CancelCommand = new DelegateCommand(Cancel);
 
@@ -269,44 +246,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 FindNextDetailNumber();
             }
             OnESKDNumberPartChanged();
-        }
-
-        private void FindNextDetailNumber()
-        {
-            if (_allRecords == null) return;
-
-            var existingDetailNumbers = _allRecords
-                .Where(r => r.ESKDNumber.ClassNumber.Number.ToString("D6") == ClassNumberString)
-                .Select(r => r.ESKDNumber.DetailNumber)
-                .ToHashSet();
-
-            for (int i = 1; i <= 999; i++)
-            {
-                if (!existingDetailNumbers.Contains(i))
-                {
-                    DetailNumber = i;
-                    return;
-                }
-            }
-        }
-
-        private void FindNextVersionNumber()
-        {
-            if (_allRecords == null) return;
-
-            var existingVersions = _allRecords
-                .Where(r => r.ESKDNumber.ClassNumber.Number.ToString("D6") == ClassNumberString && r.ESKDNumber.DetailNumber == DetailNumber)
-                .Select(r => r.ESKDNumber.Version)
-                .ToHashSet();
-
-            for (int i = 1; i <= 99; i++)
-            {
-                if (!existingVersions.Contains(i))
-                {
-                    Version = i;
-                    return;
-                }
-            }
         }
 
         private void FindNextDetailNumber()

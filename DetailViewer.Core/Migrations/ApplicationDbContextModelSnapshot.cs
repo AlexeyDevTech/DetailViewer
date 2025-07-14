@@ -34,7 +34,7 @@ namespace DetailViewer.Core.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Classifier");
+                    b.ToTable("Classifiers");
                 });
 
             modelBuilder.Entity("DetailViewer.Core.Models.DocumentRecord", b =>
@@ -46,8 +46,8 @@ namespace DetailViewer.Core.Migrations
                     b.Property<string>("AssemblyName")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("AssemblyNumberId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("AssemblyNumber")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("TEXT");
@@ -67,19 +67,15 @@ namespace DetailViewer.Core.Migrations
                     b.Property<string>("ProductName")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("ProductNumberId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("ProductNumber")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("YASTCode")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssemblyNumberId");
-
                     b.HasIndex("ESKDNumberId");
-
-                    b.HasIndex("ProductNumberId");
 
                     b.ToTable("DocumentRecords");
                 });
@@ -99,11 +95,6 @@ namespace DetailViewer.Core.Migrations
                     b.Property<int>("DetailNumber")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(21)
-                        .HasColumnType("TEXT");
-
                     b.Property<int?>("Version")
                         .HasColumnType("INTEGER");
 
@@ -112,10 +103,6 @@ namespace DetailViewer.Core.Migrations
                     b.HasIndex("ClassifierId");
 
                     b.ToTable("ESKDNumbers");
-
-                    b.HasDiscriminator().HasValue("ESKDNumber");
-
-                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("DetailViewer.Core.Models.Profile", b =>
@@ -138,41 +125,15 @@ namespace DetailViewer.Core.Migrations
                     b.ToTable("Profiles");
                 });
 
-            modelBuilder.Entity("DetailViewer.Core.Models.AssemblyESKDNumber", b =>
-                {
-                    b.HasBaseType("DetailViewer.Core.Models.ESKDNumber");
-
-                    b.HasDiscriminator().HasValue("AssemblyESKDNumber");
-                });
-
-            modelBuilder.Entity("DetailViewer.Core.Models.ProductESKDNumber", b =>
-                {
-                    b.HasBaseType("DetailViewer.Core.Models.ESKDNumber");
-
-                    b.HasDiscriminator().HasValue("ProductESKDNumber");
-                });
-
             modelBuilder.Entity("DetailViewer.Core.Models.DocumentRecord", b =>
                 {
-                    b.HasOne("DetailViewer.Core.Models.AssemblyESKDNumber", "AssemblyNumber")
-                        .WithMany()
-                        .HasForeignKey("AssemblyNumberId");
-
                     b.HasOne("DetailViewer.Core.Models.ESKDNumber", "ESKDNumber")
                         .WithMany()
                         .HasForeignKey("ESKDNumberId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DetailViewer.Core.Models.ProductESKDNumber", "ProductNumber")
-                        .WithMany()
-                        .HasForeignKey("ProductNumberId");
-
-                    b.Navigation("AssemblyNumber");
-
                     b.Navigation("ESKDNumber");
-
-                    b.Navigation("ProductNumber");
                 });
 
             modelBuilder.Entity("DetailViewer.Core.Models.ESKDNumber", b =>

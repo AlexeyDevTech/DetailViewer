@@ -32,8 +32,6 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
@@ -184,32 +182,6 @@
         <TextBlock
             Grid.Row="5"
             Grid.Column="0"
-            Grid.ColumnSpan="2"
-            MinHeight="100"
-            MaxHeight="400"
-            Margin="5"
-            VerticalAlignment="Top"
-            ItemsSource="{Binding FilteredRecords}"
-            SelectedItem="{Binding SelectedRecordToCopy}">
-            <DataGrid.Columns>
-                <DataGridTextColumn
-                    Width="*"
-                    Binding="{Binding ESKDNumber.FullCode}"
-                    Header="ЕСКД" />
-                <DataGridTextColumn
-                    Width="*"
-                    Binding="{Binding Name}"
-                    Header="Имя" />
-                <DataGridTextColumn
-                    Width="150"
-                    Binding="{Binding FullName}"
-                    Header="ФИО" />
-            </DataGrid.Columns>
-        </DataGrid>
-
-        <TextBlock
-            Grid.Row="5"
-            Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
             Text="ЯСТ код:" />
@@ -238,27 +210,7 @@
         <TextBox
             Grid.Row="7"
             Grid.Column="1"
-            Orientation="Horizontal">
-            <TextBox
-                Width="50"
-                IsReadOnly="True"
-                Text="ДТМЛ" />
-            <TextBlock
-                Margin="2,0"
-                VerticalAlignment="Center"
-                Text="." />
-            <TextBox Width="80" Text="{Binding AssemblyNumberClassNumberString, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBlock
-                Margin="2,0"
-                VerticalAlignment="Center"
-                Text="." />
-            <TextBox Width="50" Text="{Binding AssemblyNumberDetailNumber, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBlock
-                Margin="2,0"
-                VerticalAlignment="Center"
-                Text="-" />
-            <TextBox Width="50" Text="{Binding AssemblyNumberVersion, UpdateSourceTrigger=PropertyChanged}" />
-        </StackPanel>
+            Text="{Binding DocumentRecord.AssemblyNumber}" />
 
         <TextBlock
             Grid.Row="8"
@@ -280,27 +232,7 @@
         <TextBox
             Grid.Row="9"
             Grid.Column="1"
-            Orientation="Horizontal">
-            <TextBox
-                Width="50"
-                IsReadOnly="True"
-                Text="ДТМЛ" />
-            <TextBlock
-                Margin="2,0"
-                VerticalAlignment="Center"
-                Text="." />
-            <TextBox Width="80" Text="{Binding ProductNumberClassNumberString, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBlock
-                Margin="2,0"
-                VerticalAlignment="Center"
-                Text="." />
-            <TextBox Width="50" Text="{Binding ProductNumberDetailNumber, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBlock
-                Margin="2,0"
-                VerticalAlignment="Center"
-                Text="-" />
-            <TextBox Width="50" Text="{Binding ProductNumberVersion, UpdateSourceTrigger=PropertyChanged}" />
-        </StackPanel>
+            Text="{Binding DocumentRecord.ProductNumber}" />
 
         <TextBlock
             Grid.Row="10"
