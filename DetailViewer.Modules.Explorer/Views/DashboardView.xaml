@@ -28,11 +28,7 @@
         <ToolBar Grid.Row="0" Padding="5">
             <Button Command="{Binding FillFormCommand}" Style="{StaticResource ToolBarButtonStyle}">
                 <StackPanel Orientation="Horizontal">
-                    <ContentControl
-                        Width="16"
-                        Height="16"
-                        Margin="0,0,5,0"
-                        Content="{StaticResource IconAdd}" />
+                    <ContentControl Margin="0,0,5,0" Content="{StaticResource IconAdd}" />
                     <TextBlock VerticalAlignment="Center" Text="Заполнить форму" />
                 </StackPanel>
             </Button>
@@ -61,12 +57,22 @@
 
             <Button Command="{Binding SaveDataCommand}" Style="{StaticResource ToolBarButtonStyle}">
                 <StackPanel Orientation="Horizontal">
-                    <ContentControl
-                        Width="16"
-                        Height="16"
-                        Margin="0,0,5,0"
-                        Content="{StaticResource IconSave}" />
+                    <ContentControl Margin="0,0,5,0" Content="{StaticResource IconSave}" />
                     <TextBlock VerticalAlignment="Center" Text="Сохранить данные" />
+                </StackPanel>
+            </Button>
+
+            <Button Command="{Binding FillBasedOnCommand}" Style="{StaticResource ToolBarButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl Margin="0,0,5,0" Content="{StaticResource IconCopy}" />
+                    <TextBlock VerticalAlignment="Center" Text="Заполнить на основании" />
+                </StackPanel>
+            </Button>
+
+            <Button Command="{Binding EditCommand}" Style="{StaticResource ToolBarButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl Margin="0,0,5,0" Content="{StaticResource IconEdit}" />
+                    <TextBlock VerticalAlignment="Center" Text="Изменить" />
                 </StackPanel>
             </Button>
         </ToolBar>
@@ -84,7 +90,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="150" />
             </Grid.ColumnDefinitions>
-            <TextBlock Text="Фильтры:" VerticalAlignment="Center"/>
+            <TextBlock VerticalAlignment="Center" Text="Фильтры:" />
             <TextBox
                 Grid.Column="1"
                 Margin="0,0,5,0"
@@ -145,7 +151,7 @@
                         Header="Имя" />
                     <DataGridTextColumn
                         Width="150"
-                        Binding="{Binding AssemblyNumber}"
+                        Binding="{Binding AssemblyNumber.FullCode}"
                         Header="Номер сборки" />
                     <DataGridTextColumn
                         Width="*"
@@ -153,7 +159,7 @@
                         Header="Имя сборки" />
                     <DataGridTextColumn
                         Width="150"
-                        Binding="{Binding ProductNumber}"
+                        Binding="{Binding ProductNumber.FullCode}"
                         Header="Номер продукта" />
                     <DataGridTextColumn
                         Width="*"

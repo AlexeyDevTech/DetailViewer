@@ -2,6 +2,8 @@
 
     <!--  1. Цветовая палитра и основные кисти (Todoist-like)  -->
     <SolidColorBrush x:Key="PrimaryAccentBrush" Color="#209CEE" />
+    <SolidColorBrush x:Key="PrimaryAccentRedBrush" Color="#FFEE4220" />
+
     <!--  Todoist Blue  -->
     <SolidColorBrush x:Key="PrimaryAccentForegroundBrush" Color="White" />
     <SolidColorBrush x:Key="BackgroundLightBrush" Color="#F9F9F9" />
