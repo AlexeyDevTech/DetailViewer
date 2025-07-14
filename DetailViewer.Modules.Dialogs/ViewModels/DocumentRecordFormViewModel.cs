@@ -228,7 +228,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 records = records.Where(r => r.FullName == _activeUserFullName);
             }
 
-            FilteredRecords = new ObservableCollection<DocumentRecord>(records.ToList());
+            FilteredRecords = new ObservableCollection<DocumentRecord>(records.OrderBy(r => r.ESKDNumber.FullCode).ToList());
         }
 
 
