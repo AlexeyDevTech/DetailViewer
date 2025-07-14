@@ -18,6 +18,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private readonly ILogger _logger;
         private readonly IProfileService _profileService;
         private readonly ISettingsService _settingsService;
+        private string _activeUserFullName;
 
         private string _statusText;
         public string StatusText
@@ -38,6 +39,13 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         {
             get { return _documentRecords; }
             set { SetProperty(ref _documentRecords, value); }
+        }
+
+        private DocumentRecord _selectedRecord;
+        public DocumentRecord SelectedRecord
+        {
+            get => _selectedRecord;
+            set => SetProperty(ref _selectedRecord, value);
         }
 
         private List<DocumentRecord> _allRecords;
@@ -107,17 +115,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         public DelegateCommand FillFormCommand { get; private set; }
         public DelegateCommand FillBasedOnCommand { get; private set; }
-        public DelegateCommand EditCommand { get; private set; }
-
-        private DocumentRecord _selectedRecord;
-        public DocumentRecord SelectedRecord
-        {
-            get { return _selectedRecord; }
-            set { SetProperty(ref _selectedRecord, value, () => { 
-                FillBasedOnCommand.RaiseCanExecuteChanged(); 
-                EditCommand.RaiseCanExecuteChanged(); 
-            }); }
-        }
+        public DelegateCommand EditRecordCommand { get; private set; }
 
         public DashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger, IProfileService profileService, ISettingsService settingsService)
         {
@@ -127,13 +125,48 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             _profileService = profileService;
             _settingsService = settingsService;
 
+            var settings = _settingsService.LoadSettings();
+            var activeProfile = _profileService.GetAllProfilesAsync().Result.FirstOrDefault(p => p.Id == settings.ActiveProfileId);
+            if (activeProfile != null)
+            {
+                _activeUserFullName = $"{activeProfile.LastName} {activeProfile.FirstName.FirstOrDefault()}.{activeProfile.MiddleName.FirstOrDefault()}.";
+            }
+
             DocumentRecords = new ObservableCollection<DocumentRecord>();
             StatusText = "Готово";
 
             FillFormCommand = new DelegateCommand(FillForm);
-            FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null);
-            EditCommand = new DelegateCommand(Edit, () => SelectedRecord != null && SelectedRecord.FullName == GetActiveProfileFullName());
+            FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null).ObservesProperty(() => SelectedRecord);
+            EditRecordCommand = new DelegateCommand(EditRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
             LoadData();
+        }
+
+        private void EditRecord()
+        {
+            var parameters = new DialogParameters { { "record", SelectedRecord } };
+            _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    var updatedRecord = r.Parameters.GetValue<DocumentRecord>("record");
+                    await _documentDataService.UpdateRecordAsync(updatedRecord);
+                    await LoadData();
+                }
+            });
+        }
+
+        private void FillBasedOn()
+        {
+            var parameters = new DialogParameters { { "record", SelectedRecord } };
+            _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    var newRecord = r.Parameters.GetValue<DocumentRecord>("record");
+                    await _documentDataService.AddRecordAsync(newRecord);
+                    await LoadData();
+                }
+            });
         }
 
         private void FillForm()

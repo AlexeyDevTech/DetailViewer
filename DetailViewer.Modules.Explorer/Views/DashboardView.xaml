@@ -33,6 +33,28 @@
                 </StackPanel>
             </Button>
 
+            <Button Command="{Binding FillBasedOnCommand}" Style="{StaticResource ToolBarButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl
+                        Width="16"
+                        Height="16"
+                        Margin="0,0,5,0"
+                        Content="{StaticResource IconCopy}" />
+                    <TextBlock VerticalAlignment="Center" Text="Заполнить на основании" />
+                </StackPanel>
+            </Button>
+
+            <Button Command="{Binding EditRecordCommand}" Style="{StaticResource ToolBarButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl
+                        Width="16"
+                        Height="16"
+                        Margin="0,0,5,0"
+                        Content="{StaticResource IconEdit}" />
+                    <TextBlock VerticalAlignment="Center" Text="Изменить" />
+                </StackPanel>
+            </Button>
+
             <Button Command="{Binding SaveDataCommand}" Style="{StaticResource ToolBarButtonStyle}">
                 <StackPanel Orientation="Horizontal">
                     <ContentControl Margin="0,0,5,0" Content="{StaticResource IconSave}" />
