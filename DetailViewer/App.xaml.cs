@@ -38,6 +38,19 @@ namespace DetailViewer
             containerRegistry.RegisterSingleton<IProfileService, ProfileService>();
         }
 
+        protected override void OnInitialized()
+        {
+            base.OnInitialized();
+            var dialogService = Container.Resolve<Prism.Services.Dialogs.IDialogService>();
+            dialogService.ShowDialog("AuthorizationView", null, r =>
+            {
+                if (r.Result != Prism.Services.Dialogs.ButtonResult.OK)
+                {
+                    Application.Current.Shutdown();
+                }
+            });
+        }
+
         protected override void ConfigureModuleCatalog(IModuleCatalog moduleCatalog)
         {
             moduleCatalog.AddModule<Core.CoreModule>();

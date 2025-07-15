@@ -42,6 +42,14 @@
         Data="M3 10 L10 3 L13 6 L6 13 H3 Z"
         Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
 
+        <Geometry x:Key="IconAppLogoGeometry">M14,2H6C4.9,2 4,2.9 4,4V20C4,21.1 4.9,22 6,22H18C19.1,22 20,21.1 20,20V8L14,2M18,20H6V4H13V9H18V20M12,18A2,2 0 0,1 10,16H9V14H10A2,2 0 0,1 12,12A2,2 0 0,1 14,14H15V16H14A2,2 0 0,1 12,18M11,15A1,1 0 0,0 12,16A1,1 0 0,0 13,15A1,1 0 0,0 12,14A1,1 0 0,0 11,15Z</Geometry>
+
+    <DrawingImage x:Key="AppIconImage">
+        <DrawingImage.Drawing>
+            <GeometryDrawing Brush="{StaticResource PrimaryAccentBrush}" Geometry="{StaticResource IconAppLogoGeometry}" />
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
     <!--  3. Базовые стили для элементов управления  -->
 
     <!--  Базовый стиль для TextBlock  -->

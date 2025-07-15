@@ -19,6 +19,7 @@ namespace DetailViewer.ViewModels
 
         public DelegateCommand<string> NavigateCommand { get; private set; }
         public DelegateCommand ShowSettingsCommand { get; private set; } // Added
+        public DelegateCommand ShowAboutCommand { get; private set; }
 
         public MainWindowViewModel(IRegionManager regionManager, IDialogService dialogService) // Modified constructor
         {
@@ -26,6 +27,7 @@ namespace DetailViewer.ViewModels
             _dialogService = dialogService; // Added
             NavigateCommand = new DelegateCommand<string>(Navigate);
             ShowSettingsCommand = new DelegateCommand(ShowSettings); // Added
+            ShowAboutCommand = new DelegateCommand(ShowAbout);
         }
 
         private void Navigate(string navigationPath)
@@ -36,6 +38,14 @@ namespace DetailViewer.ViewModels
         private void ShowSettings() // Added
         {
             _dialogService.ShowDialog("SettingsView", new DialogParameters(), r =>
+            {
+                // Handle dialog result if needed
+            });
+        }
+
+        private void ShowAbout()
+        {
+            _dialogService.ShowDialog("AboutView", new DialogParameters(), r =>
             {
                 // Handle dialog result if needed
             });

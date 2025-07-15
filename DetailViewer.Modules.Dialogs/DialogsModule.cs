@@ -15,7 +15,9 @@ namespace DetailViewer.Modules.Dialogs
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
             containerRegistry.RegisterDialog<DocumentRecordForm, ViewModels.DocumentRecordFormViewModel>();
-            containerRegistry.RegisterDialog<SettingsView, ViewModels.SettingsViewModel>();
+                        containerRegistry.RegisterDialog<SettingsView, ViewModels.SettingsViewModel>();
+            containerRegistry.RegisterDialog<AuthorizationView, ViewModels.AuthorizationViewModel>();
+            containerRegistry.RegisterDialog<AboutView, ViewModels.AboutViewModel>();
         }
     }
 }
