@@ -137,7 +137,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void OnCurrentUserChanged()
         {
-            _activeUserFullName = _activeUserService.CurrentUser?.FullName;
+            _activeUserFullName = _activeUserService.CurrentUser?.ShortName;
             ApplyFilters();
         }
 

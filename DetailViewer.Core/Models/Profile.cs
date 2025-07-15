@@ -22,5 +22,16 @@ namespace DetailViewer.Core.Models
 
         [NotMapped]
         public string FullName => $"{LastName} {FirstName} {MiddleName}".Trim();
+
+        [NotMapped]
+        public string ShortName
+        {
+            get
+            {
+                var firstInitial = !string.IsNullOrEmpty(FirstName) ? $"{FirstName[0]}." : string.Empty;
+                var middleInitial = !string.IsNullOrEmpty(MiddleName) ? $"{MiddleName[0]}." : string.Empty;
+                return $"{LastName} {firstInitial}{middleInitial}".Trim();
+            }
+        }
     }
 }

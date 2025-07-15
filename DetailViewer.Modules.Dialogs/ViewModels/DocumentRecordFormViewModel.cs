@@ -177,7 +177,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _logger = logger;
             _activeUserService = activeUserService;
 
-            _activeUserFullName = _activeUserService.CurrentUser?.FullName;
+            _activeUserFullName = _activeUserService.CurrentUser?.ShortName;
 
             DocumentRecord = new DocumentRecord { Date = DateTime.Now, FullName = _activeUserFullName, ESKDNumber = new ESKDNumber() { ClassNumber = new Classifier() } };
             

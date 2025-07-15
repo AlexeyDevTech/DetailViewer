@@ -5,6 +5,7 @@ using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Services.Dialogs;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
@@ -15,12 +16,16 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly IDocumentDataService _documentDataService;
         private readonly IProfileService _profileService;
         private readonly ISettingsService _settingsService;
+        private readonly IActiveUserService _activeUserService;
+        private readonly IPasswordService _passwordService;
+
         private string _databasePath;
         private ObservableCollection<Profile> _profiles;
         private Profile _selectedProfile;
         private string _newProfileLastName;
         private string _newProfileFirstName;
         private string _newProfileMiddleName;
+        private string _newProfilePassword;
         private double _importProgress;
         private bool _isImporting;
         private string _importStatus;
@@ -67,6 +72,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set { SetProperty(ref _newProfileMiddleName, value); }
         }
 
+        public string NewProfilePassword
+        {
+            get { return _newProfilePassword; }
+            set { SetProperty(ref _newProfilePassword, value); }
+        }
+
         public double ImportProgress
         {
             get { return _importProgress; }
@@ -85,6 +96,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set { SetProperty(ref _importStatus, value); }
         }
 
+        public bool IsAdminOrModerator { get; private set; }
+        public IEnumerable<Role> Roles { get; private set; }
+        private Role _newProfileRole;
+        public Role NewProfileRole
+        {
+            get => _newProfileRole;
+            set => SetProperty(ref _newProfileRole, value);
+        }
+
         public DelegateCommand ImportCommand { get; private set; }
         public DelegateCommand ExportCommand { get; private set; }
         public DelegateCommand AddProfileCommand { get; private set; }
@@ -95,11 +115,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public event Action<IDialogResult> RequestClose;
 
-        public SettingsViewModel(IDocumentDataService documentDataService, IProfileService profileService, ISettingsService settingsService)
+        public SettingsViewModel(IDocumentDataService documentDataService, IProfileService profileService, ISettingsService settingsService, IActiveUserService activeUserService, IPasswordService passwordService)
         {
             _documentDataService = documentDataService;
             _profileService = profileService;
             _settingsService = settingsService;
+            _activeUserService = activeUserService;
+            _passwordService = passwordService;
+
             DatabasePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "detailviewer.db");
 
             ImportCommand = new DelegateCommand(Import);
@@ -108,6 +131,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             SaveProfileCommand = new DelegateCommand(SaveProfile, () => SelectedProfile != null).ObservesProperty(() => SelectedProfile);
             DeleteProfileCommand = new DelegateCommand(DeleteProfile, () => SelectedProfile != null).ObservesProperty(() => SelectedProfile);
 
+            IsAdminOrModerator = _activeUserService.CurrentUser?.Role == Role.Admin || _activeUserService.CurrentUser?.Role == Role.Moderator;
+            RaisePropertyChanged(nameof(IsAdminOrModerator));
+
+            Roles = Enum.GetValues(typeof(Role)).Cast<Role>();
+            NewProfileRole = Role.Operator;
+
             LoadProfiles();
         }
 
@@ -115,23 +144,26 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             var profiles = await _profileService.GetAllProfilesAsync();
             Profiles = new ObservableCollection<Profile>(profiles);
-            SelectedProfile = Profiles.FirstOrDefault();
+            SelectedProfile = Profiles.FirstOrDefault(p => p.Id == _activeUserService.CurrentUser?.Id) ?? Profiles.FirstOrDefault();
         }
 
         private async void AddProfile()
         {
-            if (!string.IsNullOrWhiteSpace(NewProfileLastName) || !string.IsNullOrWhiteSpace(NewProfileFirstName) || !string.IsNullOrWhiteSpace(NewProfileMiddleName))
+            if (!string.IsNullOrWhiteSpace(NewProfileLastName) && !string.IsNullOrWhiteSpace(NewProfilePassword))
             {
                 var newProfile = new Profile
                 {
                     LastName = NewProfileLastName,
                     FirstName = NewProfileFirstName,
-                    MiddleName = NewProfileMiddleName
+                    MiddleName = NewProfileMiddleName,
+                    Role = NewProfileRole,
+                    PasswordHash = _passwordService.HashPassword(NewProfilePassword)
                 };
                 await _profileService.AddProfileAsync(newProfile);
                 NewProfileLastName = string.Empty;
                 NewProfileFirstName = string.Empty;
                 NewProfileMiddleName = string.Empty;
+                NewProfilePassword = string.Empty;
                 LoadProfiles();
             }
         }
@@ -155,11 +187,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private async void Import()
         {
-            var openFileDialog = new OpenFileDialog
-            {
-                Filter = "Excel Files|*.xlsx"
-            };
-
+            var openFileDialog = new OpenFileDialog { Filter = "Excel Files|*.xlsx" };
             if (openFileDialog.ShowDialog() == true)
             {
                 IsImporting = true;
@@ -173,30 +201,17 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private async void Export()
         {
-            var saveFileDialog = new SaveFileDialog
-            {
-                Filter = "Excel Files|*.xlsx"
-            };
-
+            var saveFileDialog = new SaveFileDialog { Filter = "Excel Files|*.xlsx" };
             if (saveFileDialog.ShowDialog() == true)
             {
                 await _documentDataService.ExportToExcelAsync(saveFileDialog.FileName);
             }
         }
 
-        public bool CanCloseDialog()
-        {
-            return true;
-        }
+        public bool CanCloseDialog() => true;
 
-        public void OnDialogClosed()
-        {
-            // Clean up resources if necessary
-        }
+        public void OnDialogClosed() { }
 
-        public void OnDialogOpened(IDialogParameters parameters)
-        {
-            // Handle parameters passed to the dialog if necessary
-        }
+        public void OnDialogOpened(IDialogParameters parameters) { }
     }
 }

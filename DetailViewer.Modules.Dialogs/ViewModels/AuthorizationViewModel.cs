@@ -32,6 +32,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set { SetProperty(ref _statusMessage, value); }
         }
 
+        private bool _isError;
+        public bool IsError
+        {
+            get { return _isError; }
+            set { SetProperty(ref _isError, value); }
+        }
+
         // Login properties
         private List<Profile> _profiles;
         public List<Profile> Profiles
@@ -44,14 +51,22 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public Profile SelectedProfile
         {
             get { return _selectedProfile; }
-            set { SetProperty(ref _selectedProfile, value); }
+            set
+            {
+                SetProperty(ref _selectedProfile, value);
+                StatusMessage = null;
+            }
         }
 
         private string _password;
         public string Password
         {
             get { return _password; }
-            set { SetProperty(ref _password, value); }
+            set
+            {
+                SetProperty(ref _password, value);
+                StatusMessage = null;
+            }
         }
 
         // Registration properties
@@ -110,6 +125,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             else
             {
                 StatusMessage = "Неверный логин или пароль";
+                IsError = true;
             }
         }
 
@@ -129,11 +145,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 await _profileService.AddProfileAsync(newProfile);
                 LoadProfiles();
                 StatusMessage = "Регистрация прошла успешно! Теперь вы можете войти.";
+                IsError = false;
                 SelectedTabIndex = 0; // Switch to login tab
             }
             catch (Exception ex)
             {
                 StatusMessage = $"Ошибка регистрации: {ex.Message}";
+                IsError = true;
             }
         }
 

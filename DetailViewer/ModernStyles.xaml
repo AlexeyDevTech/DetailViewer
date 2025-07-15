@@ -99,6 +99,26 @@
         </Style.Triggers>
     </Style>
 
+    <!--  Базовый стиль для PasswordBox  -->
+    <Style TargetType="PasswordBox">
+        <Setter Property="FontFamily" Value="Segoe UI, Sans-Serif" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="5" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderLightBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Background" Value="{StaticResource BackgroundWhiteBrush}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Style.Triggers>
+            <Trigger Property="IsFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{StaticResource PrimaryAccentBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{StaticResource DisabledBackgroundBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource DisabledForegroundBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!--  Стиль для кнопок на панели инструментов (ToolBar)  -->
     <Style x:Key="ToolBarButtonStyle" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
