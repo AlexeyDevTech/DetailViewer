@@ -44,9 +44,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             {
                 if (SetProperty(ref _selectedProfile, value) && value != null)
                 {
-                    var settings = _settingsService.LoadSettings();
-                    settings.ActiveProfileId = value.Id;
-                    _settingsService.SaveSettingsAsync(settings);
+                    // Do nothing on selection
                 }
             }
         }
@@ -115,10 +113,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private async void LoadProfiles()
         {
-            var settings = _settingsService.LoadSettings();
             var profiles = await _profileService.GetAllProfilesAsync();
             Profiles = new ObservableCollection<Profile>(profiles);
-            SelectedProfile = Profiles.FirstOrDefault(p => p.Id == settings.ActiveProfileId) ?? Profiles.FirstOrDefault();
+            SelectedProfile = Profiles.FirstOrDefault();
         }
 
         private async void AddProfile()

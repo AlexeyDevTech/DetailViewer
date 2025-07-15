@@ -16,8 +16,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private readonly IDocumentDataService _documentDataService;
         private readonly IDialogService _dialogService;
         private readonly ILogger _logger;
-        private readonly IProfileService _profileService;
-        private readonly ISettingsService _settingsService;
+        private readonly IActiveUserService _activeUserService;
         private string _activeUserFullName;
 
         private string _statusText;
@@ -117,20 +116,15 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public DelegateCommand FillBasedOnCommand { get; private set; }
         public DelegateCommand EditRecordCommand { get; private set; }
 
-        public DashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger, IProfileService profileService, ISettingsService settingsService)
+        public DashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService)
         {
             _documentDataService = documentDataService;
             _dialogService = dialogService;
             _logger = logger;
-            _profileService = profileService;
-            _settingsService = settingsService;
+            _activeUserService = activeUserService;
 
-            var settings = _settingsService.LoadSettings();
-            var activeProfile = _profileService.GetAllProfilesAsync().Result.FirstOrDefault(p => p.Id == settings.ActiveProfileId);
-            if (activeProfile != null)
-            {
-                _activeUserFullName = $"{activeProfile.LastName} {activeProfile.FirstName.FirstOrDefault()}.{activeProfile.MiddleName.FirstOrDefault()}.";
-            }
+            _activeUserService.CurrentUserChanged += OnCurrentUserChanged;
+            OnCurrentUserChanged();
 
             DocumentRecords = new ObservableCollection<DocumentRecord>();
             StatusText = "Готово";
@@ -139,6 +133,12 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null).ObservesProperty(() => SelectedRecord);
             EditRecordCommand = new DelegateCommand(EditRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
             LoadData();
+        }
+
+        private void OnCurrentUserChanged()
+        {
+            _activeUserFullName = _activeUserService.CurrentUser?.FullName;
+            ApplyFilters();
         }
 
         private void EditRecord()
@@ -252,12 +252,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
             if (OnlyMyRecordsFilter)
             {
-                var settings = _settingsService.LoadSettings();
-                var activeProfile = _profileService.GetAllProfilesAsync().Result.FirstOrDefault(p => p.Id == settings.ActiveProfileId);
-                if (activeProfile != null)
+                if (_activeUserService.CurrentUser != null)
                 {
-                    var activeProfileFullName = $"{activeProfile.LastName} {activeProfile.FirstName.FirstOrDefault()}.{activeProfile.MiddleName.FirstOrDefault()}.";
-                    filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.FullName) && r.FullName == activeProfileFullName);
+                    filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.FullName) && r.FullName == _activeUserFullName);
                 }
             }
 

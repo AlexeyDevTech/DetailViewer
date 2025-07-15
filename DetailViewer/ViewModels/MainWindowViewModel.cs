@@ -1,33 +1,51 @@
+using DetailViewer.Core.Interfaces;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Regions;
-using Prism.Services.Dialogs; // Added
+using Prism.Services.Dialogs;
 
 namespace DetailViewer.ViewModels
 {
     public class MainWindowViewModel : BindableBase
     {
         private readonly IRegionManager _regionManager;
-        private readonly IDialogService _dialogService; // Added
-        private string _title = "Detail Viewer";
+        private readonly IDialogService _dialogService;
+        private readonly IActiveUserService _activeUserService;
 
+        private string _title = "Detail Viewer";
         public string Title
         {
             get { return _title; }
             set { SetProperty(ref _title, value); }
         }
 
+        private string _activeUserFullName;
+        public string ActiveUserFullName
+        {
+            get { return _activeUserFullName; }
+            set { SetProperty(ref _activeUserFullName, value); }
+        }
+
         public DelegateCommand<string> NavigateCommand { get; private set; }
-        public DelegateCommand ShowSettingsCommand { get; private set; } // Added
+        public DelegateCommand ShowSettingsCommand { get; private set; }
         public DelegateCommand ShowAboutCommand { get; private set; }
 
-        public MainWindowViewModel(IRegionManager regionManager, IDialogService dialogService) // Modified constructor
+        public MainWindowViewModel(IRegionManager regionManager, IDialogService dialogService, IActiveUserService activeUserService)
         {
             _regionManager = regionManager;
-            _dialogService = dialogService; // Added
+            _dialogService = dialogService;
+            _activeUserService = activeUserService;
+
+            _activeUserService.CurrentUserChanged += OnCurrentUserChanged;
+
             NavigateCommand = new DelegateCommand<string>(Navigate);
-            ShowSettingsCommand = new DelegateCommand(ShowSettings); // Added
+            ShowSettingsCommand = new DelegateCommand(ShowSettings);
             ShowAboutCommand = new DelegateCommand(ShowAbout);
+        }
+
+        private void OnCurrentUserChanged()
+        {
+            ActiveUserFullName = _activeUserService.CurrentUser?.FullName;
         }
 
         private void Navigate(string navigationPath)
@@ -35,7 +53,7 @@ namespace DetailViewer.ViewModels
             _regionManager.RequestNavigate("ContentRegion", navigationPath);
         }
 
-        private void ShowSettings() // Added
+        private void ShowSettings()
         {
             _dialogService.ShowDialog("SettingsView", new DialogParameters(), r =>
             {

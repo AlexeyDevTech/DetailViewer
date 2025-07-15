@@ -17,8 +17,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
     public class DocumentRecordFormViewModel : BindableBase, IDialogAware
     {
         private readonly IDocumentDataService _documentDataService;
-        private readonly IProfileService _profileService;
-        private readonly ISettingsService _settingsService;
+        private readonly IActiveUserService _activeUserService;
         private readonly ILogger _logger;
         private List<DocumentRecord> _allRecords;
         private string _activeUserFullName;
@@ -172,16 +171,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public DelegateCommand SaveCommand { get; private set; }
         public DelegateCommand CancelCommand { get; private set; }
 
-        public DocumentRecordFormViewModel(IDocumentDataService documentDataService, IProfileService profileService, ISettingsService settingsService, ILogger logger)
+        public DocumentRecordFormViewModel(IDocumentDataService documentDataService, ILogger logger, IActiveUserService activeUserService)
         {
             _documentDataService = documentDataService;
-            _profileService = profileService;
-            _settingsService = settingsService;
             _logger = logger;
+            _activeUserService = activeUserService;
 
-            var settings = _settingsService.LoadSettings();
-            var activeProfile = _profileService.GetAllProfilesAsync().Result.FirstOrDefault(p => p.Id == settings.ActiveProfileId);
-            _activeUserFullName = $"{activeProfile.LastName} {activeProfile.FirstName.FirstOrDefault()}.{activeProfile.MiddleName.FirstOrDefault()}.";
+            _activeUserFullName = _activeUserService.CurrentUser?.FullName;
 
             DocumentRecord = new DocumentRecord { Date = DateTime.Now, FullName = _activeUserFullName, ESKDNumber = new ESKDNumber() { ClassNumber = new Classifier() } };
             

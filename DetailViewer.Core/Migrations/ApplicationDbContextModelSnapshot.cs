@@ -120,6 +120,12 @@ namespace DetailViewer.Core.Migrations
                     b.Property<string>("MiddleName")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.ToTable("Profiles");

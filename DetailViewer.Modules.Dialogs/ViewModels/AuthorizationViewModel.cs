@@ -12,11 +12,27 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
     public class AuthorizationViewModel : BindableBase, IDialogAware
     {
         private readonly IProfileService _profileService;
+        private readonly IPasswordService _passwordService;
 
-        public string Title => "Авторизация";
+        public string Title => "Вход и Регистрация";
 
         public event Action<IDialogResult> RequestClose;
 
+        private int _selectedTabIndex;
+        public int SelectedTabIndex
+        {
+            get { return _selectedTabIndex; }
+            set { SetProperty(ref _selectedTabIndex, value); }
+        }
+
+        private string _statusMessage;
+        public string StatusMessage
+        {
+            get { return _statusMessage; }
+            set { SetProperty(ref _statusMessage, value); }
+        }
+
+        // Login properties
         private List<Profile> _profiles;
         public List<Profile> Profiles
         {
@@ -38,12 +54,44 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set { SetProperty(ref _password, value); }
         }
 
-        public DelegateCommand AuthorizeCommand { get; }
+        // Registration properties
+        private string _newLastName;
+        public string NewLastName
+        {
+            get { return _newLastName; }
+            set { SetProperty(ref _newLastName, value); }
+        }
 
-        public AuthorizationViewModel(IProfileService profileService)
+        private string _newFirstName;
+        public string NewFirstName
+        {
+            get { return _newFirstName; }
+            set { SetProperty(ref _newFirstName, value); }
+        }
+
+        private string _newMiddleName;
+        public string NewMiddleName
+        {
+            get { return _newMiddleName; }
+            set { SetProperty(ref _newMiddleName, value); }
+        }
+
+        private string _newPassword;
+        public string NewPassword
+        {
+            get { return _newPassword; }
+            set { SetProperty(ref _newPassword, value); }
+        }
+
+        public DelegateCommand AuthorizeCommand { get; }
+        public DelegateCommand RegisterCommand { get; }
+
+        public AuthorizationViewModel(IProfileService profileService, IPasswordService passwordService)
         {
             _profileService = profileService;
+            _passwordService = passwordService;
             AuthorizeCommand = new DelegateCommand(OnAuthorize);
+            RegisterCommand = new DelegateCommand(OnRegister);
             LoadProfiles();
         }
 
@@ -54,10 +102,38 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private void OnAuthorize()
         {
-            // TODO: Implement actual password validation here
-            if (SelectedProfile != null)
+            if (SelectedProfile != null && _passwordService.VerifyPassword(Password, SelectedProfile.PasswordHash))
             {
-                RequestClose?.Invoke(new DialogResult(ButtonResult.OK));
+                var parameters = new DialogParameters { { "user", SelectedProfile } };
+                RequestClose?.Invoke(new DialogResult(ButtonResult.OK, parameters));
+            }
+            else
+            {
+                StatusMessage = "Неверный логин или пароль";
+            }
+        }
+
+        private async void OnRegister()
+        {
+            try
+            {
+                var newProfile = new Profile
+                {
+                    LastName = NewLastName,
+                    FirstName = NewFirstName,
+                    MiddleName = NewMiddleName,
+                    PasswordHash = _passwordService.HashPassword(NewPassword),
+                    Role = Role.Operator
+                };
+
+                await _profileService.AddProfileAsync(newProfile);
+                LoadProfiles();
+                StatusMessage = "Регистрация прошла успешно! Теперь вы можете войти.";
+                SelectedTabIndex = 0; // Switch to login tab
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Ошибка регистрации: {ex.Message}";
             }
         }
 

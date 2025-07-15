@@ -2,6 +2,7 @@
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Services;
 using DetailViewer.Views;
+using Microsoft.EntityFrameworkCore;
 using Prism.Ioc;
 using Prism.Modularity;
 using System.IO;
@@ -30,12 +31,16 @@ namespace DetailViewer
             var appSettings = settingsService.LoadSettings();
             containerRegistry.RegisterInstance(appSettings);
 
-            // Register the DbContext
+            // Register and migrate the DbContext
             containerRegistry.RegisterSingleton<ApplicationDbContext>();
+            var dbContext = Container.Resolve<ApplicationDbContext>();
+            dbContext.Database.Migrate();
 
             // Register the data service
             containerRegistry.RegisterSingleton<IDocumentDataService, SqliteDocumentDataService>();
             containerRegistry.RegisterSingleton<IProfileService, ProfileService>();
+            containerRegistry.RegisterSingleton<IPasswordService, PasswordService>();
+            containerRegistry.RegisterSingleton<IActiveUserService, ActiveUserService>();
         }
 
         protected override void OnInitialized()
@@ -44,7 +49,12 @@ namespace DetailViewer
             var dialogService = Container.Resolve<Prism.Services.Dialogs.IDialogService>();
             dialogService.ShowDialog("AuthorizationView", null, r =>
             {
-                if (r.Result != Prism.Services.Dialogs.ButtonResult.OK)
+                if (r.Result == Prism.Services.Dialogs.ButtonResult.OK)
+                {
+                    var activeUserService = Container.Resolve<IActiveUserService>();
+                    activeUserService.CurrentUser = r.Parameters.GetValue<DetailViewer.Core.Models.Profile>("user");
+                }
+                else
                 {
                     Application.Current.Shutdown();
                 }
