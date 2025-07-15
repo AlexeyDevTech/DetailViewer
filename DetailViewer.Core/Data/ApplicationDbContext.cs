@@ -11,17 +11,16 @@ namespace DetailViewer.Core.Data
         public DbSet<ESKDNumber> ESKDNumbers { get; set; }
         public DbSet<Classifier> Classifiers { get; set; }
 
-        private readonly string _databasePath;
+        private readonly AppSettings _appSettings;
 
-        public ApplicationDbContext()
+        public ApplicationDbContext(AppSettings appSettings)
         {
-            var folder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            _databasePath = System.IO.Path.Join(folder, "detailviewer.db");
+            _appSettings = appSettings;
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite($"Data Source={_databasePath}");
+            optionsBuilder.UseSqlite($"Data Source={_appSettings.DatabasePath}");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

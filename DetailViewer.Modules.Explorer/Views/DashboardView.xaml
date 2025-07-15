@@ -59,16 +59,7 @@
                 </StackPanel>
             </Button>
 
-            <Button Command="{Binding SaveDataCommand}" Style="{StaticResource ToolBarButtonStyle}">
-                <StackPanel Orientation="Horizontal">
-                    <ContentControl
-                        Width="16"
-                        Height="16"
-                        Margin="0,0,5,0"
-                        Content="{StaticResource IconSave}" />
-                    <TextBlock VerticalAlignment="Center" Text="Сохранить данные" />
-                </StackPanel>
-            </Button>
+            
         </ToolBar>
 
         <!--  2. Панель фильтров  -->

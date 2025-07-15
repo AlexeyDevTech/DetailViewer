@@ -157,7 +157,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void FillBasedOn()
         {
-            var parameters = new DialogParameters { { "record", SelectedRecord } };
+            var parameters = new DialogParameters { { "record", SelectedRecord }, { "activeUserFullName", _activeUserFullName } };
             _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
             {
                 if (r.Result == ButtonResult.OK)

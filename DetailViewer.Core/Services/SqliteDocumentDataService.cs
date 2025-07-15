@@ -3,6 +3,7 @@ using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -176,28 +177,30 @@ namespace DetailViewer.Core.Services
 
             using (var package = new ExcelPackage())
             {
-                var worksheet = package.Workbook.Worksheets.Add("Export");
+                var worksheet = package.Workbook.Worksheets.Add("Детали"); // Changed sheet name to "Детали"
 
-                // Add header
-                worksheet.Cells[1, 1].Value = "Date";
-                worksheet.Cells[1, 2].Value = "ESKDNumber";
-                worksheet.Cells[1, 3].Value = "YASTCode";
-                worksheet.Cells[1, 4].Value = "Name";
-                worksheet.Cells[1, 5].Value = "AssemblyNumber";
-                worksheet.Cells[1, 6].Value = "AssemblyName";
-                worksheet.Cells[1, 7].Value = "ProductNumber";
-                worksheet.Cells[1, 8].Value = "ProductName";
-                worksheet.Cells[1, 9].Value = "FullName";
-                worksheet.Cells[1, 10].Value = "ClassifierName";
-                worksheet.Cells[1, 11].Value = "ClassifierNumber";
-                worksheet.Cells[1, 12].Value = "ClassifierDescription";
+                // Column Headers
+                string[] headers = {
+                    "Дата", "ЕСКД номер", "ЯСТ код", "Имя", "Номер сборки",
+                    "Имя сборки", "Номер продукта", "Имя продукта", "ФИО",
+                    "Наименование классификатора", "Номер классификатора", "Описание классификатора"
+                };
 
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    worksheet.Cells[1, i + 1].Value = headers[i];
+                    worksheet.Cells[1, i + 1].Style.Font.Bold = true;
+                    worksheet.Cells[1, i + 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                    worksheet.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                }
 
+                // Data Rows
                 for (int i = 0; i < records.Count; i++)
                 {
                     var record = records[i];
-                    worksheet.Cells[i + 2, 1].Value = record.Date;
-                    worksheet.Cells[i + 2, 2].Value = record.ESKDNumber?.GetCode();
+                    worksheet.Cells[i + 2, 1].Value = record.Date.ToShortDateString(); // Format date
+                    worksheet.Cells[i + 2, 2].Value = record.ESKDNumber?.FullCode;
                     worksheet.Cells[i + 2, 3].Value = record.YASTCode;
                     worksheet.Cells[i + 2, 4].Value = record.Name;
                     worksheet.Cells[i + 2, 5].Value = record.AssemblyNumber;
@@ -209,6 +212,24 @@ namespace DetailViewer.Core.Services
                     worksheet.Cells[i + 2, 11].Value = record.ESKDNumber?.ClassNumber?.Number;
                     worksheet.Cells[i + 2, 12].Value = record.ESKDNumber?.ClassNumber?.Description;
                 }
+
+                // Apply general styles to all cells
+                using (var range = worksheet.Cells[1, 1, records.Count + 1, headers.Length])
+                {
+                    range.Style.Font.Name = "Calibri";
+                    range.Style.Font.Size = 11;
+                    range.Style.Font.Color.SetColor(System.Drawing.Color.Black);
+                    range.Style.Border.Top.Style = ExcelBorderStyle.Thin;
+                    range.Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+                    range.Style.Border.Left.Style = ExcelBorderStyle.Thin;
+                    range.Style.Border.Right.Style = ExcelBorderStyle.Thin;
+                    range.Style.Border.Top.Color.SetColor(System.Drawing.Color.Gray);
+                    range.Style.Border.Bottom.Color.SetColor(System.Drawing.Color.Gray);
+                    range.Style.Border.Left.Color.SetColor(System.Drawing.Color.Gray);
+                    range.Style.Border.Right.Color.SetColor(System.Drawing.Color.Gray);
+                }
+
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
                 await package.SaveAsAsync(new FileInfo(filePath));
             }

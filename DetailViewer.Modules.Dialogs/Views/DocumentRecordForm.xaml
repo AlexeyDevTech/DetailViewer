@@ -182,78 +182,119 @@
         <TextBlock
             Grid.Row="5"
             Grid.Column="0"
-            Margin="5"
+            Margin="5,10,5,5"
             VerticalAlignment="Center"
             Text="ЯСТ код:" />
         <TextBox
             Grid.Row="5"
             Grid.Column="1"
+            Margin="5,10,5,5"
             Text="{Binding DocumentRecord.YASTCode}" />
 
         <TextBlock
             Grid.Row="6"
             Grid.Column="0"
-            Margin="5"
+            Margin="5,10,5,5"
             VerticalAlignment="Center"
             Text="Имя:" />
         <TextBox
             Grid.Row="6"
             Grid.Column="1"
+            Margin="5,10,5,5"
             Text="{Binding DocumentRecord.Name}" />
 
         <TextBlock
             Grid.Row="7"
             Grid.Column="0"
-            Margin="5"
+            Margin="5,10,5,5"
             VerticalAlignment="Center"
             Text="Номер сборки:" />
-        <TextBox
+        <StackPanel
             Grid.Row="7"
             Grid.Column="1"
-            Text="{Binding DocumentRecord.AssemblyNumber}" />
+            Margin="5,10,5,5"
+            Orientation="Horizontal">
+            <TextBox Width="50" Text="{Binding AssemblyPart1, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="." />
+            <TextBox Width="80" Text="{Binding AssemblyPart2, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="." />
+            <TextBox Width="50" Text="{Binding AssemblyPart3, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="-" />
+            <TextBox Width="50" Text="{Binding AssemblyPart4, UpdateSourceTrigger=PropertyChanged}" />
+        </StackPanel>
 
         <TextBlock
             Grid.Row="8"
             Grid.Column="0"
-            Margin="5"
+            Margin="5,10,5,5"
             VerticalAlignment="Center"
             Text="Имя сборки:" />
         <TextBox
             Grid.Row="8"
             Grid.Column="1"
+            Margin="5,10,5,5"
             Text="{Binding DocumentRecord.AssemblyName}" />
 
         <TextBlock
             Grid.Row="9"
             Grid.Column="0"
-            Margin="5"
+            Margin="5,10,5,5"
             VerticalAlignment="Center"
             Text="Номер продукта:" />
-        <TextBox
+        <StackPanel
             Grid.Row="9"
             Grid.Column="1"
-            Text="{Binding DocumentRecord.ProductNumber}" />
+            Margin="5,10,5,5"
+            Orientation="Horizontal">
+            <TextBox Width="50" Text="{Binding ProductPart1, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="." />
+            <TextBox Width="80" Text="{Binding ProductPart2, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="." />
+            <TextBox Width="50" Text="{Binding ProductPart3, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="-" />
+            <TextBox Width="50" Text="{Binding ProductPart4, UpdateSourceTrigger=PropertyChanged}" />
+        </StackPanel>
 
         <TextBlock
             Grid.Row="10"
             Grid.Column="0"
-            Margin="5"
+            Margin="5,10,5,5"
             VerticalAlignment="Center"
             Text="Имя продукта:" />
         <TextBox
             Grid.Row="10"
             Grid.Column="1"
+            Margin="5,10,5,5"
             Text="{Binding DocumentRecord.ProductName}" />
 
         <TextBlock
             Grid.Row="11"
             Grid.Column="0"
-            Margin="5"
+            Margin="5,10,5,5"
             VerticalAlignment="Center"
             Text="ФИО:" />
         <TextBox
             Grid.Row="11"
             Grid.Column="1"
+            Margin="5,10,5,5"
             Text="{Binding DocumentRecord.FullName}" />
 
         <StackPanel

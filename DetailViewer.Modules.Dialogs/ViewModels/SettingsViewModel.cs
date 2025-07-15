@@ -20,6 +20,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly IPasswordService _passwordService;
 
         private string _databasePath;
+        private string _defaultCompanyCode;
+        public string DefaultCompanyCode
+        {
+            get { return _defaultCompanyCode; }
+            set { SetProperty(ref _defaultCompanyCode, value); }
+        }
         private ObservableCollection<Profile> _profiles;
         private Profile _selectedProfile;
         private string _newProfileLastName;
@@ -110,6 +116,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public DelegateCommand AddProfileCommand { get; private set; }
         public DelegateCommand SaveProfileCommand { get; private set; }
         public DelegateCommand DeleteProfileCommand { get; private set; }
+        public DelegateCommand ChangeDatabasePathCommand { get; private set; }
 
         public string Title => "Настройки";
 
@@ -124,12 +131,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _passwordService = passwordService;
 
             DatabasePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "detailviewer.db");
+            DefaultCompanyCode = _settingsService.LoadSettings().DefaultCompanyCode;
 
             ImportCommand = new DelegateCommand(Import);
             ExportCommand = new DelegateCommand(Export);
             AddProfileCommand = new DelegateCommand(AddProfile);
             SaveProfileCommand = new DelegateCommand(SaveProfile, () => SelectedProfile != null).ObservesProperty(() => SelectedProfile);
             DeleteProfileCommand = new DelegateCommand(DeleteProfile, () => SelectedProfile != null).ObservesProperty(() => SelectedProfile);
+            ChangeDatabasePathCommand = new DelegateCommand(ChangeDatabasePath);
 
             IsAdminOrModerator = _activeUserService.CurrentUser?.Role == Role.Admin || _activeUserService.CurrentUser?.Role == Role.Moderator;
             RaisePropertyChanged(nameof(IsAdminOrModerator));
@@ -205,6 +214,24 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (saveFileDialog.ShowDialog() == true)
             {
                 await _documentDataService.ExportToExcelAsync(saveFileDialog.FileName);
+            }
+        }
+
+        private void ChangeDatabasePath()
+        {
+            var saveFileDialog = new SaveFileDialog
+            {
+                Filter = "SQLite Database (*.db)|*.db",
+                FileName = System.IO.Path.GetFileName(DatabasePath)
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                DatabasePath = saveFileDialog.FileName;
+                var settings = _settingsService.LoadSettings();
+                settings.DatabasePath = DatabasePath;
+                settings.DefaultCompanyCode = DefaultCompanyCode;
+                _settingsService.SaveSettingsAsync(settings);
             }
         }
 
