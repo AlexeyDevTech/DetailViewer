@@ -228,7 +228,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 records = records.Where(r => r.ESKDNumber.ClassNumber.Number.ToString("D6").StartsWith(ClassNumberString));
             }
 
-            if (IsNewVersionEnabled && DetailNumber > 0)
+            if (IsNewVersionEnabled && DetailNumber > 0 && SelectedRecordToCopy == null)
             {
                 records = records.Where(r => r.ESKDNumber.DetailNumber == DetailNumber);
             }
@@ -297,7 +297,28 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
         private void FindNextVersionNumber()
         {
-            // Implementation needed
+            if (_allRecords == null || string.IsNullOrEmpty(CompanyCode) || string.IsNullOrEmpty(ClassNumberString) || DetailNumber == 0)
+            {
+                Version = null; // No valid ESKD number to find a version for
+                return;
+            }
+
+            var existingVersions = _allRecords
+                .Where(r => r.ESKDNumber.CompanyCode == CompanyCode &&
+                            r.ESKDNumber.ClassNumber.Number.ToString("D6") == ClassNumberString &&
+                            r.ESKDNumber.DetailNumber == DetailNumber &&
+                            r.ESKDNumber.Version.HasValue)
+                .Select(r => r.ESKDNumber.Version.Value)
+                .ToList();
+
+            if (existingVersions.Any())
+            {
+                Version = existingVersions.Max() + 1;
+            }
+            else
+            {
+                Version = 1; // First version for this ESKD number
+            }
         }
 
         // --- Dialog-related Methods ---
