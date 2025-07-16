@@ -112,6 +112,27 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set { SetProperty(ref _onlyMyRecordsFilter, value, ApplyFilters); }
         }
 
+        private DateTime? _selectedDate;
+        public DateTime? SelectedDate
+        {
+            get { return _selectedDate; }
+            set { SetProperty(ref _selectedDate, value, ApplyFilters); }
+        }
+
+        private ObservableCollection<string> _uniqueFullNames;
+        public ObservableCollection<string> UniqueFullNames
+        {
+            get { return _uniqueFullNames; }
+            set { SetProperty(ref _uniqueFullNames, value); }
+        }
+
+        private string _selectedFullName;
+        public string SelectedFullName
+        {
+            get { return _selectedFullName; }
+            set { SetProperty(ref _selectedFullName, value, ApplyFilters); }
+        }
+
         public DelegateCommand FillFormCommand { get; private set; }
         public DelegateCommand FillBasedOnCommand { get; private set; }
         public DelegateCommand EditRecordCommand { get; private set; }
@@ -189,6 +210,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             try
             {
                 _allRecords = await _documentDataService.GetAllRecordsAsync();
+                UniqueFullNames = new ObservableCollection<string>(_allRecords.Select(r => r.FullName).Distinct().OrderBy(n => n));
                 ApplyFilters();
                 StatusText = $"Данные успешно загружены. Записей: {DocumentRecords.Count}";
                 _logger.LogInformation("Data loaded successfully.");
@@ -209,6 +231,11 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             if (_allRecords == null) return;
 
             var filteredRecords = _allRecords.AsEnumerable();
+
+            if (SelectedDate.HasValue)
+            {
+                filteredRecords = filteredRecords.Where(r => r.Date.Date == SelectedDate.Value.Date);
+            }
 
             if (!string.IsNullOrWhiteSpace(EskdNumberFilter))
             {
@@ -248,6 +275,11 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             if (!string.IsNullOrWhiteSpace(FullNameFilter))
             {
                 filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.FullName) && r.FullName.Contains(FullNameFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(SelectedFullName))
+            {
+                filteredRecords = filteredRecords.Where(r => r.FullName == SelectedFullName);
             }
 
             if (OnlyMyRecordsFilter)

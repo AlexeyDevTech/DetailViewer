@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:prism="http://prismlibrary.com/"
         prism:ViewModelLocator.AutoWireViewModel="True"
-        Title="{Binding Title}" Height="550" Width="1225" 
+        Title="{Binding Title}" Height="550" Width="1470" 
         Background="{StaticResource BackgroundLightBrush}" 
         Icon="{StaticResource AppIconImage}">
     <Grid>

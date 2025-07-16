@@ -8,7 +8,7 @@
     xmlns:models="clr-namespace:DetailViewer.Core.Models;assembly=DetailViewer.Core"
     xmlns:prism="http://prismlibrary.com/"
     d:DesignHeight="600"
-    d:DesignWidth="1000"
+    d:DesignWidth="1450"
     prism:ViewModelLocator.AutoWireViewModel="True"
     Background="{StaticResource BackgroundLightBrush}"
     mc:Ignorable="d">
@@ -65,53 +65,67 @@
         <!--  2. Панель фильтров  -->
         <Grid Grid.Row="1" Margin="5,0,5,5">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="100" />
+                <ColumnDefinition Width="120" />
                 <ColumnDefinition Width="150" />
                 <ColumnDefinition Width="100" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="200" />
                 <ColumnDefinition Width="150" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="150" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="150" />
             </Grid.ColumnDefinitions>
-            <TextBlock Text="Фильтры:" VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="0" Orientation="Vertical">
+                <TextBlock Text="Фильтры:" VerticalAlignment="Center" Margin="0,0,0,5"/>
+                <DatePicker SelectedDate="{Binding SelectedDate, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,5,0"/>
+            </StackPanel>
             <TextBox
                 Grid.Column="1"
                 Margin="0,0,5,0"
+                Height="32" VerticalAlignment="Bottom"
                 Text="{Binding EskdNumberFilter, UpdateSourceTrigger=PropertyChanged}" />
             <TextBox
                 Grid.Column="2"
                 Margin="0,0,5,0"
+                Height="32" VerticalAlignment="Bottom"
                 Text="{Binding YastCodeFilter, UpdateSourceTrigger=PropertyChanged}" />
             <TextBox
                 Grid.Column="3"
                 Margin="0,0,5,0"
+                Height="32" VerticalAlignment="Bottom"
                 Text="{Binding NameFilter, UpdateSourceTrigger=PropertyChanged}" />
             <TextBox
                 Grid.Column="4"
                 Margin="0,0,5,0"
+                Height="32" VerticalAlignment="Bottom"
                 Text="{Binding AssemblyNumberFilter, UpdateSourceTrigger=PropertyChanged}" />
             <TextBox
                 Grid.Column="5"
                 Margin="0,0,5,0"
+                Height="32" VerticalAlignment="Bottom"
                 Text="{Binding AssemblyNameFilter, UpdateSourceTrigger=PropertyChanged}" />
             <TextBox
                 Grid.Column="6"
                 Margin="0,0,5,0"
+                Height="32" VerticalAlignment="Bottom"
                 Text="{Binding ProductNumberFilter, UpdateSourceTrigger=PropertyChanged}" />
             <TextBox
                 Grid.Column="7"
                 Margin="0,0,5,0"
+                Height="32" VerticalAlignment="Bottom"
                 Text="{Binding ProductNameFilter, UpdateSourceTrigger=PropertyChanged}" />
-            <StackPanel Grid.Column="8" Orientation="Horizontal">
+            <StackPanel Grid.Column="8" Orientation="Vertical">
+                <ComboBox
+                    Margin="0,0,5,5"
+                    ItemsSource="{Binding UniqueFullNames}"
+                    SelectedItem="{Binding SelectedFullName}" />
                 <CheckBox
-                    Margin="7,0"
+                    Margin="7,0,0,0"
                     VerticalAlignment="Center"
                     Content="Только мои"
                     IsChecked="{Binding OnlyMyRecordsFilter}" />
             </StackPanel>
-
         </Grid>
 
         <!--  3. Основная рабочая область  -->
@@ -119,7 +133,7 @@
             <DataGrid ItemsSource="{Binding DocumentRecords}" SelectedItem="{Binding SelectedRecord}">
                 <DataGrid.Columns>
                     <DataGridTextColumn
-                        Width="100"
+                        Width="120"
                         Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}"
                         Header="Дата" />
                     <DataGridTextColumn
@@ -131,7 +145,7 @@
                         Binding="{Binding YASTCode}"
                         Header="ЯСТ код" />
                     <DataGridTextColumn
-                        Width="*"
+                        Width="200"
                         Binding="{Binding Name}"
                         Header="Имя" />
                     <DataGridTextColumn
@@ -139,7 +153,7 @@
                         Binding="{Binding AssemblyNumber}"
                         Header="Номер сборки" />
                     <DataGridTextColumn
-                        Width="*"
+                        Width="200"
                         Binding="{Binding AssemblyName}"
                         Header="Имя сборки" />
                     <DataGridTextColumn
@@ -147,7 +161,7 @@
                         Binding="{Binding ProductNumber}"
                         Header="Номер продукта" />
                     <DataGridTextColumn
-                        Width="*"
+                        Width="200"
                         Binding="{Binding ProductName}"
                         Header="Имя продукта" />
                     <DataGridTextColumn

@@ -14,4 +14,9 @@
     <ProjectReference Include="..\DetailViewer.Modules.Dialogs\DetailViewer.Modules.Dialogs.csproj" />
     <ProjectReference Include="..\DetailViewer.Modules.Explorer\DetailViewer.Modules.Explorer.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\eskd_classifiers.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>
