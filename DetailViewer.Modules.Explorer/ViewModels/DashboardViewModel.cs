@@ -212,7 +212,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 _allRecords = await _documentDataService.GetAllRecordsAsync();
                 UniqueFullNames = new ObservableCollection<string>(_allRecords.Select(r => r.FullName).Distinct().OrderBy(n => n));
                 ApplyFilters();
-                StatusText = $"Данные успешно загружены. Записей: {DocumentRecords.Count}";
+                StatusText = $"Данные успешно загружены.";
                 _logger.LogInformation("Data loaded successfully.");
             }
             catch (Exception ex)
@@ -295,6 +295,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             {
                 DocumentRecords.Add(record);
             }
+
+            StatusText = $"Отобрано записей: {DocumentRecords.Count}";
         }
     }
 }
