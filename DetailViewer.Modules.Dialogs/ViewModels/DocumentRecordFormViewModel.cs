@@ -52,14 +52,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         // --- Assembly Number Parts ---
         private string _assemblyPart1, _assemblyPart2, _assemblyPart3, _assemblyPart4;
-        public string AssemblyPart1 { get => _assemblyPart1; set => SetProperty(ref _assemblyPart1, value, UpdateAssemblyNumber); }
+        public string AssemblyPart1 { get => _assemblyPart1; set { SetProperty(ref _assemblyPart1, value); ParseAndSetEskdNumber(value, true); UpdateAssemblyNumber(); } }
         public string AssemblyPart2 { get => _assemblyPart2; set => SetProperty(ref _assemblyPart2, value, UpdateAssemblyNumber); }
         public string AssemblyPart3 { get => _assemblyPart3; set => SetProperty(ref _assemblyPart3, value, UpdateAssemblyNumber); }
         public string AssemblyPart4 { get => _assemblyPart4; set => SetProperty(ref _assemblyPart4, value, UpdateAssemblyNumber); }
 
         // --- Product Number Parts ---
         private string _productPart1, _productPart2, _productPart3, _productPart4;
-        public string ProductPart1 { get => _productPart1; set => SetProperty(ref _productPart1, value, UpdateProductNumber); }
+        public string ProductPart1 { get => _productPart1; set { SetProperty(ref _productPart1, value); ParseAndSetEskdNumber(value, false); UpdateProductNumber(); } }
         public string ProductPart2 { get => _productPart2; set => SetProperty(ref _productPart2, value, UpdateProductNumber); }
         public string ProductPart3 { get => _productPart3; set => SetProperty(ref _productPart3, value, UpdateProductNumber); }
         public string ProductPart4 { get => _productPart4; set => SetProperty(ref _productPart4, value, UpdateProductNumber); }
@@ -154,6 +154,31 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         // --- Methods for Assembling/Disassembling Composite Numbers ---
         private void UpdateAssemblyNumber() => DocumentRecord.AssemblyNumber = $"{AssemblyPart1}.{AssemblyPart2}.{AssemblyPart3}" + (string.IsNullOrEmpty(AssemblyPart4) ? "" : $"-{AssemblyPart4}");
         private void UpdateProductNumber() => DocumentRecord.ProductNumber = $"{ProductPart1}.{ProductPart2}.{ProductPart3}" + (string.IsNullOrEmpty(ProductPart4) ? "" : $"-{ProductPart4}");
+
+        private void ParseAndSetEskdNumber(string eskdNumber, bool isAssembly)
+        {
+            if (string.IsNullOrWhiteSpace(eskdNumber)) return;
+
+            var match = System.Text.RegularExpressions.Regex.Match(eskdNumber, @"^(\w+)\.(\d+)\.(\d+)(?:-(\d+))?$");
+
+            if (match.Success)
+            {
+                if (isAssembly)
+                {
+                    AssemblyPart1 = match.Groups[1].Value;
+                    AssemblyPart2 = match.Groups[2].Value;
+                    AssemblyPart3 = match.Groups[3].Value;
+                    AssemblyPart4 = match.Groups.Count > 4 ? match.Groups[4].Value : null;
+                }
+                else
+                {
+                    ProductPart1 = match.Groups[1].Value;
+                    ProductPart2 = match.Groups[2].Value;
+                    ProductPart3 = match.Groups[3].Value;
+                    ProductPart4 = match.Groups.Count > 4 ? match.Groups[4].Value : null;
+                }
+            }
+        }
 
         private void ParseAndSetParts(string fullNumber, Action<string, string, string, string> setter)
         {
@@ -372,6 +397,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             var result = new DialogResult(ButtonResult.OK);
             result.Parameters.Add("record", DocumentRecord);
             RequestClose?.Invoke(result);
+
+            DocumentRecord.ESKDNumber.DetailNumber = DetailNumber;
+            DocumentRecord.ESKDNumber.Version = Version;
+
+            DocumentRecord.FullName = DocumentRecord.FullName;
         }
 
         private void Cancel() => RequestClose?.Invoke(new DialogResult(ButtonResult.Cancel));
@@ -406,23 +436,27 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                         }
                     };
 
-                    // Find the next available detail number instead of copying it
+                    // Populate VM properties needed for FindNextDetailNumber
+                    CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
+                    ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
+
+                    // Now find the next number and set the VM property
                     FindNextDetailNumber();
+
                     Version = null; // It's a new detail, not a new version
                     IsManualDetailNumberEnabled = false;
                 }
                 else // This is the "Edit" case
                 {
                     DocumentRecord = record;
+                    // Populate all VM properties from the record
+                    CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
+                    ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
+                    DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
+                    Version = DocumentRecord.ESKDNumber.Version;
+                    IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
                 }
             }
-
-            // Populate the ViewModel properties from the DocumentRecord (always executed)
-            CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
-            ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
-            DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
-            Version = DocumentRecord.ESKDNumber.Version;
-            IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
 
             // Parse the composite numbers for Assembly and Product (always executed)
             ParseAndSetParts(DocumentRecord.AssemblyNumber, (p1, p2, p3, p4) => { AssemblyPart1 = p1; AssemblyPart2 = p2; AssemblyPart3 = p3; AssemblyPart4 = p4; });

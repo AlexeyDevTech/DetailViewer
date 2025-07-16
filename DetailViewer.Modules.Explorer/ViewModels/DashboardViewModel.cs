@@ -136,6 +136,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public DelegateCommand FillFormCommand { get; private set; }
         public DelegateCommand FillBasedOnCommand { get; private set; }
         public DelegateCommand EditRecordCommand { get; private set; }
+        public DelegateCommand DeleteRecordCommand { get; private set; }
 
         public DashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService)
         {
@@ -153,6 +154,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             FillFormCommand = new DelegateCommand(FillForm);
             FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null).ObservesProperty(() => SelectedRecord);
             EditRecordCommand = new DelegateCommand(EditRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
+            DeleteRecordCommand = new DelegateCommand(DeleteRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
             LoadData();
         }
 
@@ -171,6 +173,18 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 {
                     var updatedRecord = r.Parameters.GetValue<DocumentRecord>("record");
                     await _documentDataService.UpdateRecordAsync(updatedRecord);
+                    await LoadData();
+                }
+            });
+        }
+
+        private void DeleteRecord()
+        {
+            _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedRecord.ESKDNumber.FullCode}?" } }, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    await _documentDataService.DeleteRecordAsync(SelectedRecord.Id);
                     await LoadData();
                 }
             });

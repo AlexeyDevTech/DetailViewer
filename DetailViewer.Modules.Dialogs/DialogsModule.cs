@@ -18,6 +18,7 @@ namespace DetailViewer.Modules.Dialogs
                         containerRegistry.RegisterDialog<SettingsView, ViewModels.SettingsViewModel>();
             containerRegistry.RegisterDialog<AuthorizationView, ViewModels.AuthorizationViewModel>();
             containerRegistry.RegisterDialog<AboutView, ViewModels.AboutViewModel>();
+            containerRegistry.RegisterDialog<ConfirmationDialog, ViewModels.ConfirmationDialogViewModel>();
         }
     }
 }

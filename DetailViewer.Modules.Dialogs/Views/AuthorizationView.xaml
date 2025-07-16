@@ -79,6 +79,7 @@
                         Margin="5"
                         Command="{Binding AuthorizeCommand}"
                         Content="Войти"
+                        IsDefault="True"
                         Style="{StaticResource PrimaryButtonStyle}" />
                 </StackPanel>
             </TabItem>
@@ -113,6 +114,7 @@
                         Margin="5"
                         Command="{Binding RegisterCommand}"
                         Content="Зарегистрироваться"
+                        IsDefault="True"
                         Style="{StaticResource PrimaryButtonStyle}" />
                 </StackPanel>
             </TabItem>
