@@ -35,6 +35,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private double _importProgress;
         private bool _isImporting;
         private string _importStatus;
+        private bool _runInTray;
+
+        public bool RunInTray
+        {
+            get { return _runInTray; }
+            set { SetProperty(ref _runInTray, value); }
+        }
 
         public string DatabasePath
         {
@@ -117,6 +124,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public DelegateCommand SaveProfileCommand { get; private set; }
         public DelegateCommand DeleteProfileCommand { get; private set; }
         public DelegateCommand ChangeDatabasePathCommand { get; private set; }
+        public DelegateCommand<string> CloseDialogCommand { get; private set; }
 
         public string Title => "Настройки";
 
@@ -130,8 +138,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _activeUserService = activeUserService;
             _passwordService = passwordService;
 
-            DatabasePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "detailviewer.db");
-            DefaultCompanyCode = _settingsService.LoadSettings().DefaultCompanyCode;
+            //DatabasePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "detailviewer.db");
+            var settings = _settingsService.LoadSettings();
+            DatabasePath = settings.DatabasePath;
+            DefaultCompanyCode = settings.DefaultCompanyCode;
+            RunInTray = settings.RunInTray;
 
             ImportCommand = new DelegateCommand(Import);
             ExportCommand = new DelegateCommand(Export);
@@ -139,6 +150,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             SaveProfileCommand = new DelegateCommand(SaveProfile, () => SelectedProfile != null).ObservesProperty(() => SelectedProfile);
             DeleteProfileCommand = new DelegateCommand(DeleteProfile, () => SelectedProfile != null).ObservesProperty(() => SelectedProfile);
             ChangeDatabasePathCommand = new DelegateCommand(ChangeDatabasePath);
+            CloseDialogCommand = new DelegateCommand<string>(CloseDialog);
 
             IsAdminOrModerator = _activeUserService.CurrentUser?.Role == Role.Admin || _activeUserService.CurrentUser?.Role == Role.Moderator;
             RaisePropertyChanged(nameof(IsAdminOrModerator));
@@ -231,14 +243,43 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 var settings = _settingsService.LoadSettings();
                 settings.DatabasePath = DatabasePath;
                 settings.DefaultCompanyCode = DefaultCompanyCode;
+                settings.RunInTray = RunInTray;
                 _settingsService.SaveSettingsAsync(settings);
             }
         }
 
         public bool CanCloseDialog() => true;
 
-        public void OnDialogClosed() { }
+        public void OnDialogClosed()
+        {
+            var settings = _settingsService.LoadSettings();
+            settings.DatabasePath = DatabasePath;
+            settings.DefaultCompanyCode = DefaultCompanyCode;
+            settings.RunInTray = RunInTray;
+            _settingsService.SaveSettingsAsync(settings);
+        }
 
         public void OnDialogOpened(IDialogParameters parameters) { }
+
+        private void CloseDialog(string parameter)
+        {
+            ButtonResult result = ButtonResult.None;
+
+            if (parameter?.ToLower() == "ok")
+            {
+                var settings = _settingsService.LoadSettings();
+                settings.DatabasePath = DatabasePath;
+                settings.DefaultCompanyCode = DefaultCompanyCode;
+                settings.RunInTray = RunInTray;
+                _settingsService.SaveSettingsAsync(settings);
+                result = ButtonResult.OK;
+            }
+            else if (parameter?.ToLower() == "cancel")
+            {
+                result = ButtonResult.Cancel;
+            }
+
+            RequestClose?.Invoke(new DialogResult(result));
+        }
     }
 }

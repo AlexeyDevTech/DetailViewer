@@ -4,5 +4,6 @@ namespace DetailViewer.Core.Models
     {
         public string DatabasePath { get; set; }
         public string DefaultCompanyCode { get; set; } = "ДТМЛ";
+        public bool RunInTray { get; set; } = true;
     }
 }

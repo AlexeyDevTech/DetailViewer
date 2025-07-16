@@ -150,7 +150,7 @@
             VerticalAlignment="Center"
             FontWeight="Bold"
             Foreground="Red"
-            Text="Выберите запись для копирования"
+            Text="{Binding UserMessage}"
             Visibility="{Binding IsNewVersionEnabled, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
         <DataGrid

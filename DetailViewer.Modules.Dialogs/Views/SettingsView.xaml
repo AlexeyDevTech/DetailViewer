@@ -34,6 +34,12 @@
                         </StackPanel>
                     </GroupBox>
 
+                    <GroupBox Header="Поведение">
+                        <StackPanel>
+                            <CheckBox Content="Запускать в трее" IsChecked="{Binding RunInTray}" Margin="0,5"/>
+                        </StackPanel>
+                    </GroupBox>
+
                     <GroupBox Header="Импорт и экспорт">
                         <StackPanel>
                             <Button Content="Импорт из Excel" Command="{Binding ImportCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,5"/>

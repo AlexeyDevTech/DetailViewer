@@ -84,6 +84,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public bool IsNewVersionEnabled { get => _isNewVersionEnabled; set => SetProperty(ref _isNewVersionEnabled, value, OnIsNewVersionEnabledChanged); }
         public bool FilterByFullName { get => _filterByFullName; set => SetProperty(ref _filterByFullName, value, FilterRecords); }
 
+        private string _userMessage;
+        public string UserMessage { get => _userMessage; set => SetProperty(ref _userMessage, value); }
+
         // --- Filtered Collections for UI ---
         private ObservableCollection<ClassifierData> _filteredClassifiers;
         public ObservableCollection<ClassifierData> FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
@@ -112,7 +115,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 SetProperty(ref _selectedRecordToCopy, value);
                 if (value != null && IsNewVersionEnabled)
                 {
-                    // Logic to copy from selected record
+                    CopyDataFromSelectedRecord(value);
                 }
             }
         }
@@ -149,8 +152,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         // --- Methods for Assembling/Disassembling Composite Numbers ---
-        private void UpdateAssemblyNumber() => DocumentRecord.AssemblyNumber = $"{AssemblyPart1}.{AssemblyPart2}.{AssemblyPart3}-{AssemblyPart4}";
-        private void UpdateProductNumber() => DocumentRecord.ProductNumber = $"{ProductPart1}.{ProductPart2}.{ProductPart3}-{ProductPart4}";
+        private void UpdateAssemblyNumber() => DocumentRecord.AssemblyNumber = $"{AssemblyPart1}.{AssemblyPart2}.{AssemblyPart3}" + (string.IsNullOrEmpty(AssemblyPart4) ? "" : $"-{AssemblyPart4}");
+        private void UpdateProductNumber() => DocumentRecord.ProductNumber = $"{ProductPart1}.{ProductPart2}.{ProductPart3}" + (string.IsNullOrEmpty(ProductPart4) ? "" : $"-{ProductPart4}");
 
         private void ParseAndSetParts(string fullNumber, Action<string, string, string, string> setter)
         {
@@ -230,7 +233,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
             if (IsNewVersionEnabled && DetailNumber > 0 && SelectedRecordToCopy == null)
             {
-                records = records.Where(r => r.ESKDNumber.DetailNumber == DetailNumber);
+                //records = records.Where(r => r.ESKDNumber.DetailNumber == DetailNumber);
+                records.Where(r => r.ESKDNumber.ClassNumber.Number.ToString("D6").StartsWith(ClassNumberString));
             }
 
             if (FilterByFullName)
@@ -275,7 +279,22 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (IsNewVersionEnabled)
             {
                 IsManualDetailNumberEnabled = true;
+                UserMessage = "Выберите запись для копирования";
+                // Clear relevant fields when 'New Version' is checked
+                DocumentRecord.YASTCode = null;
+                DocumentRecord.Name = null;
+                DocumentRecord.AssemblyNumber = null;
+                DocumentRecord.AssemblyName = null;
+                DocumentRecord.ProductNumber = null;
+                DocumentRecord.ProductName = null;
+                // ESKD number parts will be copied from selected record, not cleared here.
+                SelectedRecordToCopy = null; // Clear selected record
             }
+            else
+            {
+                UserMessage = null;
+            }
+            //FilterRecords();
         }
 
         // --- Business Logic ---
@@ -319,6 +338,29 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             {
                 Version = 1; // First version for this ESKD number
             }
+        }
+
+        private void CopyDataFromSelectedRecord(DocumentRecord sourceRecord)
+        {
+            // Copy all fields except Date and FullName
+            DocumentRecord.YASTCode = sourceRecord.YASTCode;
+            DocumentRecord.Name = sourceRecord.Name;
+            DocumentRecord.AssemblyNumber = sourceRecord.AssemblyNumber;
+            DocumentRecord.AssemblyName = sourceRecord.AssemblyName;
+            DocumentRecord.ProductNumber = sourceRecord.ProductNumber;
+            DocumentRecord.ProductName = sourceRecord.ProductName;
+
+            // ESKD Number parts
+            CompanyCode = sourceRecord.ESKDNumber.CompanyCode;
+            ClassNumberString = sourceRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
+            DetailNumber = sourceRecord.ESKDNumber.DetailNumber;
+            FindNextVersionNumber(); // Find next version based on copied ESKD number
+
+            // Parse composite numbers for Assembly and Product
+            ParseAndSetParts(DocumentRecord.AssemblyNumber, (p1, p2, p3, p4) => { AssemblyPart1 = p1; AssemblyPart2 = p2; AssemblyPart3 = p3; AssemblyPart4 = p4; });
+            ParseAndSetParts(DocumentRecord.ProductNumber, (p1, p2, p3, p4) => { ProductPart1 = p1; ProductPart2 = p2; ProductPart3 = p3; ProductPart4 = p4; });
+            RaisePropertyChanged(nameof(DocumentRecord));
+            UserMessage = null; // Clear message after selection
         }
 
         // --- Dialog-related Methods ---
@@ -385,6 +427,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             // Parse the composite numbers for Assembly and Product (always executed)
             ParseAndSetParts(DocumentRecord.AssemblyNumber, (p1, p2, p3, p4) => { AssemblyPart1 = p1; AssemblyPart2 = p2; AssemblyPart3 = p3; AssemblyPart4 = p4; });
             ParseAndSetParts(DocumentRecord.ProductNumber, (p1, p2, p3, p4) => { ProductPart1 = p1; ProductPart2 = p2; ProductPart3 = p3; ProductPart4 = p4; });
+
+            // If IsNewVersionEnabled is true on dialog open (e.g., from tray menu), show message
+            if (IsNewVersionEnabled)
+            {
+                UserMessage = "Выберите запись для копирования";
+            }
         }
     }
 }
+

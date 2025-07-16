@@ -3,6 +3,7 @@ using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
@@ -18,7 +19,15 @@ namespace DetailViewer.Core.Services
 
         public async Task<List<Profile>> GetAllProfilesAsync()
         {
-            return await _dbContext.Profiles.ToListAsync();
+            return await _dbContext.Profiles.Select(p => new Profile
+            {
+                Id = p.Id,
+                LastName = p.LastName,
+                FirstName = p.FirstName,
+                MiddleName = p.MiddleName,
+                Role = p.Role,
+                PasswordHash = p.PasswordHash
+            }).ToListAsync();
         }
 
         public async Task AddProfileAsync(Profile profile)

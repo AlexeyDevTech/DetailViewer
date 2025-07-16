@@ -1,4 +1,5 @@
-﻿using System.Windows;
+using System.ComponentModel;
+using System.Windows;
 
 namespace DetailViewer.Views
 {
@@ -10,6 +11,15 @@ namespace DetailViewer.Views
         public MainWindow()
         {
             InitializeComponent();
+            Closing += MainWindow_Closing;
+        }
+
+        private void MainWindow_Closing(object sender, CancelEventArgs e)
+        {
+            // Отменяем закрытие окна
+            e.Cancel = true;
+            // Скрываем окно вместо закрытия
+            Hide();
         }
     }
 }
