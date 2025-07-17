@@ -13,7 +13,7 @@ namespace DetailViewer.Modules.Dialogs.Converters
             if (value is System.Collections.Generic.List<string> imagePaths && imagePaths.Count > 0)
             {
                 string imagePath = imagePaths[0];
-                string fullPath = Path.Combine("C:\\AI\\", imagePath);
+                string fullPath = Path.Combine(Environment.CurrentDirectory, imagePath);
                 System.Diagnostics.Debug.WriteLine($"Attempting to load image from: {fullPath}");
                 if (File.Exists(fullPath))
                 {

@@ -138,12 +138,15 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public DelegateCommand EditRecordCommand { get; private set; }
         public DelegateCommand DeleteRecordCommand { get; private set; }
 
-        public DashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService)
+        private readonly ISettingsService _settingsService;
+
+        public DashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService)
         {
             _documentDataService = documentDataService;
             _dialogService = dialogService;
             _logger = logger;
             _activeUserService = activeUserService;
+            _settingsService = settingsService;
 
             _activeUserService.CurrentUserChanged += OnCurrentUserChanged;
             OnCurrentUserChanged();
@@ -206,7 +209,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void FillForm()
         {
-            _dialogService.ShowDialog("DocumentRecordForm", new DialogParameters(), async r =>
+            var settings = _settingsService.LoadSettings();
+            var parameters = new DialogParameters { { "companyCode", settings.DefaultCompanyCode } };
+            _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
             {
                 if (r.Result == ButtonResult.OK)
                 {

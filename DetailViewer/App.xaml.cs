@@ -149,7 +149,9 @@ namespace DetailViewer
         private void OnFillFormClick(object sender, EventArgs e)
         {
             var dialogService = Container.Resolve<Prism.Services.Dialogs.IDialogService>();
-            dialogService.ShowDialog("DocumentRecordForm", new DialogParameters(), r =>
+            var settings = _settingsService.LoadSettings();
+            var parameters = new DialogParameters { { "companyCode", settings.DefaultCompanyCode } };
+            dialogService.ShowDialog("DocumentRecordForm", parameters, r =>
             {
                 if (r.Result == Prism.Services.Dialogs.ButtonResult.OK)
                 {

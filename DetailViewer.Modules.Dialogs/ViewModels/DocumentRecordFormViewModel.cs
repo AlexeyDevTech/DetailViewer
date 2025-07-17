@@ -152,8 +152,28 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         // --- Methods for Assembling/Disassembling Composite Numbers ---
-        private void UpdateAssemblyNumber() => DocumentRecord.AssemblyNumber = $"{AssemblyPart1}.{AssemblyPart2}.{AssemblyPart3}" + (string.IsNullOrEmpty(AssemblyPart4) ? "" : $"-{AssemblyPart4}");
-        private void UpdateProductNumber() => DocumentRecord.ProductNumber = $"{ProductPart1}.{ProductPart2}.{ProductPart3}" + (string.IsNullOrEmpty(ProductPart4) ? "" : $"-{ProductPart4}");
+        private void UpdateAssemblyNumber()
+        {
+            if (string.IsNullOrEmpty(AssemblyPart1) && string.IsNullOrEmpty(AssemblyPart2) && string.IsNullOrEmpty(AssemblyPart3))
+            {
+                DocumentRecord.AssemblyNumber = string.Empty;
+            }
+            else
+            {
+                DocumentRecord.AssemblyNumber = $"{AssemblyPart1}.{AssemblyPart2}.{AssemblyPart3}" + (string.IsNullOrEmpty(AssemblyPart4) ? "" : $"-{AssemblyPart4}");
+            }
+        }
+        private void UpdateProductNumber()
+        {
+            if (string.IsNullOrEmpty(ProductPart1) && string.IsNullOrEmpty(ProductPart2) && string.IsNullOrEmpty(ProductPart3))
+            {
+                DocumentRecord.ProductNumber = string.Empty;
+            }
+            else
+            {
+                DocumentRecord.ProductNumber = $"{ProductPart1}.{ProductPart2}.{ProductPart3}" + (string.IsNullOrEmpty(ProductPart4) ? "" : $"-{ProductPart4}");
+            }
+        }
 
         private void ParseAndSetEskdNumber(string eskdNumber, bool isAssembly)
         {
@@ -304,7 +324,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (IsNewVersionEnabled)
             {
                 IsManualDetailNumberEnabled = true;
-                UserMessage = "Выберите запись для копирования";
+                UserMessage = "Выберите запись для исполнения";
                 // Clear relevant fields when 'New Version' is checked
                 DocumentRecord.YASTCode = null;
                 DocumentRecord.Name = null;
@@ -394,14 +414,20 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             UpdateAssemblyNumber();
             UpdateProductNumber();
             // ... other save logic ...
-            var result = new DialogResult(ButtonResult.OK);
-            result.Parameters.Add("record", DocumentRecord);
-            RequestClose?.Invoke(result);
 
+
+            DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
+            if (int.TryParse(ClassNumberString, out int classNumber))
+            {
+                DocumentRecord.ESKDNumber.ClassNumber.Number = classNumber;
+            }
             DocumentRecord.ESKDNumber.DetailNumber = DetailNumber;
             DocumentRecord.ESKDNumber.Version = Version;
 
             DocumentRecord.FullName = DocumentRecord.FullName;
+            var result = new DialogResult(ButtonResult.OK);
+            result.Parameters.Add("record", DocumentRecord);
+            RequestClose?.Invoke(result);
         }
 
         private void Cancel() => RequestClose?.Invoke(new DialogResult(ButtonResult.Cancel));
@@ -456,6 +482,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                     Version = DocumentRecord.ESKDNumber.Version;
                     IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
                 }
+            }
+            else if (parameters.ContainsKey("companyCode"))
+            {
+                CompanyCode = parameters.GetValue<string>("companyCode");
+                DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
             }
 
             // Parse the composite numbers for Assembly and Product (always executed)
