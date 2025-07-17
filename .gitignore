@@ -455,3 +455,4 @@ $RECYCLE.BIN/
 /.vscode
 /images
 /eskd_classifiers.json
+/build.bat
