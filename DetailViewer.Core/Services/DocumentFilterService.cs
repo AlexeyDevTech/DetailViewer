@@ -7,7 +7,7 @@ namespace DetailViewer.Core.Services
 {
     public class DocumentFilterService : IDocumentFilterService
     {
-        public List<DocumentRecord> FilterRecords(List<DocumentRecord> records, string searchTerm)
+        public List<DocumentDetailRecord> FilterRecords(List<DocumentDetailRecord> records, string searchTerm)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
             {

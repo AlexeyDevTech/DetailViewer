@@ -6,6 +6,6 @@ namespace DetailViewer.Core.Interfaces
 {
     public interface ICsvExportService
     {
-        Task ExportRecordsToCsvAsync(string filePath, List<DocumentRecord> records);
+        Task ExportRecordsToCsvAsync(string filePath, List<DocumentDetailRecord> records);
     }
 }

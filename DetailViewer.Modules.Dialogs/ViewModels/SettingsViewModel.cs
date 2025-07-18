@@ -13,12 +13,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 {
     public class SettingsViewModel : BindableBase, IDialogAware
     {
-        private readonly IDocumentDataService _documentDataService;
         private readonly IProfileService _profileService;
         private readonly ISettingsService _settingsService;
         private readonly IActiveUserService _activeUserService;
         private readonly IPasswordService _passwordService;
-
+        private readonly IExcelExportService _exportService;
         private string _databasePath;
         private string _defaultCompanyCode;
         public string DefaultCompanyCode
@@ -112,6 +111,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public bool IsAdminOrModerator { get; private set; }
         public IEnumerable<Role> Roles { get; private set; }
         private Role _newProfileRole;
+        private IExcelImportService _importService;
+
         public Role NewProfileRole
         {
             get => _newProfileRole;
@@ -130,13 +131,20 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public event Action<IDialogResult> RequestClose;
 
-        public SettingsViewModel(IDocumentDataService documentDataService, IProfileService profileService, ISettingsService settingsService, IActiveUserService activeUserService, IPasswordService passwordService)
+        public SettingsViewModel(IProfileService profileService, 
+                                 ISettingsService settingsService, 
+                                 IActiveUserService activeUserService, 
+                                 IPasswordService passwordService,
+                                 IExcelExportService exportService,
+                                 IExcelImportService importService)
         {
-            _documentDataService = documentDataService;
+            
             _profileService = profileService;
             _settingsService = settingsService;
             _activeUserService = activeUserService;
             _passwordService = passwordService;
+            _exportService = exportService;
+            _importService = importService;
 
             //DatabasePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "detailviewer.db");
             var settings = _settingsService.LoadSettings();
@@ -214,7 +222,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 IsImporting = true;
                 ImportStatus = "Импорт...";
                 var progress = new Progress<double>(p => ImportProgress = p);
-                await _documentDataService.ImportFromExcelAsync(openFileDialog.FileName, progress);
+                await _importService.ImportFromExcelAsync(openFileDialog.FileName, progress);
                 IsImporting = false;
                 ImportStatus = "Импорт завершен.";
             }
@@ -225,7 +233,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             var saveFileDialog = new SaveFileDialog { Filter = "Excel Files|*.xlsx" };
             if (saveFileDialog.ShowDialog() == true)
             {
-                await _documentDataService.ExportToExcelAsync(saveFileDialog.FileName);
+                await _exportService.ExportToExcelAsync(saveFileDialog.FileName);
             }
         }
 

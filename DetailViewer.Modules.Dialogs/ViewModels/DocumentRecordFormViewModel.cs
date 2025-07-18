@@ -22,7 +22,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly ISettingsService _settingsService;
 
         // Data collections
-        private List<DocumentRecord> _allRecords;
+        private List<DocumentDetailRecord> _allRecords;
         private ObservableCollection<ClassifierData> _allClassifiers;
 
         // Active User Info
@@ -33,8 +33,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public string Title => "Форма записи документа";
         public event Action<IDialogResult> RequestClose;
 
-        private DocumentRecord _documentRecord;
-        public DocumentRecord DocumentRecord
+        private DocumentDetailRecord _documentRecord;
+        public DocumentDetailRecord DocumentRecord
         {
             get { return _documentRecord; }
             set { SetProperty(ref _documentRecord, value); }
@@ -91,8 +91,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private ObservableCollection<ClassifierData> _filteredClassifiers;
         public ObservableCollection<ClassifierData> FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
 
-        private ObservableCollection<DocumentRecord> _filteredRecords;
-        public ObservableCollection<DocumentRecord> FilteredRecords { get => _filteredRecords; set => SetProperty(ref _filteredRecords, value); }
+        private ObservableCollection<DocumentDetailRecord> _filteredRecords;
+        public ObservableCollection<DocumentDetailRecord> FilteredRecords { get => _filteredRecords; set => SetProperty(ref _filteredRecords, value); }
 
         // --- Selected Items ---
         private ClassifierData _selectedClassifier;
@@ -106,8 +106,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
-        private DocumentRecord _selectedRecordToCopy;
-        public DocumentRecord SelectedRecordToCopy
+        private DocumentDetailRecord _selectedRecordToCopy;
+        public DocumentDetailRecord SelectedRecordToCopy
         {
             get => _selectedRecordToCopy;
             set
@@ -133,7 +133,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _settingsService = settingsService;
             _activeUserFullName = _activeUserService.CurrentUser?.ShortName;
 
-            DocumentRecord = new DocumentRecord
+            DocumentRecord = new DocumentDetailRecord
             {
                 Date = DateTime.Now,
                 FullName = _activeUserFullName,
@@ -265,7 +265,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             if (_allRecords == null || ClassNumberString?.Length != 6)
             {
-                FilteredRecords = new ObservableCollection<DocumentRecord>();
+                FilteredRecords = new ObservableCollection<DocumentDetailRecord>();
                 return;
             }
 
@@ -287,7 +287,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 records = records.Where(r => r.FullName == _activeUserFullName);
             }
 
-            FilteredRecords = new ObservableCollection<DocumentRecord>(records.OrderBy(r => r.ESKDNumber.FullCode).ToList());
+            FilteredRecords = new ObservableCollection<DocumentDetailRecord>(records.OrderBy(r => r.ESKDNumber.FullCode).ToList());
         }
 
         private void FilterClassifiers()
@@ -385,7 +385,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
-        private void CopyDataFromSelectedRecord(DocumentRecord sourceRecord)
+        private void CopyDataFromSelectedRecord(DocumentDetailRecord sourceRecord)
         {
             // Copy all fields except Date and FullName
             DocumentRecord.YASTCode = sourceRecord.YASTCode;
@@ -439,13 +439,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             if (parameters.ContainsKey("record"))
             {
-                var record = parameters.GetValue<DocumentRecord>("record");
+                var record = parameters.GetValue<DocumentDetailRecord>("record");
                 bool isFillBasedOn = parameters.ContainsKey("activeUserFullName");
 
                 if (isFillBasedOn)
                 {
                     // Create a NEW record, copying data from the passed one.
-                    DocumentRecord = new DocumentRecord
+                    DocumentRecord = new DocumentDetailRecord
                     {
                         Date = DateTime.Now,
                         FullName = _activeUserFullName, // Use active user's name

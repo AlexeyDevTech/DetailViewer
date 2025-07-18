@@ -17,7 +17,7 @@ namespace DetailViewer.Core.Services
             _logger = logger;
         }
 
-        public async Task ExportRecordsToCsvAsync(string filePath, List<DocumentRecord> records)
+        public async Task ExportRecordsToCsvAsync(string filePath, List<DocumentDetailRecord> records)
         {
             try
             {

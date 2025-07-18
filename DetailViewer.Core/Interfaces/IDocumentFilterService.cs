@@ -5,6 +5,6 @@ namespace DetailViewer.Core.Interfaces
 {
     public interface IDocumentFilterService
     {
-        List<DocumentRecord> FilterRecords(List<DocumentRecord> records, string searchTerm);
+        List<DocumentDetailRecord> FilterRecords(List<DocumentDetailRecord> records, string searchTerm);
     }
 }

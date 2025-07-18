@@ -1,32 +1,9 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using Unity;
 
 namespace DetailViewer.Core.Models
 {
-    public class DocumentRecord
-    {
-        [Key]
-        public int Id { get; set; }
-        public DateTime Date { get; set; }
-
-        public int ESKDNumberId { get; set; }
-        public ESKDNumber ESKDNumber { get; set; }
-
-        public string YASTCode { get; set; }
-        public string Name { get; set; }
-        public string AssemblyNumber { get; set; }
-        public string AssemblyName { get; set; }
-        public string ProductNumber { get; set; }
-        public string ProductName { get; set; }
-        public string FullName { get; set; }
-        public bool IsManualDetailNumber { get; set; }
-    }
-
     public class ESKDNumber
     {
         [Key]
@@ -83,18 +60,5 @@ namespace DetailViewer.Core.Models
             }
         }
 
-    }
-
-    public class Classifier
-    {
-        [Key]
-        public int Id { get; set; }
-        // имя классификатора детали 
-        public string Name { get; set; }
-        // номер классификатора детали
-        public int Number { get; set; } // например, "000001", "000002" и т.д.
-        public string Description { get; set; }
-
-        public ICollection<ESKDNumber> ESKDNumbers { get; set; }
     }
 }

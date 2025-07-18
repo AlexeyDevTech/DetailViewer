@@ -70,7 +70,7 @@
                 </StackPanel>
             </Button>
 
-            
+            <Separator />
         </ToolBar>
 
         <!--  2. Панель фильтров  -->

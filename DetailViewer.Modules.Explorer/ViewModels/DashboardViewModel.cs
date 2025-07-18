@@ -14,6 +14,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
     public class DashboardViewModel : BindableBase
     {
         private readonly IDocumentDataService _documentDataService;
+        private readonly IExcelImportService _excelImportService;
+        private readonly IExcelExportService _excelExportService;
         private readonly IDialogService _dialogService;
         private readonly ILogger _logger;
         private readonly IActiveUserService _activeUserService;
@@ -33,21 +35,21 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set { SetProperty(ref _isBusy, value); }
         }
 
-        private ObservableCollection<DocumentRecord> _documentRecords;
-        public ObservableCollection<DocumentRecord> DocumentRecords
+        private ObservableCollection<DocumentDetailRecord> _documentRecords;
+        public ObservableCollection<DocumentDetailRecord> DocumentRecords
         {
             get { return _documentRecords; }
             set { SetProperty(ref _documentRecords, value); }
         }
 
-        private DocumentRecord _selectedRecord;
-        public DocumentRecord SelectedRecord
+        private DocumentDetailRecord _selectedRecord;
+        public DocumentDetailRecord SelectedRecord
         {
             get => _selectedRecord;
             set => SetProperty(ref _selectedRecord, value);
         }
 
-        private List<DocumentRecord> _allRecords;
+        private List<DocumentDetailRecord> _allRecords;
 
         private string _eskdNumberFilter;
         public string EskdNumberFilter
@@ -137,12 +139,16 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public DelegateCommand FillBasedOnCommand { get; private set; }
         public DelegateCommand EditRecordCommand { get; private set; }
         public DelegateCommand DeleteRecordCommand { get; private set; }
+        public DelegateCommand ImportFromExcelCommand { get; private set; }
+        public DelegateCommand ExportToExcelCommand { get; private set; }
 
         private readonly ISettingsService _settingsService;
 
-        public DashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService)
+        public DashboardViewModel(IDocumentDataService documentDataService, IExcelImportService excelImportService, IExcelExportService excelExportService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService)
         {
             _documentDataService = documentDataService;
+            _excelImportService = excelImportService;
+            _excelExportService = excelExportService;
             _dialogService = dialogService;
             _logger = logger;
             _activeUserService = activeUserService;
@@ -151,14 +157,50 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             _activeUserService.CurrentUserChanged += OnCurrentUserChanged;
             OnCurrentUserChanged();
 
-            DocumentRecords = new ObservableCollection<DocumentRecord>();
+            DocumentRecords = new ObservableCollection<DocumentDetailRecord>();
             StatusText = "Готово";
 
             FillFormCommand = new DelegateCommand(FillForm);
             FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null).ObservesProperty(() => SelectedRecord);
             EditRecordCommand = new DelegateCommand(EditRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
             DeleteRecordCommand = new DelegateCommand(DeleteRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
+            ImportFromExcelCommand = new DelegateCommand(ImportFromExcel);
+            ExportToExcelCommand = new DelegateCommand(ExportToExcel);
             LoadData();
+        }
+
+        private async void ImportFromExcel()
+        {
+            var dialogParameters = new DialogParameters();
+            dialogParameters.Add("filter", "Excel Files (*.xlsx)|*.xlsx|All files (*.*)|*.*");
+            dialogParameters.Add("title", "Import from Excel");
+
+            _dialogService.ShowDialog("OpenFileDialog", dialogParameters, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    var filePath = r.Parameters.GetValue<string>("filePath");
+                    var progress = new Progress<double>(p => StatusText = $"Импорт... {p:F2}%");
+                    await _excelImportService.ImportFromExcelAsync(filePath, progress);
+                    await LoadData();
+                }
+            });
+        }
+
+        private async void ExportToExcel()
+        {
+            var dialogParameters = new DialogParameters();
+            dialogParameters.Add("filter", "Excel Files (*.xlsx)|*.xlsx|All files (*.*)|*.*");
+            dialogParameters.Add("title", "Export to Excel");
+
+            _dialogService.ShowDialog("SaveFileDialog", dialogParameters, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    var filePath = r.Parameters.GetValue<string>("filePath");
+                    await _excelExportService.ExportToExcelAsync(filePath);
+                }
+            });
         }
 
         private void OnCurrentUserChanged()
@@ -174,7 +216,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             {
                 if (r.Result == ButtonResult.OK)
                 {
-                    var updatedRecord = r.Parameters.GetValue<DocumentRecord>("record");
+                    var updatedRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
                     await _documentDataService.UpdateRecordAsync(updatedRecord);
                     await LoadData();
                 }
@@ -200,7 +242,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             {
                 if (r.Result == ButtonResult.OK)
                 {
-                    var newRecord = r.Parameters.GetValue<DocumentRecord>("record");
+                    var newRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
                     await _documentDataService.AddRecordAsync(newRecord);
                     await LoadData();
                 }
@@ -215,7 +257,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             {
                 if (r.Result == ButtonResult.OK)
                 {
-                    var newRecord = r.Parameters.GetValue<DocumentRecord>("record");
+                    var newRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
                     await _documentDataService.AddRecordAsync(newRecord);
                     await LoadData();
                 }
