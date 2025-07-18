@@ -16,10 +16,6 @@ namespace DetailViewer.Core.Models
 
         public string YASTCode { get; set; }
         public string Name { get; set; }
-        public string AssemblyNumber { get; set; }
-        public string AssemblyName { get; set; }
-        public string ProductNumber { get; set; }
-        public string ProductName { get; set; }
         public string FullName { get; set; }
         public bool IsManualDetailNumber { get; set; }
 

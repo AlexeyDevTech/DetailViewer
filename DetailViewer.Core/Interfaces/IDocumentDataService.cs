@@ -13,5 +13,11 @@ namespace DetailViewer.Core.Interfaces
         Task DeleteRecordAsync(int recordId);
         Task<List<Assembly>> GetAssembliesAsync();
         Task<List<Product>> GetProductsAsync();
+        Task DeleteAssemblyAsync(int assemblyId);
+        Task AddAssemblyAsync(Assembly assembly);
+        Task UpdateAssemblyAsync(Assembly assembly);
+        Task AddProductAsync(Product product);
+        Task UpdateProductAsync(Product product);
+        Task DeleteProductAsync(int productId);
     }
 }

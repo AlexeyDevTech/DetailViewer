@@ -67,18 +67,63 @@ namespace DetailViewer.Core.Services
             var date = ParseDate(worksheet.Cells[row, 2].Value);
             var eskdNumber = await CreateEskdNumber(eskdNumberString);
 
-            return new DocumentDetailRecord
+            var record = new DocumentDetailRecord
             {
                 Date = date,
                 ESKDNumber = eskdNumber,
                 YASTCode = worksheet.Cells[row, 4].Value?.ToString() ?? string.Empty,
                 Name = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty,
-                AssemblyNumber = worksheet.Cells[row, 6].Value?.ToString() ?? string.Empty,
-                AssemblyName = worksheet.Cells[row, 7].Value?.ToString() ?? string.Empty,
-                ProductNumber = worksheet.Cells[row, 8].Value?.ToString() ?? string.Empty,
-                ProductName = worksheet.Cells[row, 9].Value?.ToString() ?? string.Empty,
                 FullName = worksheet.Cells[row, 10].Value?.ToString() ?? string.Empty,
             };
+
+            var assemblyNumber = worksheet.Cells[row, 6].Value?.ToString();
+            var productNumber = worksheet.Cells[row, 8].Value?.ToString();
+
+            if (!string.IsNullOrEmpty(assemblyNumber))
+            {
+                var assembly = await _dbContext.Assemblies.Include(a => a.EskdNumber).FirstOrDefaultAsync(a => a.EskdNumber.FullCode == assemblyNumber);
+                if (assembly == null)
+                {
+                    assembly = new Assembly
+                    {
+                        EskdNumber = new ESKDNumber().SetCode(assemblyNumber),
+                        Name = worksheet.Cells[row, 7].Value?.ToString(),
+                    };
+                    _dbContext.Assemblies.Add(assembly);
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                var assemblyDetail = new AssemblyDetail
+                {
+                    Assembly = assembly,
+                    Detail = record
+                };
+                _dbContext.AssemblyDetails.Add(assemblyDetail);
+
+                if (!string.IsNullOrEmpty(productNumber))
+                {
+                    var product = await _dbContext.Products.Include(p => p.EskdNumber).FirstOrDefaultAsync(p => p.EskdNumber.FullCode == productNumber);
+                    if (product == null)
+                    {
+                        product = new Product
+                        {
+                            EskdNumber = new ESKDNumber().SetCode(productNumber),
+                            Name = worksheet.Cells[row, 9].Value?.ToString(),
+                        };
+                        _dbContext.Products.Add(product);
+                        await _dbContext.SaveChangesAsync();
+                    }
+
+                    var productAssembly = new ProductAssembly
+                    {
+                        Product = product,
+                        Assembly = assembly
+                    };
+                    _dbContext.ProductAssemblies.Add(productAssembly);
+                }
+            }
+
+            return record;
         }
 
         private DateTime ParseDate(object dateValue)

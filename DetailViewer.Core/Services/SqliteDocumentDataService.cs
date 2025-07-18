@@ -81,5 +81,49 @@ namespace DetailViewer.Core.Services
         {
             return await _dbContext.Products.ToListAsync();
         }
+
+        public async Task DeleteAssemblyAsync(int assemblyId)
+        {
+            var assembly = await _dbContext.Assemblies.FindAsync(assemblyId);
+            if (assembly != null)
+            {
+                _dbContext.Assemblies.Remove(assembly);
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+
+        public async Task DeleteProductAsync(int productId)
+        {
+            var product = await _dbContext.Products.FindAsync(productId);
+            if (product != null)
+            {
+                _dbContext.Products.Remove(product);
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+
+        public async Task AddAssemblyAsync(Assembly assembly)
+        {
+            _dbContext.Assemblies.Add(assembly);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task UpdateAssemblyAsync(Assembly assembly)
+        {
+            _dbContext.Assemblies.Update(assembly);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task AddProductAsync(Product product)
+        {
+            _dbContext.Products.Add(product);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task UpdateProductAsync(Product product)
+        {
+            _dbContext.Products.Update(product);
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }

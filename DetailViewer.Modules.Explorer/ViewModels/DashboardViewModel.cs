@@ -65,20 +65,6 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set { SetProperty(ref _nameFilter, value, ApplyFilters); }
         }
 
-        private string _assemblyNameFilter;
-        public string AssemblyNameFilter
-        {
-            get { return _assemblyNameFilter; }
-            set { SetProperty(ref _assemblyNameFilter, value, ApplyFilters); }
-        }
-
-        private string _productNameFilter;
-        public string ProductNameFilter
-        {
-            get { return _productNameFilter; }
-            set { SetProperty(ref _productNameFilter, value, ApplyFilters); }
-        }
-
         private string _fullNameFilter;
         public string FullNameFilter
         {
@@ -91,20 +77,6 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         {
             get { return _yastCodeFilter; }
             set { SetProperty(ref _yastCodeFilter, value, ApplyFilters); }
-        }
-
-        private string _assemblyNumberFilter;
-        public string AssemblyNumberFilter
-        {
-            get { return _assemblyNumberFilter; }
-            set { SetProperty(ref _assemblyNumberFilter, value, ApplyFilters); }
-        }
-
-        private string _productNumberFilter;
-        public string ProductNumberFilter
-        {
-            get { return _productNumberFilter; }
-            set { SetProperty(ref _productNumberFilter, value, ApplyFilters); }
         }
 
         private bool _onlyMyRecordsFilter;
@@ -314,26 +286,6 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             if (!string.IsNullOrWhiteSpace(NameFilter))
             {
                 filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.Name) && r.Name.Contains(NameFilter, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (!string.IsNullOrWhiteSpace(AssemblyNumberFilter))
-            {
-                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.AssemblyNumber) && r.AssemblyNumber.Contains(AssemblyNumberFilter, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (!string.IsNullOrWhiteSpace(AssemblyNameFilter))
-            {
-                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.AssemblyName) && r.AssemblyName.Contains(AssemblyNameFilter, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (!string.IsNullOrWhiteSpace(ProductNumberFilter))
-            {
-                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.ProductNumber) && r.ProductNumber.Contains(ProductNumberFilter, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (!string.IsNullOrWhiteSpace(ProductNameFilter))
-            {
-                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.ProductName) && r.ProductName.Contains(ProductNameFilter, StringComparison.OrdinalIgnoreCase));
             }
 
             if (!string.IsNullOrWhiteSpace(FullNameFilter))

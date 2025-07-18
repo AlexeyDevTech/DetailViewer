@@ -28,8 +28,20 @@
                         <Button
                             Margin="10,0,0,0"
                             Command="{Binding NavigateCommand}"
-                            CommandParameter="ExplorerView"
+                            CommandParameter="DashboardView"
                             Content="Реестр"
+                            Style="{StaticResource ToolBarButtonStyle}" />
+                        <Button
+                            Margin="10,0,0,0"
+                            Command="{Binding NavigateCommand}"
+                            CommandParameter="AssembliesDashboardView"
+                            Content="Сборки"
+                            Style="{StaticResource ToolBarButtonStyle}" />
+                        <Button
+                            Margin="10,0,0,0"
+                            Command="{Binding NavigateCommand}"
+                            CommandParameter="ProductsDashboardView"
+                            Content="Изделия"
                             Style="{StaticResource ToolBarButtonStyle}" />
                         <!--  Add other navigation buttons here  -->
                     </StackPanel>

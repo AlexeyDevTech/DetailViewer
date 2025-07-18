@@ -20,10 +20,6 @@ namespace DetailViewer.Core.Services
                 r.ESKDNumber?.GetCode()?.ToLower().Contains(lowerSearchTerm) == true ||
                 r.YASTCode?.ToLower().Contains(lowerSearchTerm) == true ||
                 r.Name?.ToLower().Contains(lowerSearchTerm) == true ||
-                r.AssemblyNumber?.ToLower().Contains(lowerSearchTerm) == true ||
-                r.AssemblyName?.ToLower().Contains(lowerSearchTerm) == true ||
-                r.ProductNumber?.ToLower().Contains(lowerSearchTerm) == true ||
-                r.ProductName?.ToLower().Contains(lowerSearchTerm) == true ||
                 r.FullName?.ToLower().Contains(lowerSearchTerm) == true
             ).ToList();
         }

@@ -5,6 +5,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
@@ -53,23 +54,60 @@ namespace DetailViewer.Core.Services
 
         private void AddData(ExcelWorksheet worksheet, List<DocumentDetailRecord> records)
         {
-            for (int i = 0; i < records.Count; i++)
+            var row = 2;
+            foreach (var record in records)
             {
-                var record = records[i];
-                var row = i + 2;
-
-                worksheet.Cells[row, 1].Value = record.Date.ToShortDateString();
-                worksheet.Cells[row, 2].Value = record.ESKDNumber?.FullCode;
-                worksheet.Cells[row, 3].Value = record.YASTCode;
-                worksheet.Cells[row, 4].Value = record.Name;
-                worksheet.Cells[row, 5].Value = record.AssemblyNumber;
-                worksheet.Cells[row, 6].Value = record.AssemblyName;
-                worksheet.Cells[row, 7].Value = record.ProductNumber;
-                worksheet.Cells[row, 8].Value = record.ProductName;
-                worksheet.Cells[row, 9].Value = record.FullName;
-                worksheet.Cells[row, 10].Value = record.ESKDNumber?.ClassNumber?.Name;
-                worksheet.Cells[row, 11].Value = record.ESKDNumber?.ClassNumber?.Number;
-                worksheet.Cells[row, 12].Value = record.ESKDNumber?.ClassNumber?.Description;
+                if (record.AssemblyDetails.Any())
+                {
+                    foreach (var ad in record.AssemblyDetails)
+                    {
+                        if (ad.Assembly.ProductAssemblies.Any())
+                        {
+                            foreach (var pa in ad.Assembly.ProductAssemblies)
+                            {
+                                worksheet.Cells[row, 1].Value = record.Date.ToShortDateString();
+                                worksheet.Cells[row, 2].Value = record.ESKDNumber?.FullCode;
+                                worksheet.Cells[row, 3].Value = record.YASTCode;
+                                worksheet.Cells[row, 4].Value = record.Name;
+                                worksheet.Cells[row, 5].Value = ad.Assembly.EskdNumber.FullCode;
+                                worksheet.Cells[row, 6].Value = ad.Assembly.Name;
+                                worksheet.Cells[row, 7].Value = pa.Product.EskdNumber.FullCode;
+                                worksheet.Cells[row, 8].Value = pa.Product.Name;
+                                worksheet.Cells[row, 9].Value = record.FullName;
+                                worksheet.Cells[row, 10].Value = record.ESKDNumber?.ClassNumber?.Name;
+                                worksheet.Cells[row, 11].Value = record.ESKDNumber?.ClassNumber?.Number;
+                                worksheet.Cells[row, 12].Value = record.ESKDNumber?.ClassNumber?.Description;
+                                row++;
+                            }
+                        }
+                        else
+                        {
+                            worksheet.Cells[row, 1].Value = record.Date.ToShortDateString();
+                            worksheet.Cells[row, 2].Value = record.ESKDNumber?.FullCode;
+                            worksheet.Cells[row, 3].Value = record.YASTCode;
+                            worksheet.Cells[row, 4].Value = record.Name;
+                            worksheet.Cells[row, 5].Value = ad.Assembly.EskdNumber.FullCode;
+                            worksheet.Cells[row, 6].Value = ad.Assembly.Name;
+                            worksheet.Cells[row, 9].Value = record.FullName;
+                            worksheet.Cells[row, 10].Value = record.ESKDNumber?.ClassNumber?.Name;
+                            worksheet.Cells[row, 11].Value = record.ESKDNumber?.ClassNumber?.Number;
+                            worksheet.Cells[row, 12].Value = record.ESKDNumber?.ClassNumber?.Description;
+                            row++;
+                        }
+                    }
+                }
+                else
+                {
+                    worksheet.Cells[row, 1].Value = record.Date.ToShortDateString();
+                    worksheet.Cells[row, 2].Value = record.ESKDNumber?.FullCode;
+                    worksheet.Cells[row, 3].Value = record.YASTCode;
+                    worksheet.Cells[row, 4].Value = record.Name;
+                    worksheet.Cells[row, 9].Value = record.FullName;
+                    worksheet.Cells[row, 10].Value = record.ESKDNumber?.ClassNumber?.Name;
+                    worksheet.Cells[row, 11].Value = record.ESKDNumber?.ClassNumber?.Number;
+                    worksheet.Cells[row, 12].Value = record.ESKDNumber?.ClassNumber?.Description;
+                    row++;
+                }
             }
         }
 

@@ -3,6 +3,7 @@ using DetailViewer.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -29,8 +30,30 @@ namespace DetailViewer.Core.Services
                     // Write records
                     foreach (var record in records)
                     {
-                        var line = $"{record.Date:yyyy-MM-dd},{record.ESKDNumber.GetCode()},{EscapeCsvField(record.YASTCode)},{EscapeCsvField(record.Name)},{EscapeCsvField(record.AssemblyNumber)},{EscapeCsvField(record.AssemblyName)},{EscapeCsvField(record.ProductNumber)},{EscapeCsvField(record.ProductName)},{EscapeCsvField(record.FullName)}";
-                        await writer.WriteLineAsync(line);
+                        if (record.AssemblyDetails.Any())
+                        {
+                            foreach (var ad in record.AssemblyDetails)
+                            {
+                                if (ad.Assembly.ProductAssemblies.Any())
+                                {
+                                    foreach (var pa in ad.Assembly.ProductAssemblies)
+                                    {
+                                        var line = $"{record.Date:yyyy-MM-dd},{record.ESKDNumber.GetCode()},{EscapeCsvField(record.YASTCode)},{EscapeCsvField(record.Name)},{EscapeCsvField(ad.Assembly.EskdNumber.FullCode)},{EscapeCsvField(ad.Assembly.Name)},{EscapeCsvField(pa.Product.EskdNumber.FullCode)},{EscapeCsvField(pa.Product.Name)},{EscapeCsvField(record.FullName)}";
+                                        await writer.WriteLineAsync(line);
+                                    }
+                                }
+                                else
+                                {
+                                    var line = $"{record.Date:yyyy-MM-dd},{record.ESKDNumber.GetCode()},{EscapeCsvField(record.YASTCode)},{EscapeCsvField(record.Name)},{EscapeCsvField(ad.Assembly.EskdNumber.FullCode)},{EscapeCsvField(ad.Assembly.Name)},,,{EscapeCsvField(record.FullName)}";
+                                    await writer.WriteLineAsync(line);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var line = $"{record.Date:yyyy-MM-dd},{record.ESKDNumber.GetCode()},{EscapeCsvField(record.YASTCode)},{EscapeCsvField(record.Name)},,,,,{EscapeCsvField(record.FullName)}";
+                            await writer.WriteLineAsync(line);
+                        }
                     }
                 }
                 _logger.LogInformation($"Successfully exported {records.Count} records to CSV: {filePath}");

@@ -50,20 +50,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public int DetailNumber { get => _detailNumber; set => SetProperty(ref _detailNumber, value, OnDetailNumberChanged); }
         public int? Version { get => _version; set => SetProperty(ref _version, value, OnESKDNumberPartChanged); }
 
-        // --- Assembly Number Parts ---
-        private string _assemblyPart1, _assemblyPart2, _assemblyPart3, _assemblyPart4;
-        public string AssemblyPart1 { get => _assemblyPart1; set { SetProperty(ref _assemblyPart1, value); ParseAndSetEskdNumber(value, true); UpdateAssemblyNumber(); } }
-        public string AssemblyPart2 { get => _assemblyPart2; set => SetProperty(ref _assemblyPart2, value, UpdateAssemblyNumber); }
-        public string AssemblyPart3 { get => _assemblyPart3; set => SetProperty(ref _assemblyPart3, value, UpdateAssemblyNumber); }
-        public string AssemblyPart4 { get => _assemblyPart4; set => SetProperty(ref _assemblyPart4, value, UpdateAssemblyNumber); }
-
-        // --- Product Number Parts ---
-        private string _productPart1, _productPart2, _productPart3, _productPart4;
-        public string ProductPart1 { get => _productPart1; set { SetProperty(ref _productPart1, value); ParseAndSetEskdNumber(value, false); UpdateProductNumber(); } }
-        public string ProductPart2 { get => _productPart2; set => SetProperty(ref _productPart2, value, UpdateProductNumber); }
-        public string ProductPart3 { get => _productPart3; set => SetProperty(ref _productPart3, value, UpdateProductNumber); }
-        public string ProductPart4 { get => _productPart4; set => SetProperty(ref _productPart4, value, UpdateProductNumber); }
-
         public string ESKDNumberString
         {
             get
@@ -174,69 +160,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         // --- Methods for Assembling/Disassembling Composite Numbers ---
-        private void UpdateAssemblyNumber()
-        {
-            if (string.IsNullOrEmpty(AssemblyPart1) && string.IsNullOrEmpty(AssemblyPart2) && string.IsNullOrEmpty(AssemblyPart3))
-            {
-                DocumentRecord.AssemblyNumber = string.Empty;
-            }
-            else
-            {
-                DocumentRecord.AssemblyNumber = $"{AssemblyPart1}.{AssemblyPart2}.{AssemblyPart3}" + (string.IsNullOrEmpty(AssemblyPart4) ? "" : $"-{AssemblyPart4}");
-            }
-        }
-        private void UpdateProductNumber()
-        {
-            if (string.IsNullOrEmpty(ProductPart1) && string.IsNullOrEmpty(ProductPart2) && string.IsNullOrEmpty(ProductPart3))
-            {
-                DocumentRecord.ProductNumber = string.Empty;
-            }
-            else
-            {
-                DocumentRecord.ProductNumber = $"{ProductPart1}.{ProductPart2}.{ProductPart3}" + (string.IsNullOrEmpty(ProductPart4) ? "" : $"-{ProductPart4}");
-            }
-        }
-
-        private void ParseAndSetEskdNumber(string eskdNumber, bool isAssembly)
-        {
-            if (string.IsNullOrWhiteSpace(eskdNumber)) return;
-
-            var match = System.Text.RegularExpressions.Regex.Match(eskdNumber, @"^(\w+)\.(\d+)\.(\d+)(?:-(\d+))?$");
-
-            if (match.Success)
-            {
-                if (isAssembly)
-                {
-                    AssemblyPart1 = match.Groups[1].Value;
-                    AssemblyPart2 = match.Groups[2].Value;
-                    AssemblyPart3 = match.Groups[3].Value;
-                    AssemblyPart4 = match.Groups.Count > 4 ? match.Groups[4].Value : null;
-                }
-                else
-                {
-                    ProductPart1 = match.Groups[1].Value;
-                    ProductPart2 = match.Groups[2].Value;
-                    ProductPart3 = match.Groups[3].Value;
-                    ProductPart4 = match.Groups.Count > 4 ? match.Groups[4].Value : null;
-                }
-            }
-        }
-
-        private void ParseAndSetParts(string fullNumber, Action<string, string, string, string> setter)
-        {
-            if (string.IsNullOrWhiteSpace(fullNumber))
-            {
-                setter(null, null, null, null);
-                return;
-            }
-            var parts = fullNumber.Replace('-', '.').Split('.');
-            setter(
-                parts.Length > 0 ? parts[0] : null,
-                parts.Length > 1 ? parts[1] : null,
-                parts.Length > 2 ? parts[2] : null,
-                parts.Length > 3 ? parts[3] : null
-            );
-        }
 
         // --- Data Loading ---
         private async void LoadRecords()
@@ -362,10 +285,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 // Clear relevant fields when 'New Version' is checked
                 DocumentRecord.YASTCode = null;
                 DocumentRecord.Name = null;
-                DocumentRecord.AssemblyNumber = null;
-                DocumentRecord.AssemblyName = null;
-                DocumentRecord.ProductNumber = null;
-                DocumentRecord.ProductName = null;
                 // ESKD number parts will be copied from selected record, not cleared here.
                 SelectedRecordToCopy = null; // Clear selected record
             }
@@ -424,10 +343,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             // Copy all fields except Date and FullName
             DocumentRecord.YASTCode = sourceRecord.YASTCode;
             DocumentRecord.Name = sourceRecord.Name;
-            DocumentRecord.AssemblyNumber = sourceRecord.AssemblyNumber;
-            DocumentRecord.AssemblyName = sourceRecord.AssemblyName;
-            DocumentRecord.ProductNumber = sourceRecord.ProductNumber;
-            DocumentRecord.ProductName = sourceRecord.ProductName;
 
             // ESKD Number parts
             CompanyCode = sourceRecord.ESKDNumber.CompanyCode;
@@ -435,9 +350,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             DetailNumber = sourceRecord.ESKDNumber.DetailNumber;
             FindNextVersionNumber(); // Find next version based on copied ESKD number
 
-            // Parse composite numbers for Assembly and Product
-            ParseAndSetParts(DocumentRecord.AssemblyNumber, (p1, p2, p3, p4) => { AssemblyPart1 = p1; AssemblyPart2 = p2; AssemblyPart3 = p3; AssemblyPart4 = p4; });
-            ParseAndSetParts(DocumentRecord.ProductNumber, (p1, p2, p3, p4) => { ProductPart1 = p1; ProductPart2 = p2; ProductPart3 = p3; ProductPart4 = p4; });
             RaisePropertyChanged(nameof(DocumentRecord));
             UserMessage = null; // Clear message after selection
         }
@@ -445,8 +357,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         // --- Dialog-related Methods ---
         private void Save()
         {
-            UpdateAssemblyNumber();
-            UpdateProductNumber();
             // ... other save logic ...
 
 
@@ -486,10 +396,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                         FullName = _activeUserFullName, // Use active user's name
                         YASTCode = record.YASTCode,
                         Name = record.Name,
-                        AssemblyNumber = record.AssemblyNumber,
-                        AssemblyName = record.AssemblyName,
-                        ProductNumber = record.ProductNumber,
-                        ProductName = record.ProductName,
                         ESKDNumber = new ESKDNumber()
                         {
                             CompanyCode = _settingsService.LoadSettings().DefaultCompanyCode, // Set default company code here
@@ -525,8 +431,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
 
             // Parse the composite numbers for Assembly and Product (always executed)
-            ParseAndSetParts(DocumentRecord.AssemblyNumber, (p1, p2, p3, p4) => { AssemblyPart1 = p1; AssemblyPart2 = p2; AssemblyPart3 = p3; AssemblyPart4 = p4; });
-            ParseAndSetParts(DocumentRecord.ProductNumber, (p1, p2, p3, p4) => { ProductPart1 = p1; ProductPart2 = p2; ProductPart3 = p3; ProductPart4 = p4; });
 
             // If IsNewVersionEnabled is true on dialog open (e.g., from tray menu), show message
             if (IsNewVersionEnabled)
