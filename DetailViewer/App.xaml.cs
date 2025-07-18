@@ -44,7 +44,7 @@ namespace DetailViewer
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            string logFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Logs", "app.log");
+            string logFilePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Logs", "app.log");
             containerRegistry.RegisterSingleton<ILogger>(() => new FileLogger(logFilePath));
             containerRegistry.RegisterSingleton<ISettingsService, JsonSettingsService>();
             containerRegistry.RegisterSingleton<IDocumentFilterService, DocumentFilterService>();
@@ -99,7 +99,7 @@ namespace DetailViewer
         private void InitializeNotifyIcon()
         {
             _notifyIcon = new NotifyIcon();
-            _notifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
+            _notifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
             _notifyIcon.Visible = true;
             _notifyIcon.Text = "Detail Viewer - Загрузка...";
 

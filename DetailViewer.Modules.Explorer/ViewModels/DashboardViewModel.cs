@@ -217,7 +217,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 if (r.Result == ButtonResult.OK)
                 {
                     var updatedRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
-                    await _documentDataService.UpdateRecordAsync(updatedRecord);
+                    var assemblyId = r.Parameters.GetValue<int?>("assemblyId");
+                    await _documentDataService.UpdateRecordAsync(updatedRecord, assemblyId);
                     await LoadData();
                 }
             });
@@ -243,7 +244,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 if (r.Result == ButtonResult.OK)
                 {
                     var newRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
-                    await _documentDataService.AddRecordAsync(newRecord);
+                    var assemblyId = r.Parameters.GetValue<int?>("assemblyId");
+                    await _documentDataService.AddRecordAsync(newRecord, assemblyId);
                     await LoadData();
                 }
             });
@@ -258,7 +260,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 if (r.Result == ButtonResult.OK)
                 {
                     var newRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
-                    await _documentDataService.AddRecordAsync(newRecord);
+                    var assemblyId = r.Parameters.GetValue<int?>("assemblyId");
+                    await _documentDataService.AddRecordAsync(newRecord, assemblyId);
                     await LoadData();
                 }
             });

@@ -94,6 +94,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private ObservableCollection<DocumentDetailRecord> _filteredRecords;
         public ObservableCollection<DocumentDetailRecord> FilteredRecords { get => _filteredRecords; set => SetProperty(ref _filteredRecords, value); }
 
+        private ObservableCollection<Assembly> _assemblies;
+        public ObservableCollection<Assembly> Assemblies { get => _assemblies; set => SetProperty(ref _assemblies, value); }
+
+        private ObservableCollection<Product> _products;
+        public ObservableCollection<Product> Products { get => _products; set => SetProperty(ref _products, value); }
+
         // --- Selected Items ---
         private ClassifierData _selectedClassifier;
         public ClassifierData SelectedClassifier
@@ -118,6 +124,20 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                     CopyDataFromSelectedRecord(value);
                 }
             }
+        }
+
+        private Assembly _selectedAssembly;
+        public Assembly SelectedAssembly
+        {
+            get => _selectedAssembly;
+            set => SetProperty(ref _selectedAssembly, value);
+        }
+
+        private Product _selectedProduct;
+        public Product SelectedProduct
+        {
+            get => _selectedProduct;
+            set => SetProperty(ref _selectedProduct, value);
         }
 
         // --- Commands ---
@@ -149,6 +169,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
             LoadClassifiers();
             LoadRecords();
+            LoadAssemblies();
+            LoadProducts();
         }
 
         // --- Methods for Assembling/Disassembling Composite Numbers ---
@@ -258,6 +280,18 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 }
             }
             return flattenedList;
+        }
+
+        private async void LoadAssemblies()
+        {
+            var assemblies = await _documentDataService.GetAssembliesAsync();
+            Assemblies = new ObservableCollection<Assembly>(assemblies);
+        }
+
+        private async void LoadProducts()
+        {
+            var products = await _documentDataService.GetProductsAsync();
+            Products = new ObservableCollection<Product>(products);
         }
 
         // --- Filtering Logic ---
@@ -427,6 +461,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             DocumentRecord.FullName = DocumentRecord.FullName;
             var result = new DialogResult(ButtonResult.OK);
             result.Parameters.Add("record", DocumentRecord);
+            result.Parameters.Add("assemblyId", SelectedAssembly?.Id);
             RequestClose?.Invoke(result);
         }
 

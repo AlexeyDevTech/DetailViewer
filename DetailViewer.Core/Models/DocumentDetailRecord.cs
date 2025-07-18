@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -21,5 +22,7 @@ namespace DetailViewer.Core.Models
         public string ProductName { get; set; }
         public string FullName { get; set; }
         public bool IsManualDetailNumber { get; set; }
+
+        public virtual ICollection<AssemblyDetail> AssemblyDetails { get; set; } = new List<AssemblyDetail>();
     }
 }

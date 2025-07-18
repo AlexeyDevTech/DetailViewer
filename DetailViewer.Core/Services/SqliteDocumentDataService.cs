@@ -22,17 +22,43 @@ namespace DetailViewer.Core.Services
             return await _dbContext.DocumentRecords.Include(r => r.ESKDNumber).ThenInclude(e => e.ClassNumber).ToListAsync();
         }
 
-        public async Task AddRecordAsync(DocumentDetailRecord record)
+        public async Task AddRecordAsync(DocumentDetailRecord record, int? assemblyId)
         {
-            _dbContext.Classifiers.Add(record.ESKDNumber.ClassNumber);
-            _dbContext.ESKDNumbers.Add(record.ESKDNumber);
             _dbContext.DocumentRecords.Add(record);
             await _dbContext.SaveChangesAsync();
+
+            if (assemblyId.HasValue)
+            {
+                var assemblyDetail = new AssemblyDetail
+                {
+                    AssemblyId = assemblyId.Value,
+                    DetailId = record.Id
+                };
+                _dbContext.AssemblyDetails.Add(assemblyDetail);
+                await _dbContext.SaveChangesAsync();
+            }
         }
 
-        public async Task UpdateRecordAsync(DocumentDetailRecord record)
+        public async Task UpdateRecordAsync(DocumentDetailRecord record, int? assemblyId)
         {
             _dbContext.DocumentRecords.Update(record);
+
+            var existingLink = await _dbContext.AssemblyDetails.FirstOrDefaultAsync(ad => ad.DetailId == record.Id);
+            if (existingLink != null)
+            {
+                _dbContext.AssemblyDetails.Remove(existingLink);
+            }
+
+            if (assemblyId.HasValue)
+            {
+                var newLink = new AssemblyDetail
+                {
+                    AssemblyId = assemblyId.Value,
+                    DetailId = record.Id
+                };
+                _dbContext.AssemblyDetails.Add(newLink);
+            }
+
             await _dbContext.SaveChangesAsync();
         }
 
@@ -44,6 +70,16 @@ namespace DetailViewer.Core.Services
                 _dbContext.DocumentRecords.Remove(record);
                 await _dbContext.SaveChangesAsync();
             }
+        }
+
+        public async Task<List<Assembly>> GetAssembliesAsync()
+        {
+            return await _dbContext.Assemblies.ToListAsync();
+        }
+
+        public async Task<List<Product>> GetProductsAsync()
+        {
+            return await _dbContext.Products.ToListAsync();
         }
     }
 }
