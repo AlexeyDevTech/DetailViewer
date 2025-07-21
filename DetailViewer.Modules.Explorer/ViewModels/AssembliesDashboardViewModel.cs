@@ -3,7 +3,10 @@ using DetailViewer.Core.Models;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Services.Dialogs;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Modules.Explorer.ViewModels
@@ -12,6 +15,21 @@ namespace DetailViewer.Modules.Explorer.ViewModels
     {
         private readonly IDocumentDataService _documentDataService;
         private readonly IDialogService _dialogService;
+        private readonly ILogger _logger;
+
+        private string _statusText;
+        public string StatusText
+        {
+            get { return _statusText; }
+            set { SetProperty(ref _statusText, value); }
+        }
+
+        private bool _isBusy;
+        public bool IsBusy
+        {
+            get { return _isBusy; }
+            set { SetProperty(ref _isBusy, value); }
+        }
 
         private ObservableCollection<Assembly> _assemblies;
         public ObservableCollection<Assembly> Assemblies
@@ -20,37 +38,47 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set { SetProperty(ref _assemblies, value); }
         }
 
+        private Assembly _selectedAssembly;
+        public Assembly SelectedAssembly
+        {
+            get => _selectedAssembly;
+            set => SetProperty(ref _selectedAssembly, value);
+        }
+
+        private List<Assembly> _allAssemblies;
+
+        private string _eskdNumberFilter;
+        public string EskdNumberFilter
+        {
+            get { return _eskdNumberFilter; }
+            set { SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
+        }
+
+        private string _nameFilter;
+        public string NameFilter
+        {
+            get { return _nameFilter; }
+            set { SetProperty(ref _nameFilter, value, ApplyFilters); }
+        }
+
         public DelegateCommand AddAssemblyCommand { get; private set; }
         public DelegateCommand EditAssemblyCommand { get; private set; }
         public DelegateCommand DeleteAssemblyCommand { get; private set; }
 
-        public AssembliesDashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService)
+        public AssembliesDashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger)
         {
             _documentDataService = documentDataService;
             _dialogService = dialogService;
+            _logger = logger;
+
+            Assemblies = new ObservableCollection<Assembly>();
+            StatusText = "Готово";
 
             AddAssemblyCommand = new DelegateCommand(AddAssembly);
             EditAssemblyCommand = new DelegateCommand(EditAssembly, () => SelectedAssembly != null).ObservesProperty(() => SelectedAssembly);
             DeleteAssemblyCommand = new DelegateCommand(DeleteAssembly, () => SelectedAssembly != null).ObservesProperty(() => SelectedAssembly);
 
-            LoadAssemblies();
-        }
-
-        private async Task LoadAssemblies()
-        {
-            var assemblies = await _documentDataService.GetAssembliesAsync();
-            Assemblies = new ObservableCollection<Assembly>(assemblies);
-        }
-
-        private void AddAssembly()
-        {
-            _dialogService.ShowDialog("AssemblyForm", null, async r =>
-            {
-                if (r.Result == ButtonResult.OK)
-                {
-                    await LoadAssemblies();
-                }
-            });
+            LoadData();
         }
 
         private void EditAssembly()
@@ -60,23 +88,79 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             {
                 if (r.Result == ButtonResult.OK)
                 {
-                    await LoadAssemblies();
+                    await LoadData();
                 }
             });
         }
 
-        private async void DeleteAssembly()
+        private void DeleteAssembly()
         {
-            // Confirmation dialog can be added here
-            await _documentDataService.DeleteAssemblyAsync(SelectedAssembly.Id);
-            await LoadAssemblies();
+            _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedAssembly.EskdNumber.FullCode}?" } }, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    await _documentDataService.DeleteAssemblyAsync(SelectedAssembly.Id);
+                    await LoadData();
+                }
+            });
         }
 
-        private Assembly _selectedAssembly;
-        public Assembly SelectedAssembly
+        private void AddAssembly()
         {
-            get { return _selectedAssembly; }
-            set { SetProperty(ref _selectedAssembly, value); }
+            _dialogService.ShowDialog("AssemblyForm", null, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    await LoadData();
+                }
+            });
+        }
+
+        private async Task LoadData()
+        {
+            IsBusy = true;
+            StatusText = "Загрузка данных...";
+            try
+            {
+                _allAssemblies = await _documentDataService.GetAssembliesAsync();
+                ApplyFilters();
+                StatusText = $"Данные успешно загружены.";
+                _logger.LogInformation("Assemblies loaded successfully.");
+            }
+            catch (Exception ex)
+            {
+                StatusText = "Ошибка при загрузке данных.";
+                _logger.LogError($"Error loading assemblies: {ex.Message}", ex);
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        private void ApplyFilters()
+        {
+            if (_allAssemblies == null) return;
+
+            var filteredAssemblies = _allAssemblies.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(EskdNumberFilter))
+            {
+                filteredAssemblies = filteredAssemblies.Where(a => a.EskdNumber != null && a.EskdNumber.FullCode != null && a.EskdNumber.FullCode.Contains(EskdNumberFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(NameFilter))
+            {
+                filteredAssemblies = filteredAssemblies.Where(a => !string.IsNullOrEmpty(a.Name) && a.Name.Contains(NameFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            Assemblies.Clear();
+            foreach (var assembly in filteredAssemblies)
+            {
+                Assemblies.Add(assembly);
+            }
+
+            StatusText = $"Отобрано записей: {Assemblies.Count}";
         }
     }
 }

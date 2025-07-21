@@ -5,10 +5,75 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:DetailViewer.Modules.Explorer.Views"
              xmlns:prism="http://prismlibrary.com/"
+             xmlns:converters="clr-namespace:DetailViewer.Modules.Explorer.Converters"
              prism:ViewModelLocator.AutoWireViewModel="True"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </UserControl.Resources>
     <Grid>
-        <TextBlock>Products Dashboard</TextBlock>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!--  1. Панель инструментов  -->
+        <ToolBar Grid.Row="0" Padding="5">
+            <Button Command="{Binding AddProductCommand}" Style="{StaticResource ToolBarButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl Width="16" Height="16" Margin="0,0,5,0" Content="{StaticResource IconAdd}" />
+                    <TextBlock VerticalAlignment="Center" Text="Добавить изделие" />
+                </StackPanel>
+            </Button>
+
+            <Button Command="{Binding EditProductCommand}" Style="{StaticResource ToolBarButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl Width="16" Height="16" Margin="0,0,5,0" Content="{StaticResource IconEdit}" />
+                    <TextBlock VerticalAlignment="Center" Text="Изменить" />
+                </StackPanel>
+            </Button>
+
+            <Button Command="{Binding DeleteProductCommand}" Style="{StaticResource ToolBarButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <ContentControl Width="16" Height="16" Margin="0,0,5,0" Content="{StaticResource IconDelete}" />
+                    <TextBlock VerticalAlignment="Center" Text="Удалить" />
+                </StackPanel>
+            </Button>
+        </ToolBar>
+
+        <!--  2. Панель фильтров  -->
+        <Grid Grid.Row="1" Margin="5,0,5,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBox Grid.Column="0" Margin="0,0,5,0" Height="32" VerticalAlignment="Bottom" Text="{Binding EskdNumberFilter, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Grid.Column="1" Margin="0,0,5,0" Height="32" VerticalAlignment="Bottom" Text="{Binding NameFilter, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+
+        <!--  3. Основная рабочая область  -->
+        <Grid Grid.Row="2" Margin="5,0,5,5">
+            <DataGrid ItemsSource="{Binding Products}" SelectedItem="{Binding SelectedProduct}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Width="150" Binding="{Binding ESKDNumber.FullCode}" Header="ЕСКД номер" />
+                    <DataGridTextColumn Width="*" Binding="{Binding Name}" Header="Имя" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <!--  4. Статус бар  -->
+        <StatusBar Grid.Row="3">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusText}" />
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <ProgressBar Width="100" Height="15" IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}" />
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </UserControl>
