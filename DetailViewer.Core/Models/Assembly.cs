@@ -14,6 +14,11 @@ namespace DetailViewer.Core.Models
         public int Id { get; set; }
 
         /// <summary>
+        /// Идентификатор ЕСКД номера.
+        /// </summary>
+        public int EskdNumberId { get; set; }
+
+        /// <summary>
         /// ЕСКД номер сборки.
         /// </summary>
         public ESKDNumber EskdNumber { get; set; }
@@ -27,6 +32,11 @@ namespace DetailViewer.Core.Models
         /// Материал сборки.
         /// </summary>
         public string Material { get; set; }
+
+        /// <summary>
+        /// Автор сборки.
+        /// </summary>
+        public string Author { get; set; }
 
         /// <summary>
         /// Идентификатор родительской сборки (для вложенности).

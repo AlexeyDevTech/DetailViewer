@@ -121,7 +121,12 @@
 
         <!--  3. Основная рабочая область  -->
         <Grid Grid.Row="2" Margin="5,0,5,5">
-            <DataGrid ItemsSource="{Binding DocumentRecords}" SelectedItem="{Binding SelectedRecord}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <DataGrid Grid.Column="0" ItemsSource="{Binding DocumentRecords}" SelectedItem="{Binding SelectedRecord}">
                 <DataGrid.Columns>
                     <DataGridTextColumn
                         Width="120"
@@ -145,6 +150,56 @@
                         Header="ФИО" />
                 </DataGrid.Columns>
             </DataGrid>
+
+            <Grid Grid.Column="1" Margin="5,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="5" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DataGrid Grid.Row="0" ItemsSource="{Binding ParentAssemblies}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn
+                            Width="120"
+                            Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}"
+                            Header="Дата" />
+                        <DataGridTextColumn
+                            Width="150"
+                            Binding="{Binding ESKDNumber.FullCode}"
+                            Header="ЕСКД номер сборки" />
+                        <DataGridTextColumn
+                            Width="200"
+                            Binding="{Binding Name}"
+                            Header="Наименование сборки" />
+                        <DataGridTextColumn
+                            Width="150"
+                            Binding="{Binding FullName}"
+                            Header="ФИО автора" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <DataGrid Grid.Row="2" ItemsSource="{Binding ParentProducts}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn
+                            Width="120"
+                            Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}"
+                            Header="Дата" />
+                        <DataGridTextColumn
+                            Width="150"
+                            Binding="{Binding ESKDNumber.FullCode}"
+                            Header="ЕСКД номер изделия" />
+                        <DataGridTextColumn
+                            Width="200"
+                            Binding="{Binding Name}"
+                            Header="Наименование изделия" />
+                        <DataGridTextColumn
+                            Width="150"
+                            Binding="{Binding FullName}"
+                            Header="ФИО автора" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
         </Grid>
 
         <!--  4. Статус бар  -->

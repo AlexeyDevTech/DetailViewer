@@ -13,6 +13,11 @@ namespace DetailViewer.Core.Models
         public int Id { get; set; }
 
         /// <summary>
+        /// Идентификатор ЕСКД номера.
+        /// </summary>
+        public int EskdNumberId { get; set; }
+
+        /// <summary>
         /// ЕСКД номер изделия.
         /// </summary>
         public ESKDNumber EskdNumber { get; set; }
@@ -26,6 +31,11 @@ namespace DetailViewer.Core.Models
         /// Материал изделия.
         /// </summary>
         public string Material { get; set; }
+
+        /// <summary>
+        /// Автор изделия.
+        /// </summary>
+        public string Author { get; set; }
 
         /// <summary>
         /// Коллекция связей со сборками, входящими в состав изделия.

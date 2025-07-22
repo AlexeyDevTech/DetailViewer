@@ -62,6 +62,7 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Width="150" Binding="{Binding ESKDNumber.FullCode}" Header="ЕСКД номер" />
                     <DataGridTextColumn Width="*" Binding="{Binding Name}" Header="Имя" />
+                    <DataGridTextColumn Width="150" Binding="{Binding Author}" Header="ФИО" />
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

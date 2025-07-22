@@ -8,8 +8,8 @@ namespace DetailViewer.Core.Interfaces
     public interface IDocumentDataService
     {
         Task<List<DocumentDetailRecord>> GetAllRecordsAsync();
-        Task AddRecordAsync(DocumentDetailRecord record, int? assemblyId);
-        Task UpdateRecordAsync(DocumentDetailRecord record, int? assemblyId);
+        Task AddRecordAsync(DocumentDetailRecord record, List<int> assemblyIds);
+        Task UpdateRecordAsync(DocumentDetailRecord record, List<int> assemblyIds);
         Task DeleteRecordAsync(int recordId);
         Task<List<Assembly>> GetAssembliesAsync();
         Task<List<Product>> GetProductsAsync();
@@ -19,5 +19,9 @@ namespace DetailViewer.Core.Interfaces
         Task AddProductAsync(Product product);
         Task UpdateProductAsync(Product product);
         Task DeleteProductAsync(int productId);
+        Task<Classifier> GetOrCreateClassifierAsync(string code);
+        Task<List<Assembly>> GetParentAssemblies(int detailId);
+        Task<List<DocumentDetailRecord>> GetParentProducts(int detailId);
+        Task<List<Product>> GetProductsByAssemblyId(int assemblyId);
     }
 }

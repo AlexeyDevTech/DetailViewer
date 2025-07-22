@@ -20,6 +20,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly IActiveUserService _activeUserService;
         private readonly ILogger _logger;
         private readonly ISettingsService _settingsService;
+        private readonly IDialogService _dialogService;
 
         // Data collections
         private List<DocumentDetailRecord> _allRecords;
@@ -80,22 +81,18 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private ObservableCollection<DocumentDetailRecord> _filteredRecords;
         public ObservableCollection<DocumentDetailRecord> FilteredRecords { get => _filteredRecords; set => SetProperty(ref _filteredRecords, value); }
 
-        private ObservableCollection<Assembly> _assemblies;
-        public ObservableCollection<Assembly> Assemblies { get => _assemblies; set => SetProperty(ref _assemblies, value); }
-
-        private ObservableCollection<Product> _products;
-        public ObservableCollection<Product> Products { get => _products; set => SetProperty(ref _products, value); }
-
-        // --- Selected Items ---
-        private ClassifierData _selectedClassifier;
-        public ClassifierData SelectedClassifier
+        private ObservableCollection<Assembly> _linkedAssemblies;
+        public ObservableCollection<Assembly> LinkedAssemblies
         {
-            get => _selectedClassifier;
-            set
-            {
-                SetProperty(ref _selectedClassifier, value);
-                if (value != null) ClassNumberString = value.Code;
-            }
+            get { return _linkedAssemblies; }
+            set { SetProperty(ref _linkedAssemblies, value); }
+        }
+
+        private Assembly _selectedLinkedAssembly;
+        public Assembly SelectedLinkedAssembly
+        {
+            get { return _selectedLinkedAssembly; }
+            set { SetProperty(ref _selectedLinkedAssembly, value); }
         }
 
         private DocumentDetailRecord _selectedRecordToCopy;
@@ -112,31 +109,20 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
-        private Assembly _selectedAssembly;
-        public Assembly SelectedAssembly
-        {
-            get => _selectedAssembly;
-            set => SetProperty(ref _selectedAssembly, value);
-        }
-
-        private Product _selectedProduct;
-        public Product SelectedProduct
-        {
-            get => _selectedProduct;
-            set => SetProperty(ref _selectedProduct, value);
-        }
-
         // --- Commands ---
         public DelegateCommand SaveCommand { get; private set; }
         public DelegateCommand CancelCommand { get; private set; }
+        public DelegateCommand AddAssemblyLinkCommand { get; private set; }
+        public DelegateCommand RemoveAssemblyLinkCommand { get; private set; }
 
         // --- Constructor ---
-        public DocumentRecordFormViewModel(IDocumentDataService documentDataService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService)
+        public DocumentRecordFormViewModel(IDocumentDataService documentDataService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService, IDialogService dialogService)
         {
             _documentDataService = documentDataService;
             _logger = logger;
             _activeUserService = activeUserService;
             _settingsService = settingsService;
+            _dialogService = dialogService;
             _activeUserFullName = _activeUserService.CurrentUser?.ShortName;
 
             DocumentRecord = new DocumentDetailRecord
@@ -150,13 +136,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 }
             };
 
+            LinkedAssemblies = new ObservableCollection<Assembly>();
+
             SaveCommand = new DelegateCommand(Save);
             CancelCommand = new DelegateCommand(Cancel);
+            AddAssemblyLinkCommand = new DelegateCommand(AddAssemblyLink);
+            RemoveAssemblyLinkCommand = new DelegateCommand(RemoveAssemblyLink, () => SelectedLinkedAssembly != null).ObservesProperty(() => SelectedLinkedAssembly);
 
             LoadClassifiers();
             LoadRecords();
-            LoadAssemblies();
-            LoadProducts();
         }
 
         // --- Methods for Assembling/Disassembling Composite Numbers ---
@@ -205,17 +193,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             return flattenedList;
         }
 
-        private async void LoadAssemblies()
-        {
-            var assemblies = await _documentDataService.GetAssembliesAsync();
-            Assemblies = new ObservableCollection<Assembly>(assemblies);
-        }
+        
 
-        private async void LoadProducts()
-        {
-            var products = await _documentDataService.GetProductsAsync();
-            Products = new ObservableCollection<Product>(products);
-        }
+        
 
         // --- Filtering Logic ---
         private void FilterRecords()
@@ -371,16 +351,42 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             DocumentRecord.FullName = DocumentRecord.FullName;
             var result = new DialogResult(ButtonResult.OK);
             result.Parameters.Add("record", DocumentRecord);
-            result.Parameters.Add("assemblyId", SelectedAssembly?.Id);
+            result.Parameters.Add("linkedAssemblies", LinkedAssemblies.ToList());
             RequestClose?.Invoke(result);
         }
 
         private void Cancel() => RequestClose?.Invoke(new DialogResult(ButtonResult.Cancel));
 
+        private void AddAssemblyLink()
+        {
+            _dialogService.ShowDialog("SelectAssemblyDialog", new DialogParameters(), r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    var selectedAssemblies = r.Parameters.GetValue<List<Assembly>>("selectedAssemblies");
+                    foreach (var assembly in selectedAssemblies)
+                    {
+                        if (!LinkedAssemblies.Any(a => a.Id == assembly.Id))
+                        {
+                            LinkedAssemblies.Add(assembly);
+                        }
+                    }
+                }
+            });
+        }
+
+        private void RemoveAssemblyLink()
+        {
+            if (SelectedLinkedAssembly != null)
+            {
+                LinkedAssemblies.Remove(SelectedLinkedAssembly);
+            }
+        }
+
         public bool CanCloseDialog() => true;
         public void OnDialogClosed() { }
 
-        public void OnDialogOpened(IDialogParameters parameters)
+        public async void OnDialogOpened(IDialogParameters parameters)
         {
             if (parameters.ContainsKey("record"))
             {
@@ -422,6 +428,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                     DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
                     Version = DocumentRecord.ESKDNumber.Version;
                     IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
+
+                    var linkedAssemblies = await _documentDataService.GetParentAssemblies(DocumentRecord.Id);
+                    LinkedAssemblies = new ObservableCollection<Assembly>(linkedAssemblies);
                 }
             }
             else if (parameters.ContainsKey("companyCode"))

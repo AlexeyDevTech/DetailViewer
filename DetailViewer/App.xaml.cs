@@ -61,6 +61,7 @@ namespace DetailViewer
             // dbContext.Database.Migrate();
 
             // Register the data service
+            containerRegistry.RegisterSingleton<IClassifierProvider, ClassifierProvider>();
             containerRegistry.RegisterSingleton<IDocumentDataService, SqliteDocumentDataService>();
             containerRegistry.RegisterSingleton<IProfileService, ProfileService>();
             containerRegistry.RegisterSingleton<IPasswordService, PasswordService>();

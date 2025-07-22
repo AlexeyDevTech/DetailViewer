@@ -46,7 +46,27 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public DocumentDetailRecord SelectedRecord
         {
             get => _selectedRecord;
-            set => SetProperty(ref _selectedRecord, value);
+            set
+            {
+                if (SetProperty(ref _selectedRecord, value))
+                {
+                    LoadParentAssembliesAndProducts();
+                }
+            }
+        }
+
+        private ObservableCollection<Assembly> _parentAssemblies;
+        public ObservableCollection<Assembly> ParentAssemblies
+        {
+            get => _parentAssemblies;
+            set => SetProperty(ref _parentAssemblies, value);
+        }
+
+        private ObservableCollection<DocumentDetailRecord> _parentProducts;
+        public ObservableCollection<DocumentDetailRecord> ParentProducts
+        {
+            get => _parentProducts;
+            set => SetProperty(ref _parentProducts, value);
         }
 
         private List<DocumentDetailRecord> _allRecords;
@@ -132,6 +152,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             DocumentRecords = new ObservableCollection<DocumentDetailRecord>();
             StatusText = "Готово";
 
+            ParentAssemblies = new ObservableCollection<Assembly>();
+            ParentProducts = new ObservableCollection<DocumentDetailRecord>();
+
             FillFormCommand = new DelegateCommand(FillForm);
             FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null).ObservesProperty(() => SelectedRecord);
             EditRecordCommand = new DelegateCommand(EditRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
@@ -139,6 +162,23 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             ImportFromExcelCommand = new DelegateCommand(ImportFromExcel);
             ExportToExcelCommand = new DelegateCommand(ExportToExcel);
             LoadData();
+        }
+
+        private async void LoadParentAssembliesAndProducts()
+        {
+            ParentAssemblies.Clear();
+            ParentProducts.Clear();
+
+            if (SelectedRecord == null)
+                return;
+
+            var parentAssemblies = await _documentDataService.GetParentAssemblies(SelectedRecord.Id);
+            foreach(var item in parentAssemblies)
+            {
+                ParentAssemblies.Add(item);
+            }
+            var parentProducts = await _documentDataService.GetParentProducts(SelectedRecord.Id);
+            ParentProducts.AddRange(parentProducts);
         }
 
         private async void ImportFromExcel()
@@ -189,8 +229,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 if (r.Result == ButtonResult.OK)
                 {
                     var updatedRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
-                    var assemblyId = r.Parameters.GetValue<int?>("assemblyId");
-                    await _documentDataService.UpdateRecordAsync(updatedRecord, assemblyId);
+                    var linkedAssemblies = r.Parameters.GetValue<List<Assembly>>("linkedAssemblies");
+                    await _documentDataService.UpdateRecordAsync(updatedRecord, linkedAssemblies.Select(a => a.Id).ToList());
                     await LoadData();
                 }
             });
@@ -216,8 +256,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 if (r.Result == ButtonResult.OK)
                 {
                     var newRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
-                    var assemblyId = r.Parameters.GetValue<int?>("assemblyId");
-                    await _documentDataService.AddRecordAsync(newRecord, assemblyId);
+                    var linkedAssemblies = r.Parameters.GetValue<List<Assembly>>("linkedAssemblies");
+                    await _documentDataService.AddRecordAsync(newRecord, linkedAssemblies.Select(a => a.Id).ToList());
                     await LoadData();
                 }
             });
@@ -232,8 +272,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 if (r.Result == ButtonResult.OK)
                 {
                     var newRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
-                    var assemblyId = r.Parameters.GetValue<int?>("assemblyId");
-                    await _documentDataService.AddRecordAsync(newRecord, assemblyId);
+                    var linkedAssemblies = r.Parameters.GetValue<List<Assembly>>("linkedAssemblies");
+                    await _documentDataService.AddRecordAsync(newRecord, linkedAssemblies.Select(a => a.Id).ToList());
                     await LoadData();
                 }
             });

@@ -36,10 +36,16 @@ namespace DetailViewer.Core.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Product>()
-                .HasOne(p => p.EskdNumber);
+                .HasOne(p => p.EskdNumber)
+                .WithMany()
+                .HasForeignKey(p => p.EskdNumberId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Assembly>()
-                .HasOne(a => a.EskdNumber);
+                .HasOne(a => a.EskdNumber)
+                .WithMany()
+                .HasForeignKey(a => a.EskdNumberId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Assembly>()
                 .HasMany(a => a.SubAssemblies)

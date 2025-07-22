@@ -95,7 +95,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void DeleteAssembly()
         {
-            _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedAssembly.EskdNumber.FullCode}?" } }, async r =>
+            _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedAssembly.EskdNumber?.FullCode ?? "<unf>"}?" } }, async r =>
             {
                 if (r.Result == ButtonResult.OK)
                 {
