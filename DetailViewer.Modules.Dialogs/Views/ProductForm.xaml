@@ -73,10 +73,10 @@
         </DataGrid>
 
         <TextBlock Grid.Row="3" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="Наименование:" />
-        <TextBox Grid.Row="3" Grid.Column="1" Margin="5" Text="{Binding Product.Name}" />
+        <TextBox Grid.Row="3" Grid.Column="1" Margin="5" Text="{Binding ProductName}" />
 
         <TextBlock Grid.Row="4" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="Материал:" />
-        <TextBox Grid.Row="4" Grid.Column="1" Margin="5" Text="{Binding Product.Material}" />
+        <TextBox Grid.Row="4" Grid.Column="1" Margin="5" Text="{Binding ProductMaterial}" />
 
         <TextBlock Grid.Row="5" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="ФИО:" />
         <TextBox Grid.Row="5" Grid.Column="1" Margin="5" IsReadOnly="True" Text="{Binding Product.Author}" />

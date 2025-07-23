@@ -32,7 +32,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set { SetProperty(ref _product, value); }
         }
 
-        private string _companyCode, _classNumberString;
+        private string _companyCode, _classNumberString, _productName, _productMaterial;
         private int _detailNumber;
         private int? _version;
 
@@ -40,6 +40,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public string ClassNumberString { get => _classNumberString; set => SetProperty(ref _classNumberString, value, OnClassNumberStringChanged); }
         public int DetailNumber { get => _detailNumber; set => SetProperty(ref _detailNumber, value, OnESKDNumberPartChanged); }
         public int? Version { get => _version; set => SetProperty(ref _version, value, OnESKDNumberPartChanged); }
+        public string ProductName { get => _productName; set => SetProperty(ref _productName, value); }
+        public string ProductMaterial { get => _productMaterial; set => SetProperty(ref _productMaterial, value); }
 
         public string ESKDNumberString
         {
@@ -189,6 +191,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private async void Save()
         {
+            Product.Name = ProductName;
+            Product.Material = ProductMaterial;
             Product.EskdNumber.CompanyCode = CompanyCode;
             Product.EskdNumber.DetailNumber = DetailNumber;
             Product.EskdNumber.Version = Version;
@@ -223,13 +227,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public void OnDialogOpened(IDialogParameters parameters)
         {
-            if (parameters.ContainsKey("product"))
+            if (parameters.ContainsKey(DialogParameterKeys.Product))
             {
-                Product = parameters.GetValue<Product>("product");
+                Product = parameters.GetValue<Product>(DialogParameterKeys.Product);
                 CompanyCode = Product.EskdNumber.CompanyCode;
                 ClassNumberString = Product.EskdNumber.ClassNumber?.Number.ToString("D6");
                 DetailNumber = Product.EskdNumber.DetailNumber;
                 Version = Product.EskdNumber.Version;
+                ProductName = Product.Name;
+                ProductMaterial = Product.Material;
             }
             else
             {

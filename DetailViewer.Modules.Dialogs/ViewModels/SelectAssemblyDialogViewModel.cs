@@ -109,7 +109,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private void Ok()
         {
             var result = new DialogResult(ButtonResult.OK);
-            result.Parameters.Add("selectedAssemblies", FilteredAssemblies.Where(a => a.IsSelected).Select(a => a.Item).ToList());
+            result.Parameters.Add(DialogParameterKeys.SelectedAssemblies, FilteredAssemblies.Where(a => a.IsSelected).Select(a => a.Item).ToList());
             RequestClose?.Invoke(result);
         }
 

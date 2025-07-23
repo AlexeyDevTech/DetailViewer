@@ -337,22 +337,27 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         // --- Dialog-related Methods ---
         private void Save()
         {
-            // ... other save logic ...
-
-
             DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
             if (int.TryParse(ClassNumberString, out int classNumber))
             {
+                if (DocumentRecord.ESKDNumber.ClassNumber == null)
+                {
+                    DocumentRecord.ESKDNumber.ClassNumber = new Classifier();
+                }
                 DocumentRecord.ESKDNumber.ClassNumber.Number = classNumber;
             }
             DocumentRecord.ESKDNumber.DetailNumber = DetailNumber;
             DocumentRecord.ESKDNumber.Version = Version;
 
-            DocumentRecord.FullName = DocumentRecord.FullName;
+            RequestClose?.Invoke(BuildDialogResult());
+        }
+
+        private IDialogResult BuildDialogResult()
+        {
             var result = new DialogResult(ButtonResult.OK);
             result.Parameters.Add("record", DocumentRecord);
             result.Parameters.Add("linkedAssemblies", LinkedAssemblies.ToList());
-            RequestClose?.Invoke(result);
+            return result;
         }
 
         private void Cancel() => RequestClose?.Invoke(new DialogResult(ButtonResult.Cancel));
@@ -386,67 +391,76 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public bool CanCloseDialog() => true;
         public void OnDialogClosed() { }
 
-        public async void OnDialogOpened(IDialogParameters parameters)
+        public void OnDialogOpened(IDialogParameters parameters)
         {
-            if (parameters.ContainsKey("record"))
+            if (parameters.ContainsKey(DialogParameterKeys.Record))
             {
-                var record = parameters.GetValue<DocumentDetailRecord>("record");
-                bool isFillBasedOn = parameters.ContainsKey("activeUserFullName");
-
-                if (isFillBasedOn)
+                var record = parameters.GetValue<DocumentDetailRecord>(DialogParameterKeys.Record);
+                if (parameters.ContainsKey(DialogParameterKeys.ActiveUserFullName))
                 {
-                    // Create a NEW record, copying data from the passed one.
-                    DocumentRecord = new DocumentDetailRecord
-                    {
-                        Date = DateTime.Now,
-                        FullName = _activeUserFullName, // Use active user's name
-                        YASTCode = record.YASTCode,
-                        Name = record.Name,
-                        ESKDNumber = new ESKDNumber()
-                        {
-                            CompanyCode = _settingsService.LoadSettings().DefaultCompanyCode, // Set default company code here
-                            ClassNumber = new Classifier { Number = record.ESKDNumber.ClassNumber.Number },
-                        }
-                    };
-
-                    // Populate VM properties needed for FindNextDetailNumber
-                    CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
-                    ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
-
-                    // Now find the next number and set the VM property
-                    FindNextDetailNumber();
-
-                    Version = null; // It's a new detail, not a new version
-                    IsManualDetailNumberEnabled = false;
+                    HandleFillBasedOnScenario(record);
                 }
-                else // This is the "Edit" case
+                else
                 {
-                    DocumentRecord = record;
-                    // Populate all VM properties from the record
-                    CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
-                    ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
-                    DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
-                    Version = DocumentRecord.ESKDNumber.Version;
-                    IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
-
-                    var linkedAssemblies = await _documentDataService.GetParentAssemblies(DocumentRecord.Id);
-                    LinkedAssemblies = new ObservableCollection<Assembly>(linkedAssemblies);
+                    HandleEditScenario(record);
                 }
             }
-            else if (parameters.ContainsKey("companyCode"))
+            else
             {
-                CompanyCode = parameters.GetValue<string>("companyCode");
-                DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
+                HandleNewRecordScenario(parameters);
             }
 
-            // Parse the composite numbers for Assembly and Product (always executed)
-
-            // If IsNewVersionEnabled is true on dialog open (e.g., from tray menu), show message
             if (IsNewVersionEnabled)
             {
                 UserMessage = "Выберите запись для копирования";
             }
         }
+
+        private async void HandleEditScenario(DocumentDetailRecord record)
+        {
+            DocumentRecord = record;
+            CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
+            ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
+            DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
+            Version = DocumentRecord.ESKDNumber.Version;
+            IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
+
+            var linkedAssemblies = await _documentDataService.GetParentAssemblies(DocumentRecord.Id);
+            LinkedAssemblies = new ObservableCollection<Assembly>(linkedAssemblies);
+        }
+
+        private void HandleFillBasedOnScenario(DocumentDetailRecord record)
+        {
+            DocumentRecord = new DocumentDetailRecord
+            {
+                Date = DateTime.Now,
+                FullName = _activeUserFullName,
+                YASTCode = record.YASTCode,
+                Name = record.Name,
+                ESKDNumber = new ESKDNumber()
+                {
+                    CompanyCode = _settingsService.LoadSettings().DefaultCompanyCode,
+                    ClassNumber = new Classifier { Number = record.ESKDNumber.ClassNumber.Number },
+                }
+            };
+
+            CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
+            ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
+            FindNextDetailNumber();
+            Version = null;
+            IsManualDetailNumberEnabled = false;
+        }
+
+        private void HandleNewRecordScenario(IDialogParameters parameters)
+        {
+            if (parameters.ContainsKey(DialogParameterKeys.CompanyCode))
+            {
+                CompanyCode = parameters.GetValue<string>(DialogParameterKeys.CompanyCode);
+                DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
+            }
+        }
+
+        
     }
 }
 
