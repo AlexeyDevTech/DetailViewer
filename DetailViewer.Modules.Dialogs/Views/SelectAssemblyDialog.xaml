@@ -31,15 +31,28 @@
             SelectedItem="{Binding SelectedAssembly}"
             SelectionMode="Single">
             <DataGrid.Columns>
-                <DataGridCheckBoxColumn Binding="{Binding IsSelected}" />
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn
                     Width="*"
-                    Binding="{Binding Item.ESKDNumber.FullCode}"
+                    Binding="{Binding Item.EskdNumber.FullCode}"
                     Header="ЕСКД" />
                 <DataGridTextColumn
                     Width="2*"
                     Binding="{Binding Item.Name}"
                     Header="Наименование" />
+                <DataGridTextColumn
+                    Width="2*"
+                    Binding="{Binding Item.Author}"
+                    Header="ФИО автора" />
             </DataGrid.Columns>
         </DataGrid>
 
@@ -57,11 +70,15 @@
             <DataGrid.Columns>
                 <DataGridTextColumn
                     Width="*"
-                    Binding="{Binding ESKDNumber.FullCode}"
+                    Binding="{Binding EskdNumber.FullCode}"
                     Header="ЕСКД" />
                 <DataGridTextColumn
                     Width="2*"
                     Binding="{Binding Name}"
+                    Header="Наименование" />
+                <DataGridTextColumn
+                    Width="2*"
+                    Binding="{Binding Author}"
                     Header="Наименование" />
             </DataGrid.Columns>
         </DataGrid>

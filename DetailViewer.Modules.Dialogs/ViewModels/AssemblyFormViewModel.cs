@@ -20,6 +20,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly ILogger _logger;
         private readonly ISettingsService _settingsService;
         private readonly IActiveUserService _activeUserService;
+        private readonly IDialogService _dialogService;
 
         public string Title => "Форма сборки";
 
@@ -30,6 +31,20 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             get { return _assembly; }
             set { SetProperty(ref _assembly, value); }
+        }
+
+        private ObservableCollection<Assembly> _parentAssemblies;
+        public ObservableCollection<Assembly> ParentAssemblies
+        {
+            get { return _parentAssemblies; }
+            set { SetProperty(ref _parentAssemblies, value); }
+        }
+
+        private ObservableCollection<Product> _relatedProducts;
+        public ObservableCollection<Product> RelatedProducts
+        {
+            get { return _relatedProducts; }
+            set { SetProperty(ref _relatedProducts, value); }
         }
 
         private string _companyCode, _classNumberString;
@@ -85,13 +100,19 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public DelegateCommand SaveCommand { get; private set; }
         public DelegateCommand CancelCommand { get; private set; }
+        public DelegateCommand AddParentAssemblyCommand { get; private set; }
+        public DelegateCommand<Assembly> RemoveParentAssemblyCommand { get; private set; }
+        public DelegateCommand AddRelatedProductCommand { get; private set; }
+        public DelegateCommand<Product> RemoveRelatedProductCommand { get; private set; }
 
-        public AssemblyFormViewModel(IDocumentDataService documentDataService, ILogger logger, ISettingsService settingsService, IActiveUserService activeUserService)
+
+        public AssemblyFormViewModel(IDocumentDataService documentDataService, ILogger logger, ISettingsService settingsService, IActiveUserService activeUserService, IDialogService dialogService)
         {
             _documentDataService = documentDataService;
             _logger = logger;
             _settingsService = settingsService;
             _activeUserService = activeUserService;
+            _dialogService = dialogService;
 
             Assembly = new Assembly
             {
@@ -102,8 +123,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 Author = _activeUserService.CurrentUser?.ShortName
             };
 
+            ParentAssemblies = new ObservableCollection<Assembly>();
+            RelatedProducts = new ObservableCollection<Product>();
+
             SaveCommand = new DelegateCommand(Save);
             CancelCommand = new DelegateCommand(Cancel);
+            AddParentAssemblyCommand = new DelegateCommand(AddParentAssembly);
+            RemoveParentAssemblyCommand = new DelegateCommand<Assembly>(RemoveParentAssembly);
+            AddRelatedProductCommand = new DelegateCommand(AddRelatedProduct);
+            RemoveRelatedProductCommand = new DelegateCommand<Product>(RemoveRelatedProduct);
 
             LoadClassifiers();
             LoadAssemblies();
@@ -199,6 +227,58 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             OnESKDNumberPartChanged();
         }
 
+        private void AddParentAssembly()
+        {
+            _dialogService.ShowDialog("SelectAssemblyDialog", new DialogParameters(), r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    var selectedAssemblies = r.Parameters.GetValue<List<Assembly>>(DialogParameterKeys.SelectedAssemblies);
+                    foreach (var assembly in selectedAssemblies)
+                    {
+                        if (!ParentAssemblies.Any(p => p.Id == assembly.Id))
+                        {
+                            ParentAssemblies.Add(assembly);
+                        }
+                    }
+                }
+            });
+        }
+
+        private void RemoveParentAssembly(Assembly assembly)
+        {
+            if (assembly != null)
+            {
+                ParentAssemblies.Remove(assembly);
+            }
+        }
+
+        private void AddRelatedProduct()
+        {
+            _dialogService.ShowDialog("SelectProductDialog", new DialogParameters(), r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    var selectedProducts = r.Parameters.GetValue<List<Product>>(DialogParameterKeys.SelectedProducts);
+                    foreach (var product in selectedProducts)
+                    {
+                        if (!RelatedProducts.Any(p => p.Id == product.Id))
+                        {
+                            RelatedProducts.Add(product);
+                        }
+                    }
+                }
+            });
+        }
+
+        private void RemoveRelatedProduct(Product product)
+        {
+            if (product != null)
+            {
+                RelatedProducts.Remove(product);
+            }
+        }
+
         private async void Save()
         {
             Assembly.EskdNumber.CompanyCode = CompanyCode;
@@ -224,6 +304,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 await _documentDataService.UpdateAssemblyAsync(Assembly);
             }
 
+            await _documentDataService.UpdateAssemblyParentAssembliesAsync(Assembly.Id, ParentAssemblies.ToList());
+            await _documentDataService.UpdateAssemblyRelatedProductsAsync(Assembly.Id, RelatedProducts.ToList());
+
             RequestClose?.Invoke(new DialogResult(ButtonResult.OK));
         }
 
@@ -233,7 +316,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public void OnDialogClosed() { }
 
-        public void OnDialogOpened(IDialogParameters parameters)
+        public async void OnDialogOpened(IDialogParameters parameters)
         {
             if (parameters.ContainsKey("assembly"))
             {
@@ -242,6 +325,18 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 ClassNumberString = Assembly.EskdNumber.ClassNumber?.Number.ToString("D6");
                 DetailNumber = Assembly.EskdNumber.DetailNumber;
                 Version = Assembly.EskdNumber.Version;
+
+                var parentAssemblies = await _documentDataService.GetParentAssembliesAsync(Assembly.Id);
+                foreach(var item in parentAssemblies)
+                {
+                    ParentAssemblies.Add(item);
+                }
+
+                var relatedProducts = await _documentDataService.GetRelatedProductsAsync(Assembly.Id);
+                foreach(var item in relatedProducts)
+                {
+                    RelatedProducts.Add(item);
+                }
             }
             else
             {

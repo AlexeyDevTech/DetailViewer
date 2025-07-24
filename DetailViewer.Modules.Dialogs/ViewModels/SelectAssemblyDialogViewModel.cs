@@ -70,6 +70,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _documentDataService = documentDataService;
             OkCommand = new DelegateCommand(Ok);
             CancelCommand = new DelegateCommand(Cancel);
+            RelatedProducts = new ObservableCollection<Product>();
             LoadAssemblies();
         }
 
@@ -95,14 +96,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private async void OnSelectedAssemblyChanged()
         {
+            RelatedProducts.Clear();
             if (SelectedAssembly != null)
             {
                 var products = await _documentDataService.GetProductsByAssemblyId(SelectedAssembly.Item.Id);
-                RelatedProducts = new ObservableCollection<Product>(products);
-            }
-            else
-            {
-                RelatedProducts = new ObservableCollection<Product>();
+                foreach (var product in products)
+                {
+                    RelatedProducts.Add(product);
+                }
             }
         }
 

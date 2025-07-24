@@ -20,6 +20,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly ILogger _logger;
         private readonly ISettingsService _settingsService;
         private readonly IActiveUserService _activeUserService;
+        private readonly IDialogService _dialogService;
 
         public string Title => "Форма изделия";
 
@@ -30,6 +31,20 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             get { return _product; }
             set { SetProperty(ref _product, value); }
+        }
+
+        private ObservableCollection<Assembly> _parentAssemblies;
+        public ObservableCollection<Assembly> ParentAssemblies
+        {
+            get { return _parentAssemblies; }
+            set { SetProperty(ref _parentAssemblies, value); }
+        }
+
+        private ObservableCollection<Product> _parentProducts;
+        public ObservableCollection<Product> ParentProducts
+        {
+            get { return _parentProducts; }
+            set { SetProperty(ref _parentProducts, value); }
         }
 
         private string _companyCode, _classNumberString, _productName, _productMaterial;
@@ -80,13 +95,18 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public DelegateCommand SaveCommand { get; private set; }
         public DelegateCommand CancelCommand { get; private set; }
+        public DelegateCommand AddParentAssemblyCommand { get; private set; }
+        public DelegateCommand<Assembly> RemoveParentAssemblyCommand { get; private set; }
+        public DelegateCommand AddParentProductCommand { get; private set; }
+        public DelegateCommand<Product> RemoveParentProductCommand { get; private set; }
 
-        public ProductFormViewModel(IDocumentDataService documentDataService, ILogger logger, ISettingsService settingsService, IActiveUserService activeUserService)
+        public ProductFormViewModel(IDocumentDataService documentDataService, ILogger logger, ISettingsService settingsService, IActiveUserService activeUserService, IDialogService dialogService)
         {
             _documentDataService = documentDataService;
             _logger = logger;
             _settingsService = settingsService;
             _activeUserService = activeUserService;
+            _dialogService = dialogService;
 
             Product = new Product
             {
@@ -97,8 +117,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 Author = _activeUserService.CurrentUser?.ShortName
             };
 
+            ParentAssemblies = new ObservableCollection<Assembly>();
+            ParentProducts = new ObservableCollection<Product>();
+
             SaveCommand = new DelegateCommand(Save);
             CancelCommand = new DelegateCommand(Cancel);
+            AddParentAssemblyCommand = new DelegateCommand(AddParentAssembly);
+            RemoveParentAssemblyCommand = new DelegateCommand<Assembly>(RemoveParentAssembly);
+            AddParentProductCommand = new DelegateCommand(AddParentProduct);
+            RemoveParentProductCommand = new DelegateCommand<Product>(RemoveParentProduct);
 
             LoadClassifiers();
             LoadProducts();
@@ -189,31 +216,120 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             OnESKDNumberPartChanged();
         }
 
+        private void AddParentAssembly()
+        {
+            _dialogService.ShowDialog("SelectAssemblyDialog", new DialogParameters(), r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    var selectedAssemblies = r.Parameters.GetValue<List<Assembly>>(DialogParameterKeys.SelectedAssemblies);
+                    foreach (var assembly in selectedAssemblies)
+                    {
+                        if (!ParentAssemblies.Any(p => p.Id == assembly.Id))
+                        {
+                            ParentAssemblies.Add(assembly);
+                        }
+                    }
+                }
+            });
+        }
+
+        private void RemoveParentAssembly(Assembly assembly)
+        {
+            if (assembly != null)
+            {
+                ParentAssemblies.Remove(assembly);
+            }
+        }
+
+        private void AddParentProduct()
+        {
+            _dialogService.ShowDialog("SelectProductDialog", new DialogParameters(), r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    var selectedProducts = r.Parameters.GetValue<List<Product>>(DialogParameterKeys.SelectedProducts);
+                    foreach (var product in selectedProducts)
+                    {
+                        if (!ParentProducts.Any(p => p.Id == product.Id))
+                        {
+                            ParentProducts.Add(product);
+                        }
+                    }
+                }
+            });
+        }
+
+        private void RemoveParentProduct(Product product)
+        {
+            if (product != null)
+            {
+                ParentProducts.Remove(product);
+            }
+        }
+
         private async void Save()
         {
-            Product.Name = ProductName;
-            Product.Material = ProductMaterial;
-            Product.EskdNumber.CompanyCode = CompanyCode;
-            Product.EskdNumber.DetailNumber = DetailNumber;
-            Product.EskdNumber.Version = Version;
-
-            if (!string.IsNullOrWhiteSpace(ClassNumberString))
+            if (ParentProducts.Any())
             {
-                var classifier = await _documentDataService.GetOrCreateClassifierAsync(ClassNumberString);
-                Product.EskdNumber.ClassNumber = classifier;
+                // Convert product to assembly
+                var newAssembly = new Assembly
+                {
+                    Name = ProductName,
+                    Material = ProductMaterial,
+                    Author = _activeUserService.CurrentUser?.ShortName,
+                    EskdNumber = new ESKDNumber
+                    {
+                        CompanyCode = CompanyCode,
+                        DetailNumber = DetailNumber,
+                        Version = Version
+                    }
+                };
+
+                if (!string.IsNullOrWhiteSpace(ClassNumberString))
+                {
+                    var classifier = await _documentDataService.GetOrCreateClassifierAsync(ClassNumberString);
+                    newAssembly.EskdNumber.ClassNumber = classifier;
+                }
+
+                await _documentDataService.AddAssemblyAsync(newAssembly);
+
+                if (Product.Id != 0)
+                {
+                    await _documentDataService.DeleteProductAsync(Product.Id);
+                }
+
+                await _documentDataService.UpdateAssemblyParentAssembliesAsync(newAssembly.Id, ParentAssemblies.ToList());
+                await _documentDataService.UpdateAssemblyRelatedProductsAsync(newAssembly.Id, ParentProducts.ToList());
             }
             else
             {
-                Product.EskdNumber.ClassNumber = null;
-            }
+                Product.Name = ProductName;
+                Product.Material = ProductMaterial;
+                Product.EskdNumber.CompanyCode = CompanyCode;
+                Product.EskdNumber.DetailNumber = DetailNumber;
+                Product.EskdNumber.Version = Version;
 
-            if (Product.Id == 0)
-            {
-                await _documentDataService.AddProductAsync(Product);
-            }
-            else
-            {
-                await _documentDataService.UpdateProductAsync(Product);
+                if (!string.IsNullOrWhiteSpace(ClassNumberString))
+                {
+                    var classifier = await _documentDataService.GetOrCreateClassifierAsync(ClassNumberString);
+                    Product.EskdNumber.ClassNumber = classifier;
+                }
+                else
+                {
+                    Product.EskdNumber.ClassNumber = null;
+                }
+
+                if (Product.Id == 0)
+                {
+                    await _documentDataService.AddProductAsync(Product);
+                }
+                else
+                {
+                    await _documentDataService.UpdateProductAsync(Product);
+                }
+
+                await _documentDataService.UpdateProductParentAssembliesAsync(Product.Id, ParentAssemblies.ToList());
             }
 
             RequestClose?.Invoke(new DialogResult(ButtonResult.OK));
@@ -225,7 +341,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public void OnDialogClosed() { }
 
-        public void OnDialogOpened(IDialogParameters parameters)
+        public async void OnDialogOpened(IDialogParameters parameters)
         {
             if (parameters.ContainsKey(DialogParameterKeys.Product))
             {
@@ -236,6 +352,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 Version = Product.EskdNumber.Version;
                 ProductName = Product.Name;
                 ProductMaterial = Product.Material;
+
+                var parentAssemblies = await _documentDataService.GetProductParentAssembliesAsync(Product.Id);
+                foreach(var item in parentAssemblies)
+                {
+                    ParentAssemblies.Add(item);
+                }
             }
             else
             {

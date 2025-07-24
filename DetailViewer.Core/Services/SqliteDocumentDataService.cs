@@ -159,27 +159,6 @@ namespace DetailViewer.Core.Services
             return classifier;
         }
 
-       
-
-        public async Task<List<DocumentDetailRecord>> GetParentProducts(int detailId)
-        {
-            var assemblyIds = await _dbContext.AssemblyDetails
-                .Where(ad => ad.DetailId == detailId)
-                .Select(ad => ad.AssemblyId)
-                .ToListAsync();
-
-            var productIds = await _dbContext.ProductAssemblies
-                .Where(pa => assemblyIds.Contains(pa.AssemblyId))
-                .Select(pa => pa.ProductId)
-                .ToListAsync();
-
-            return await _dbContext.DocumentRecords
-                .Where(r => productIds.Contains(r.Id))
-                .Include(r => r.ESKDNumber)
-                .ThenInclude(e => e.ClassNumber)
-                .ToListAsync();
-        }
-
         public async Task<List<Product>> GetProductsByAssemblyId(int assemblyId)
         {
             var productIds = await _dbContext.ProductAssemblies
@@ -194,16 +173,107 @@ namespace DetailViewer.Core.Services
                 .ToListAsync();
         }
 
-        public async Task<List<Assembly>> GetParentAssemblies(int detailId)
+        public async Task<List<Assembly>> GetParentAssembliesAsync(int assemblyId)
         {
-            var assemblyIds = await _dbContext.AssemblyDetails
-                .Where(ad => ad.DetailId == detailId)
-                .Select(ad => ad.AssemblyId)
+            var parentAssemblyIds = await _dbContext.AssemblyParents
+                .Where(ap => ap.ChildAssemblyId == assemblyId)
+                .Select(ap => ap.ParentAssemblyId)
                 .ToListAsync();
 
             return await _dbContext.Assemblies
-                .Where(r => assemblyIds.Contains(r.Id))
-                .Include(r => r.EskdNumber)
+                .Where(a => parentAssemblyIds.Contains(a.Id))
+                .Include(a => a.EskdNumber)
+                .ThenInclude(e => e.ClassNumber)
+                .ToListAsync();
+        }
+
+        public async Task UpdateAssemblyParentAssembliesAsync(int assemblyId, List<Assembly> parentAssemblies)
+        {
+            var existingLinks = await _dbContext.AssemblyParents.Where(ap => ap.ChildAssemblyId == assemblyId).ToListAsync();
+            _dbContext.AssemblyParents.RemoveRange(existingLinks);
+
+            if (parentAssemblies != null)
+            {
+                foreach (var parent in parentAssemblies)
+                {
+                    var newLink = new AssemblyParent
+                    {
+                        ParentAssemblyId = parent.Id,
+                        ChildAssemblyId = assemblyId
+                    };
+                    _dbContext.AssemblyParents.Add(newLink);
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task UpdateAssemblyRelatedProductsAsync(int assemblyId, List<Product> relatedProducts)
+        {
+            var existingLinks = await _dbContext.ProductAssemblies.Where(pa => pa.AssemblyId == assemblyId).ToListAsync();
+            _dbContext.ProductAssemblies.RemoveRange(existingLinks);
+
+            if (relatedProducts != null)
+            {
+                foreach (var product in relatedProducts)
+                {
+                    var newLink = new ProductAssembly
+                    {
+                        ProductId = product.Id,
+                        AssemblyId = assemblyId
+                    };
+                    _dbContext.ProductAssemblies.Add(newLink);
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task UpdateProductParentAssembliesAsync(int productId, List<Assembly> parentAssemblies)
+        {
+            var existingLinks = await _dbContext.ProductAssemblies.Where(pa => pa.ProductId == productId).ToListAsync();
+            _dbContext.ProductAssemblies.RemoveRange(existingLinks);
+
+            if (parentAssemblies != null)
+            {
+                foreach (var assembly in parentAssemblies)
+                {
+                    var newLink = new ProductAssembly
+                    {
+                        ProductId = productId,
+                        AssemblyId = assembly.Id
+                    };
+                    _dbContext.ProductAssemblies.Add(newLink);
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<List<Assembly>> GetProductParentAssembliesAsync(int productId)
+        {
+            var assemblyIds = await _dbContext.ProductAssemblies
+                .Where(pa => pa.ProductId == productId)
+                .Select(pa => pa.AssemblyId)
+                .ToListAsync();
+
+            return await _dbContext.Assemblies
+                .Where(a => assemblyIds.Contains(a.Id))
+                .Include(a => a.EskdNumber)
+                .ThenInclude(e => e.ClassNumber)
+                .ToListAsync();
+        }
+
+        public async Task<List<Product>> GetRelatedProductsAsync(int assemblyId)
+        {
+            var productIds = await _dbContext.ProductAssemblies
+                .Where(pa => pa.AssemblyId == assemblyId)
+                .Select(pa => pa.ProductId)
+                .ToListAsync();
+
+            return await _dbContext.Products
+                .Where(p => productIds.Contains(p.Id))
+                .Include(p => p.EskdNumber)
                 .ThenInclude(e => e.ClassNumber)
                 .ToListAsync();
         }

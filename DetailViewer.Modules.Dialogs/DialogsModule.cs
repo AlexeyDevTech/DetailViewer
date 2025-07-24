@@ -22,6 +22,7 @@ namespace DetailViewer.Modules.Dialogs
             containerRegistry.RegisterDialog<AssemblyForm, ViewModels.AssemblyFormViewModel>();
             containerRegistry.RegisterDialog<ProductForm, ViewModels.ProductFormViewModel>();
             containerRegistry.RegisterDialog<SelectAssemblyDialog, ViewModels.SelectAssemblyDialogViewModel>();
+            containerRegistry.RegisterDialog<SelectProductDialog, ViewModels.SelectProductDialogViewModel>();
         }
     }
 }

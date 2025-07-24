@@ -81,7 +81,41 @@
         <TextBlock Grid.Row="5" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="ФИО:" />
         <TextBox Grid.Row="5" Grid.Column="1" Margin="5" IsReadOnly="True" Text="{Binding Product.Author}" />
 
-        <StackPanel Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Right" Orientation="Horizontal">
+        <TextBlock Grid.Row="6" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="Входит в сборки:" />
+        <DataGrid Grid.Row="6" Grid.Column="1" MinHeight="100" MaxHeight="200" Margin="5" ItemsSource="{Binding ParentAssemblies}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Width="*" Binding="{Binding EskdNumber.FullCode}" Header="ЕСКД" />
+                <DataGridTextColumn Width="*" Binding="{Binding Name}" Header="Имя" />
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding DataContext.RemoveParentAssemblyCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Content="Удалить" Style="{StaticResource DangerButtonStyle}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Button Grid.Row="7" Grid.Column="1" Content="Добавить сборку" Command="{Binding AddParentAssemblyCommand}" HorizontalAlignment="Right" Style="{StaticResource SecondaryButtonStyle}"/>
+
+        <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="Входит в изделия:" />
+        <DataGrid Grid.Row="8" Grid.Column="1" MinHeight="100" MaxHeight="200" Margin="5" ItemsSource="{Binding ParentProducts}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Width="*" Binding="{Binding EskdNumber.FullCode}" Header="ЕСКД" />
+                <DataGridTextColumn Width="*" Binding="{Binding Name}" Header="Имя" />
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding DataContext.RemoveParentProductCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Content="Удалить" Style="{StaticResource DangerButtonStyle}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Button Grid.Row="9" Grid.Column="1" Content="Добавить изделие" Command="{Binding AddParentProductCommand}" HorizontalAlignment="Right" Style="{StaticResource SecondaryButtonStyle}"/>
+
+        <StackPanel Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Right" Orientation="Horizontal">
             <Button Command="{Binding SaveCommand}" Content="Сохранить" Style="{StaticResource PrimaryButtonStyle}" />
             <Button Command="{Binding CancelCommand}" Content="Отмена" Style="{StaticResource SecondaryButtonStyle}" />
         </StackPanel>

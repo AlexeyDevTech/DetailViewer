@@ -6,6 +6,7 @@ namespace DetailViewer.Modules.Dialogs
         public const string ActiveUserFullName = "activeUserFullName";
         public const string CompanyCode = "companyCode";
         public const string SelectedAssemblies = "selectedAssemblies";
+        public const string SelectedProducts = "selectedProducts";
         public const string Product = "product";
     }
 }

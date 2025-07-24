@@ -172,13 +172,11 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             if (SelectedRecord == null)
                 return;
 
-            var parentAssemblies = await _documentDataService.GetParentAssemblies(SelectedRecord.Id);
+            var parentAssemblies = await _documentDataService.GetParentAssembliesAsync(SelectedRecord.Id);
             foreach(var item in parentAssemblies)
             {
                 ParentAssemblies.Add(item);
             }
-            var parentProducts = await _documentDataService.GetParentProducts(SelectedRecord.Id);
-            ParentProducts.AddRange(parentProducts);
         }
 
         private async void ImportFromExcel()

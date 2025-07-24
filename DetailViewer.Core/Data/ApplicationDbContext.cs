@@ -13,6 +13,7 @@ namespace DetailViewer.Core.Data
         public DbSet<Assembly> Assemblies { get; set; }
         public DbSet<AssemblyDetail> AssemblyDetails { get; set; }
         public DbSet<ProductAssembly> ProductAssemblies { get; set; }
+        public DbSet<AssemblyParent> AssemblyParents { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -78,6 +79,21 @@ namespace DetailViewer.Core.Data
                 .HasOne(ad => ad.Detail)
                 .WithMany(d => d.AssemblyDetails)
                 .HasForeignKey(ad => ad.DetailId);
+
+            modelBuilder.Entity<AssemblyParent>()
+                .HasKey(ap => new { ap.ParentAssemblyId, ap.ChildAssemblyId });
+
+            modelBuilder.Entity<AssemblyParent>()
+                .HasOne(ap => ap.ParentAssembly)
+                .WithMany()
+                .HasForeignKey(ap => ap.ParentAssemblyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AssemblyParent>()
+                .HasOne(ap => ap.ChildAssembly)
+                .WithMany()
+                .HasForeignKey(ap => ap.ChildAssemblyId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

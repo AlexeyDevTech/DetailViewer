@@ -20,8 +20,12 @@ namespace DetailViewer.Core.Interfaces
         Task UpdateProductAsync(Product product);
         Task DeleteProductAsync(int productId);
         Task<Classifier> GetOrCreateClassifierAsync(string code);
-        Task<List<Assembly>> GetParentAssemblies(int detailId);
-        Task<List<DocumentDetailRecord>> GetParentProducts(int detailId);
+        Task<List<Assembly>> GetParentAssembliesAsync(int assemblyId);
         Task<List<Product>> GetProductsByAssemblyId(int assemblyId);
+        Task UpdateAssemblyParentAssembliesAsync(int assemblyId, List<Assembly> parentAssemblies);
+        Task UpdateAssemblyRelatedProductsAsync(int assemblyId, List<Product> relatedProducts);
+        Task UpdateProductParentAssembliesAsync(int productId, List<Assembly> parentAssemblies);
+        Task<List<Assembly>> GetProductParentAssembliesAsync(int productId);
+        Task<List<Product>> GetRelatedProductsAsync(int assemblyId);
     }
 }
