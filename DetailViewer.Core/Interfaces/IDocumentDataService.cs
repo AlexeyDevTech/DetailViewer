@@ -143,6 +143,7 @@ namespace DetailViewer.Core.Interfaces
         /// <returns>Список связанных продуктов.</returns>
         Task<List<Product>> GetRelatedProductsAsync(int assemblyId);
 
-        Task CreateProductWithAssembliesAsync(Product product, List<Assembly> Parentassemblies);
+        Task CreateProductWithAssembliesAsync(Product product, List<int> ParentassemblyIds);
+        Task<Assembly> ConvertProductToAssemblyAsync(int productId, List<Product> childProducts);
     }
 }

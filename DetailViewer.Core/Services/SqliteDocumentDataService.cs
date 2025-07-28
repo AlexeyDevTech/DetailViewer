@@ -161,7 +161,7 @@ namespace DetailViewer.Core.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task CreateProductWithAssembliesAsync(Product product, List<Assembly> parentAssemblys)
+        public async Task CreateProductWithAssembliesAsync(Product product, List<int> parentAssemblyIds)
         {
             if (product == null) throw new ArgumentNullException(nameof(product));
 
@@ -173,12 +173,12 @@ namespace DetailViewer.Core.Services
                 await _dbContext.SaveChangesAsync();
 
                 // 2. Если есть сборки для связи, создаем записи в таблице ProductAssemblies
-                if (parentAssemblys?.Any() == true)
+                if (parentAssemblyIds?.Any() == true)
                 {
-                    var newLinks = parentAssemblys.Select(assembly => new ProductAssembly
+                    var newLinks = parentAssemblyIds.Select(assemblyId => new ProductAssembly
                     {
                         ProductId = product.Id, // Используем Id только что созданного продукта
-                        AssemblyId = assembly.Id
+                        AssemblyId = assemblyId
                     }).ToList();
                     _dbContext.ProductAssemblies.AddRange(newLinks);
                     await _dbContext.SaveChangesAsync();
@@ -249,10 +249,21 @@ namespace DetailViewer.Core.Services
             await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
+                // 1. Удаляем записи напрямую из БД
                 await _dbContext.AssemblyParents
                     .Where(ap => ap.ChildAssemblyId == assemblyId)
                     .ExecuteDeleteAsync();
 
+                // 2. Вручную отсоединяем отслеживаемые сущности, чтобы избежать конфликта
+                var trackedEntries = _dbContext.ChangeTracker.Entries<AssemblyParent>()
+                    .Where(e => e.Entity.ChildAssemblyId == assemblyId)
+                    .ToList();
+                foreach (var entry in trackedEntries)
+                {
+                    entry.State = EntityState.Detached;
+                }
+
+                // 3. Добавляем новые связи
                 if (parentAssemblies?.Any() == true)
                 {
                     var newLinks = parentAssemblies.Select(parent => new AssemblyParent
@@ -362,6 +373,75 @@ namespace DetailViewer.Core.Services
                     p => p.Id,
                     (pa, p) => p)
                 .ToListAsync();
+        }
+
+        public async Task<Assembly> ConvertProductToAssemblyAsync(int productId, List<Product> childProducts)
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                // 1. Находим исходный продукт
+                var productToConvert = await _dbContext.Products
+                    .Include(p => p.EskdNumber)
+                    .FirstOrDefaultAsync(p => p.Id == productId);
+
+                if (productToConvert == null)
+                {
+                    throw new KeyNotFoundException($"Продукт с Id={productId} не найден.");
+                }
+
+                // 2. Находим родительские сборки для продукта
+                var parentAssemblies = await _dbContext.ProductAssemblies
+                    .Where(pa => pa.ProductId == productId)
+                    .Select(pa => pa.AssemblyId)
+                    .ToListAsync();
+
+                // 3. Создаем новую сборку на основе данных продукта
+                var newAssembly = new Assembly
+                {
+                    Name = productToConvert.Name,
+                    EskdNumber = productToConvert.EskdNumber,
+                    // Копируем другие релевантные поля, если они есть
+                };
+                _dbContext.Assemblies.Add(newAssembly);
+                await _dbContext.SaveChangesAsync(); // Сохраняем, чтобы получить Id новой сборки
+
+                // 4. Перенаправляем родительские связи на новую сборку
+                if (parentAssemblies.Any())
+                {
+                    var newParentLinks = parentAssemblies.Select(parentId => new AssemblyParent
+                    {
+                        ParentAssemblyId = parentId,
+                        ChildAssemblyId = newAssembly.Id
+                    }).ToList();
+                    _dbContext.AssemblyParents.AddRange(newParentLinks);
+                }
+
+                // 5. Добавляем новые дочерние продукты к сборке
+                if (childProducts?.Any() == true)
+                {
+                    var newChildLinks = childProducts.Select(child => new ProductAssembly
+                    {
+                        AssemblyId = newAssembly.Id,
+                        ProductId = child.Id
+                    }).ToList();
+                    _dbContext.ProductAssemblies.AddRange(newChildLinks);
+                }
+
+                // 6. Удаляем старый продукт и его связи
+                await _dbContext.ProductAssemblies.Where(pa => pa.ProductId == productId).ExecuteDeleteAsync();
+                _dbContext.Products.Remove(productToConvert);
+                
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return newAssembly;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 }

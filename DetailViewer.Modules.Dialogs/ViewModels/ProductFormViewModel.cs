@@ -270,6 +270,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private async void Save()
         {
+            // 1. Подготовка ESKD номера (как и было)
             var eskdNumber = new ESKDNumber
             {
                 CompanyCode = CompanyCode,
@@ -283,38 +284,40 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 Product.EskdNumber = eskdNumber;
             }
 
-            if (ParentProducts.Any())
+            // 2. Основная логика: конвертация или обновление
+            try
             {
-                // Конвертация продукта в сборку
-                var newAssembly = new Assembly
+                // Если в форме появились дочерние продукты, значит, нужно конвертировать продукт в сборку.
+                if (ParentProducts.Any())
                 {
-                    Name = Product.Name,
-                    Material = Product.Material,
-                    Author = _activeUserService.CurrentUser?.ShortName,
-                    EskdNumber = eskdNumber
-                };
-
-                await _documentDataService.AddAssemblyAsync(newAssembly);
-
-                if (Product.Id != 0)
-                    await _documentDataService.DeleteProductAsync(Product.Id);
-                await Task.WhenAll(
-                    _documentDataService.UpdateAssemblyParentAssembliesAsync(newAssembly.Id, ParentAssemblies.ToList()),
-                    _documentDataService.UpdateAssemblyRelatedProductsAsync(newAssembly.Id, ParentProducts.ToList())
-                );
-            }
-            else
-            {
-                if (Product.Id == 0)
-                    await _documentDataService.CreateProductWithAssembliesAsync(Product, ParentAssemblies.ToList());
-                else
-                {
-                    await _documentDataService.UpdateProductAsync(Product);
-                    await _documentDataService.UpdateProductParentAssembliesAsync(Product.Id, ParentAssemblies.ToList());
+                    // Это может быть как новый продукт (Id=0), так и существующий.
+                    // Если продукт новый, его сначала нужно создать, чтобы получить Id.
+                    if (Product.Id == 0)
+                        await _documentDataService.AddProductAsync(Product);
+                    // Вызываем новый атомарный метод для конвертации
+                    await _documentDataService.ConvertProductToAssemblyAsync(Product.Id, ParentProducts.ToList());
                 }
-            }
+                else // Если дочерних продуктов нет, это обычное сохранение продукта.
+                {
+                    if (Product.Id == 0)
+                        // Используем уже существующий метод для создания продукта со связями
+                        await _documentDataService.CreateProductWithAssembliesAsync(Product, ParentAssemblies.Select(a => a.Id).ToList());
+                    else
+                    {
+                        // Обновляем сам продукт и его родительские связи
+                        await _documentDataService.UpdateProductAsync(Product);
+                        await _documentDataService.UpdateProductParentAssembliesAsync(Product.Id, ParentAssemblies.ToList());
+                    }
+                }
 
-            RequestClose?.Invoke(new DialogResult(ButtonResult.OK));
+                RequestClose?.Invoke(new DialogResult(ButtonResult.OK));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Ошибка при сохранении продукта: {ex.Message}", ex);
+                // Здесь можно показать диалоговое окно с сообщением об ошибке пользователю
+                _dialogService.ShowDialog("ErrorDialog", new DialogParameters($"Message=Произошла ошибка: {ex.Message}"), null);
+            }
         }
 
         private void Cancel() => RequestClose?.Invoke(new DialogResult(ButtonResult.Cancel));
