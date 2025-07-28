@@ -1,15 +1,17 @@
-<UserControl x:Class="DetailViewer.Modules.Dialogs.Views.ProductForm"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:DetailViewer.Modules.Dialogs.Views"
-             xmlns:prism="http://prismlibrary.com/"
-             xmlns:converters="clr-namespace:DetailViewer.Modules.Dialogs.Converters"
-             prism:ViewModelLocator.AutoWireViewModel="True"
-             mc:Ignorable="d" 
-             MaxWidth="1000"
-             d:DesignHeight="450" d:DesignWidth="800">
+<UserControl
+    x:Class="DetailViewer.Modules.Dialogs.Views.ProductForm"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:DetailViewer.Modules.Dialogs.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:DetailViewer.Modules.Dialogs.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:prism="http://prismlibrary.com/"
+    MaxWidth="1000"
+    d:DesignHeight="800"
+    d:DesignWidth="800"
+    prism:ViewModelLocator.AutoWireViewModel="True"
+    mc:Ignorable="d">
     <UserControl.Resources>
         <converters:ImagePathConverter x:Key="ImagePathConverter" />
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
@@ -23,30 +25,69 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="0" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="ЕСКД номер:" />
-        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
-            <TextBox Width="50" IsReadOnly="True" Text="{Binding CompanyCode}" />
-            <TextBlock Margin="2,0" VerticalAlignment="Center" Text="." />
+        <TextBlock
+            Grid.Row="0"
+            Grid.Column="0"
+            Margin="5"
+            VerticalAlignment="Center"
+            Text="ЕСКД номер:" />
+        <StackPanel
+            Grid.Row="0"
+            Grid.Column="1"
+            Orientation="Horizontal">
+            <TextBox
+                Width="50"
+                IsReadOnly="True"
+                Text="{Binding CompanyCode}" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="." />
             <TextBox Width="80" Text="{Binding ClassNumberString, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBlock Margin="2,0" VerticalAlignment="Center" Text="." />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="." />
             <TextBox Width="50" Text="{Binding DetailNumber, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBlock Margin="2,0" VerticalAlignment="Center" Text="-" />
+            <TextBlock
+                Margin="2,0"
+                VerticalAlignment="Center"
+                Text="-" />
             <TextBox Width="50" Text="{Binding Version, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
 
-        <ListBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Height="150" Margin="5" ItemsSource="{Binding FilteredClassifiers}" SelectedItem="{Binding SelectedClassifier}">
+        <ListBox
+            Grid.Row="1"
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            Height="150"
+            Margin="5"
+            ItemsSource="{Binding FilteredClassifiers}"
+            SelectedItem="{Binding SelectedClassifier}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
-                        <Image Width="150" Height="100" Margin="5" Stretch="Uniform">
+                        <Image
+                            Width="150"
+                            Height="100"
+                            Margin="5"
+                            Stretch="Uniform">
                             <Image.ToolTip>
-                                <Image Width="350" Height="200" Source="{Binding ImagePaths, Converter={StaticResource ImagePathConverter}}" Stretch="Uniform" />
+                                <Image
+                                    Width="350"
+                                    Height="200"
+                                    Source="{Binding ImagePaths, Converter={StaticResource ImagePathConverter}}"
+                                    Stretch="Uniform" />
                             </Image.ToolTip>
                             <Image.Source>
                                 <Binding Path="ImagePaths">
@@ -65,59 +106,184 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <DataGrid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" MinHeight="100" MaxHeight="200" Margin="5" VerticalAlignment="Top" ItemsSource="{Binding FilteredProducts}">
+        <DataGrid
+            Grid.Row="2"
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            MinHeight="100"
+            MaxHeight="200"
+            Margin="5"
+            VerticalAlignment="Top"
+            ItemsSource="{Binding FilteredProducts}">
             <DataGrid.Columns>
-                <DataGridTextColumn Width="*" Binding="{Binding EskdNumber.FullCode}" Header="ЕСКД" />
-                <DataGridTextColumn Width="*" Binding="{Binding Name}" Header="Имя" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding EskdNumber.FullCode}"
+                    Header="ЕСКД" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Name}"
+                    Header="Имя" />
             </DataGrid.Columns>
         </DataGrid>
 
-        <TextBlock Grid.Row="3" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="Наименование:" />
-        <TextBox Grid.Row="3" Grid.Column="1" Margin="5" Text="{Binding ProductName}" />
+        <TextBlock
+            Grid.Row="3"
+            Grid.Column="0"
+            Margin="5"
+            VerticalAlignment="Center"
+            Text="Наименование:" />
+        <TextBox
+            Grid.Row="3"
+            Grid.Column="1"
+            Margin="5"
+            Text="{Binding Product.Name}" />
 
-        <TextBlock Grid.Row="4" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="Материал:" />
-        <TextBox Grid.Row="4" Grid.Column="1" Margin="5" Text="{Binding ProductMaterial}" />
+        <TextBlock
+            Grid.Row="4"
+            Grid.Column="0"
+            Margin="5"
+            VerticalAlignment="Center"
+            Text="Материал:" />
+        <TextBox
+            Grid.Row="4"
+            Grid.Column="1"
+            Margin="5"
+            Text="{Binding Product.Material}" />
 
-        <TextBlock Grid.Row="5" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="ФИО:" />
-        <TextBox Grid.Row="5" Grid.Column="1" Margin="5" IsReadOnly="True" Text="{Binding Product.Author}" />
+        <TextBlock
+            Grid.Row="5"
+            Grid.Column="0"
+            Margin="5"
+            VerticalAlignment="Center"
+            Text="ФИО:" />
+        <TextBox
+            Grid.Row="5"
+            Grid.Column="1"
+            Margin="5"
+            IsReadOnly="True"
+            Text="{Binding Product.Author}" />
 
-        <TextBlock Grid.Row="6" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="Входит в сборки:" />
-        <DataGrid Grid.Row="6" Grid.Column="1" MinHeight="100" MaxHeight="200" Margin="5" ItemsSource="{Binding ParentAssemblies}">
+        <TextBlock
+            Grid.Row="6"
+            Grid.Column="0"
+            Margin="5"
+            VerticalAlignment="Center"
+            Text="Входит в сборки:" />
+        <DataGrid
+            Grid.Row="6"
+            Grid.Column="1"
+            MinHeight="100"
+            MaxHeight="200"
+            Margin="5"
+            ItemsSource="{Binding ParentAssemblies}"
+            RowHeight="45">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Height" Value="45" />
+                </Style>
+            </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Width="*" Binding="{Binding EskdNumber.FullCode}" Header="ЕСКД" />
-                <DataGridTextColumn Width="*" Binding="{Binding Name}" Header="Имя" />
-                <DataGridTemplateColumn>
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding EskdNumber.FullCode}"
+                    Header="ЕСКД" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Name}"
+                    Header="Имя" />
+                <DataGridTemplateColumn Width="0.5*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Button Command="{Binding DataContext.RemoveParentAssemblyCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Content="Удалить" Style="{StaticResource DangerButtonStyle}"/>
+                            <Button
+                                Margin="0"
+                                Padding="10,4"
+                                VerticalAlignment="Center"
+                                Command="{Binding DataContext.RemoveParentAssemblyCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                CommandParameter="{Binding}"
+                                Content="Удалить"
+                                Style="{StaticResource DangerButtonStyle}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
 
-        <Button Grid.Row="7" Grid.Column="1" Content="Добавить сборку" Command="{Binding AddParentAssemblyCommand}" HorizontalAlignment="Right" Style="{StaticResource SecondaryButtonStyle}"/>
+        <Button
+            Grid.Row="7"
+            Grid.Column="1"
+            HorizontalAlignment="Right"
+            Command="{Binding AddParentAssemblyCommand}"
+            Content="Добавить сборку"
+            Style="{StaticResource SecondaryButtonStyle}" />
 
-        <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" VerticalAlignment="Center" Text="Входит в изделия:" />
-        <DataGrid Grid.Row="8" Grid.Column="1" MinHeight="100" MaxHeight="200" Margin="5" ItemsSource="{Binding ParentProducts}">
+        <TextBlock
+            Grid.Row="8"
+            Grid.Column="0"
+            Margin="5"
+            VerticalAlignment="Center"
+            Text="Входит в изделия:" />
+        <DataGrid
+            Grid.Row="8"
+            Grid.Column="1"
+            MinHeight="100"
+            MaxHeight="200"
+            Margin="5"
+            ItemsSource="{Binding ParentProducts}"
+            RowHeight="45">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Height" Value="45" />
+                </Style>
+            </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Width="*" Binding="{Binding EskdNumber.FullCode}" Header="ЕСКД" />
-                <DataGridTextColumn Width="*" Binding="{Binding Name}" Header="Имя" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding EskdNumber.FullCode}"
+                    Header="ЕСКД" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Name}"
+                    Header="Имя" />
                 <DataGridTemplateColumn>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Button Command="{Binding DataContext.RemoveParentProductCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Content="Удалить" Style="{StaticResource DangerButtonStyle}"/>
+                            <Button
+                                Margin="0"
+                                Padding="10,4"
+                                VerticalAlignment="Center"
+                                Command="{Binding DataContext.RemoveParentProductCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                CommandParameter="{Binding}"
+                                Content="Удалить"
+                                Style="{StaticResource DangerButtonStyle}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
 
-        <Button Grid.Row="9" Grid.Column="1" Content="Добавить изделие" Command="{Binding AddParentProductCommand}" HorizontalAlignment="Right" Style="{StaticResource SecondaryButtonStyle}"/>
+        <Button
+            Grid.Row="9"
+            Grid.Column="1"
+            HorizontalAlignment="Right"
+            Command="{Binding AddParentProductCommand}"
+            Content="Добавить изделие"
+            Style="{StaticResource SecondaryButtonStyle}" />
 
-        <StackPanel Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Right" Orientation="Horizontal">
-            <Button Command="{Binding SaveCommand}" Content="Сохранить" Style="{StaticResource PrimaryButtonStyle}" />
-            <Button Command="{Binding CancelCommand}" Content="Отмена" Style="{StaticResource SecondaryButtonStyle}" />
+        <StackPanel
+            Grid.Row="10"
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal">
+            <Button
+                Command="{Binding SaveCommand}"
+                Content="Сохранить"
+                Style="{StaticResource PrimaryButtonStyle}" />
+            <Button
+                Command="{Binding CancelCommand}"
+                Content="Отмена"
+                Style="{StaticResource SecondaryButtonStyle}" />
         </StackPanel>
     </Grid>
 </UserControl>

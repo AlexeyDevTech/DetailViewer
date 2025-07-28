@@ -270,66 +270,48 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private async void Save()
         {
+            var eskdNumber = new ESKDNumber
+            {
+                CompanyCode = CompanyCode,
+                DetailNumber = DetailNumber,
+                Version = Version
+            };
+
+            if (!string.IsNullOrWhiteSpace(ClassNumberString))
+            {
+                eskdNumber.ClassNumber = await _documentDataService.GetOrCreateClassifierAsync(ClassNumberString);
+                Product.EskdNumber = eskdNumber;
+            }
+
             if (ParentProducts.Any())
             {
-                // Convert product to assembly
+                // Конвертация продукта в сборку
                 var newAssembly = new Assembly
                 {
-                    Name = ProductName,
-                    Material = ProductMaterial,
+                    Name = Product.Name,
+                    Material = Product.Material,
                     Author = _activeUserService.CurrentUser?.ShortName,
-                    EskdNumber = new ESKDNumber
-                    {
-                        CompanyCode = CompanyCode,
-                        DetailNumber = DetailNumber,
-                        Version = Version
-                    }
+                    EskdNumber = eskdNumber
                 };
-
-                if (!string.IsNullOrWhiteSpace(ClassNumberString))
-                {
-                    var classifier = await _documentDataService.GetOrCreateClassifierAsync(ClassNumberString);
-                    newAssembly.EskdNumber.ClassNumber = classifier;
-                }
 
                 await _documentDataService.AddAssemblyAsync(newAssembly);
 
                 if (Product.Id != 0)
-                {
                     await _documentDataService.DeleteProductAsync(Product.Id);
-                }
-
-                await _documentDataService.UpdateAssemblyParentAssembliesAsync(newAssembly.Id, ParentAssemblies.ToList());
-                await _documentDataService.UpdateAssemblyRelatedProductsAsync(newAssembly.Id, ParentProducts.ToList());
+                await Task.WhenAll(
+                    _documentDataService.UpdateAssemblyParentAssembliesAsync(newAssembly.Id, ParentAssemblies.ToList()),
+                    _documentDataService.UpdateAssemblyRelatedProductsAsync(newAssembly.Id, ParentProducts.ToList())
+                );
             }
             else
             {
-                Product.Name = ProductName;
-                Product.Material = ProductMaterial;
-                Product.EskdNumber.CompanyCode = CompanyCode;
-                Product.EskdNumber.DetailNumber = DetailNumber;
-                Product.EskdNumber.Version = Version;
-
-                if (!string.IsNullOrWhiteSpace(ClassNumberString))
-                {
-                    var classifier = await _documentDataService.GetOrCreateClassifierAsync(ClassNumberString);
-                    Product.EskdNumber.ClassNumber = classifier;
-                }
-                else
-                {
-                    Product.EskdNumber.ClassNumber = null;
-                }
-
                 if (Product.Id == 0)
-                {
-                    await _documentDataService.AddProductAsync(Product);
-                }
+                    await _documentDataService.CreateProductWithAssembliesAsync(Product, ParentAssemblies.ToList());
                 else
                 {
                     await _documentDataService.UpdateProductAsync(Product);
+                    await _documentDataService.UpdateProductParentAssembliesAsync(Product.Id, ParentAssemblies.ToList());
                 }
-
-                await _documentDataService.UpdateProductParentAssembliesAsync(Product.Id, ParentAssemblies.ToList());
             }
 
             RequestClose?.Invoke(new DialogResult(ButtonResult.OK));
@@ -358,6 +340,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 {
                     ParentAssemblies.Add(item);
                 }
+
+                //var parentProducts = await _documentDataService.GetProductParentProductsAsync(Product.Id);
+                //foreach(var item in parentProducts)
+                //{
+                //    ParentProducts.Add(item);
+                //}
             }
             else
             {

@@ -38,7 +38,7 @@ namespace DetailViewer.Core
                 .Options;
 
             containerRegistry.RegisterInstance(options);
-            containerRegistry.Register<ApplicationDbContext>();
+            containerRegistry.RegisterSingleton<ApplicationDbContext>();
         }
     }
 }
