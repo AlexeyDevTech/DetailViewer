@@ -32,6 +32,11 @@ namespace DetailViewer.Core.Services
             {
                 using (var package = new ExcelPackage(new FileInfo(filePath)))
                 {
+                    if (createRelationships)
+                    {
+                        await ImportAssembliesAsync(package, dbContext, progress);
+                    }
+
                     var worksheet = package.Workbook.Worksheets[sheetName];
                     if (worksheet == null)
                     {
@@ -100,6 +105,52 @@ namespace DetailViewer.Core.Services
                 // Здесь можно добавить логирование
                 throw new Exception("Ошибка во время импорта: " + ex.Message, ex);
             }
+        }
+
+        private async Task ImportAssembliesAsync(ExcelPackage package, ApplicationDbContext dbContext, IProgress<Tuple<double, string>> progress)
+        {
+            var assemblySheet = package.Workbook.Worksheets["СБ"];
+            if (assemblySheet == null)
+            {
+                progress.Report(new Tuple<double, string>(0, "Лист 'СБ' не найден."));
+                return;
+            }
+
+            var rowCount = assemblySheet.Dimension.Rows;
+            progress.Report(new Tuple<double, string>(0, "Начинается импорт сборок..."));
+
+            for (int row = 2; row <= rowCount; row++)
+            {
+                var eskdNumberString = assemblySheet.Cells[row, 3].Value?.ToString()?.Trim();
+                if (string.IsNullOrWhiteSpace(eskdNumberString)) continue;
+
+                var parsedEskd = new ESKDNumber().SetCode(eskdNumberString);
+                if (parsedEskd.ClassNumber == null || string.IsNullOrEmpty(parsedEskd.CompanyCode)) continue;
+
+                var classifierNumber = parsedEskd.ClassNumber.Number;
+                var detailNumber = parsedEskd.DetailNumber;
+                var version = parsedEskd.Version;
+                var companyCode = parsedEskd.CompanyCode;
+
+                var exists = await dbContext.Assemblies.Include(a => a.EskdNumber)
+                    .AnyAsync(a => a.EskdNumber.CompanyCode == companyCode &&
+                                    a.EskdNumber.ClassNumber.Number == classifierNumber &&
+                                    a.EskdNumber.DetailNumber == detailNumber &&
+                                    a.EskdNumber.Version == version);
+
+                if (!exists)
+                {
+                    var assembly = new Assembly
+                    {
+                        EskdNumber = await GetOrCreateEskdNumber(eskdNumberString, dbContext),
+                        Name = assemblySheet.Cells[row, 5].Value?.ToString()?.Trim(),
+                        Author = assemblySheet.Cells[row, 8].Value?.ToString()?.Trim(), // Добавлено ФИО автора
+                    };
+                    dbContext.Assemblies.Add(assembly);
+                }
+            }
+            await dbContext.SaveChangesAsync();
+            progress.Report(new Tuple<double, string>(100, "Импорт сборок завершен."));
         }
 
         private async Task<DocumentDetailRecord> CreateRecordFromRow(ExcelWorksheet worksheet, int row, string eskdNumberString, ApplicationDbContext dbContext)
