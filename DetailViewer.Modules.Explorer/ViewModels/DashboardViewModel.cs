@@ -172,7 +172,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             if (SelectedRecord == null)
                 return;
 
-            var parentAssemblies = await _documentDataService.GetParentAssembliesAsync(SelectedRecord.Id);
+            var parentAssemblies = await _documentDataService.GetParentAssembliesForDetailAsync(SelectedRecord.Id);
             foreach(var item in parentAssemblies)
             {
                 ParentAssemblies.Add(item);
@@ -185,14 +185,18 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             dialogParameters.Add("filter", "Excel Files (*.xlsx)|*.xlsx|All files (*.*)|*.*");
             dialogParameters.Add("title", "Import from Excel");
 
-            _dialogService.ShowDialog("OpenFileDialog", dialogParameters, async r =>
+            _dialogService.ShowDialog("OpenFileDialog", dialogParameters, r =>
             {
                 if (r.Result == ButtonResult.OK)
                 {
                     var filePath = r.Parameters.GetValue<string>("filePath");
-                    var progress = new Progress<double>(p => StatusText = $"Импорт... {p:F2}%");
-                    await _excelImportService.ImportFromExcelAsync(filePath, progress);
-                    await LoadData();
+                    _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", "Создавать связи между деталями и сборками?" } }, async r2 =>
+                    {
+                        bool createRelationships = r2.Result == ButtonResult.OK;
+                        var progress = new Progress<double>(p => StatusText = $"Импорт... {p:F2}%");
+                        await _excelImportService.ImportFromExcelAsync(filePath, progress, createRelationships);
+                        await LoadData();
+                    });
                 }
             });
         }

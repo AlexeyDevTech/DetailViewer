@@ -375,6 +375,20 @@ namespace DetailViewer.Core.Services
                 .ToListAsync();
         }
 
+        public async Task<List<Assembly>> GetParentAssembliesForDetailAsync(int detailId)
+        {
+            var assemblyIds = await _dbContext.AssemblyDetails
+                .Where(ad => ad.DetailId == detailId)
+                .Select(ad => ad.AssemblyId)
+                .ToListAsync();
+
+            return await _dbContext.Assemblies
+                .Include(a => a.EskdNumber)
+                .ThenInclude(e => e.ClassNumber)
+                .Where(a => assemblyIds.Contains(a.Id))
+                .ToListAsync();
+        }
+
         public async Task<Assembly> ConvertProductToAssemblyAsync(int productId, List<Product> childProducts)
         {
             await using var transaction = await _dbContext.Database.BeginTransactionAsync();

@@ -222,7 +222,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 IsImporting = true;
                 ImportStatus = "Импорт...";
                 var progress = new Progress<double>(p => ImportProgress = p);
-                await _importService.ImportFromExcelAsync(openFileDialog.FileName, progress);
+                await _importService.ImportFromExcelAsync(openFileDialog.FileName, progress, false);
                 IsImporting = false;
                 ImportStatus = "Импорт завершен.";
             }

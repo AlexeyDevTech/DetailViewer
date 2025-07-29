@@ -425,7 +425,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             Version = DocumentRecord.ESKDNumber.Version;
             IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
 
-            var linkedAssemblies = await _documentDataService.GetParentAssembliesAsync(DocumentRecord.Id);
+            var linkedAssemblies = await _documentDataService.GetParentAssembliesForDetailAsync(DocumentRecord.Id);
             LinkedAssemblies = new ObservableCollection<Assembly>(linkedAssemblies);
         }
 

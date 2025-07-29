@@ -143,6 +143,13 @@ namespace DetailViewer.Core.Interfaces
         /// <returns>Список связанных продуктов.</returns>
         Task<List<Product>> GetRelatedProductsAsync(int assemblyId);
 
+        /// <summary>
+        /// Получает список родительских сборок для указанной детали.
+        /// </summary>
+        /// <param name="detailId">Идентификатор детали.</param>
+        /// <returns>Список родительских сборок.</returns>
+        Task<List<Assembly>> GetParentAssembliesForDetailAsync(int detailId);
+
         Task CreateProductWithAssembliesAsync(Product product, List<int> ParentassemblyIds);
         Task<Assembly> ConvertProductToAssemblyAsync(int productId, List<Product> childProducts);
     }

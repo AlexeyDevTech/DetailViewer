@@ -6,6 +6,6 @@ namespace DetailViewer.Core.Interfaces
 {
     public interface IExcelImportService
     {
-        Task ImportFromExcelAsync(string filePath, IProgress<double> progress);
+        Task ImportFromExcelAsync(string filePath, IProgress<double> progress, bool createRelationships);
     }
 }

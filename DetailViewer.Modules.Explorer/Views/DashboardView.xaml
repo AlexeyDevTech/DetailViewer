@@ -175,7 +175,7 @@
                             Header="Дата" />
                         <DataGridTextColumn
                             Width="150"
-                            Binding="{Binding ESKDNumber.FullCode}"
+                            Binding="{Binding EskdNumber.FullCode}"
                             Header="ЕСКД номер сборки" />
                         <DataGridTextColumn
                             Width="200"
@@ -183,7 +183,7 @@
                             Header="Наименование сборки" />
                         <DataGridTextColumn
                             Width="150"
-                            Binding="{Binding FullName}"
+                            Binding="{Binding Author}"
                             Header="ФИО автора" />
                     </DataGrid.Columns>
                 </DataGrid>
@@ -204,7 +204,7 @@
                             Header="Наименование изделия" />
                         <DataGridTextColumn
                             Width="150"
-                            Binding="{Binding FullName}"
+                            Binding="{Binding Author}"
                             Header="ФИО автора" />
                     </DataGrid.Columns>
                 </DataGrid>
