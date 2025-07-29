@@ -210,7 +210,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
             if (!string.IsNullOrWhiteSpace(ClassNumberString))
             {
-                records = records.Where(r => r.ESKDNumber.ClassNumber.Number.ToString("D6").StartsWith(ClassNumberString));
+                records = records.Where(r => 
+                {
+                    if (r.ESKDNumber.ClassNumber != null)
+                        return r.ESKDNumber.ClassNumber.Number.ToString("D6").StartsWith(ClassNumberString);
+                    else return false;
+                        
+                });
             }
 
             if (IsNewVersionEnabled && DetailNumber > 0 && SelectedRecordToCopy == null)
@@ -280,7 +286,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             if (_allRecords == null) return;
             var existingDetailNumbers = _allRecords
-                .Where(r => r.ESKDNumber.ClassNumber.Number.ToString("D6") == ClassNumberString)
+                .Where(r => {
+                    if (r.ESKDNumber.ClassNumber != null)
+                        return r.ESKDNumber.ClassNumber.Number.ToString("D6") == ClassNumberString;
+                    else return false;
+                    })
                 .Select(r => r.ESKDNumber.DetailNumber)
                 .ToHashSet();
             for (int i = 1; i <= 999; i++)

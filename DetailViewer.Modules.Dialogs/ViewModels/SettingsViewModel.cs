@@ -9,6 +9,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
+using OfficeOpenXml;
+using System.IO;
+
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
     public class SettingsViewModel : BindableBase, IDialogAware
@@ -131,12 +134,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public event Action<IDialogResult> RequestClose;
 
+                private readonly IDialogService _dialogService;
+
         public SettingsViewModel(IProfileService profileService, 
                                  ISettingsService settingsService, 
                                  IActiveUserService activeUserService, 
                                  IPasswordService passwordService,
                                  IExcelExportService exportService,
-                                 IExcelImportService importService)
+                                 IExcelImportService importService,
+                                 IDialogService dialogService)
         {
             
             _profileService = profileService;
@@ -145,6 +151,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _passwordService = passwordService;
             _exportService = exportService;
             _importService = importService;
+            _dialogService = dialogService;
 
             //DatabasePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "detailviewer.db");
             var settings = _settingsService.LoadSettings();
@@ -214,18 +221,48 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
-        private async void Import()
+                private async void Import()
         {
             var openFileDialog = new OpenFileDialog { Filter = "Excel Files|*.xlsx" };
             if (openFileDialog.ShowDialog() == true)
             {
-                IsImporting = true;
-                ImportStatus = "Импорт...";
-                var progress = new Progress<double>(p => ImportProgress = p);
-                await _importService.ImportFromExcelAsync(openFileDialog.FileName, progress, false);
-                IsImporting = false;
-                ImportStatus = "Импорт завершен.";
+                var filePath = openFileDialog.FileName;
+                var sheetNames = GetSheetNames(filePath);
+                var dialogParameters = new DialogParameters { { "sheetNames", sheetNames } };
+
+                _dialogService.ShowDialog("SelectSheetDialog", dialogParameters, async (result) =>
+                {
+                    if (result.Result == ButtonResult.OK)
+                    {
+                        var selectedSheet = result.Parameters.GetValue<string>("selectedSheet");
+                        var createRelationships = result.Parameters.GetValue<bool>("createRelationships");
+
+                        IsImporting = true;
+                        ImportStatus = "Импорт...";
+                        var progress = new Progress<Tuple<double, string>>(p =>
+                        {
+                            ImportProgress = p.Item1;
+                            ImportStatus = p.Item2;
+                        });
+                        await _importService.ImportFromExcelAsync(filePath, selectedSheet, progress, createRelationships);
+                        IsImporting = false;
+                        ImportStatus = "Импорт завершен.";
+                    }
+                });
             }
+        }
+
+        private List<string> GetSheetNames(string filePath)
+        {
+            var sheetNames = new List<string>();
+            using (var package = new ExcelPackage(new FileInfo(filePath)))
+            {
+                foreach (var worksheet in package.Workbook.Worksheets)
+                {
+                    sheetNames.Add(worksheet.Name);
+                }
+            }
+            return sheetNames;
         }
 
         private async void Export()

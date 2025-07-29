@@ -23,52 +23,82 @@ namespace DetailViewer.Core.Services
             ExcelPackage.License.SetNonCommercialPersonal("My personal project");
         }
 
-        public async Task ImportFromExcelAsync(string filePath, IProgress<double> progress, bool createRelationships)
+        public async Task ImportFromExcelAsync(string filePath, string sheetName, IProgress<Tuple<double, string>> progress, bool createRelationships)
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
             await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
             try
             {
-                var existingEskdNumbers = new HashSet<string>(await dbContext.ESKDNumbers.Select(e => e.FullCode).ToListAsync());
-                var existingAssemblies = (await dbContext.Assemblies.Include(a => a.EskdNumber).ToListAsync()).ToDictionary(a => a.EskdNumber.FullCode);
-                var existingProducts = (await dbContext.Products.Include(p => p.EskdNumber).ToListAsync()).ToDictionary(p => p.EskdNumber.FullCode);
-
                 using (var package = new ExcelPackage(new FileInfo(filePath)))
                 {
-                    var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name.Equals("Детали", StringComparison.OrdinalIgnoreCase) || ws.Name.Equals("Details", StringComparison.OrdinalIgnoreCase));
-                    if (worksheet == null) return;
+                    var worksheet = package.Workbook.Worksheets[sheetName];
+                    if (worksheet == null)
+                    {
+                        throw new Exception($"Лист '{sheetName}' не найден в файле.");
+                    }
 
                     var rowCount = worksheet.Dimension.Rows;
+                    var processedCount = 0;
+                    var skippedCount = 0;
+
                     for (int row = 2; row <= rowCount; row++)
                     {
                         var eskdNumberString = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
-                        if (string.IsNullOrWhiteSpace(eskdNumberString) || existingEskdNumbers.Contains(eskdNumberString))
+                        if (string.IsNullOrWhiteSpace(eskdNumberString))
                         {
-                            progress.Report((double)row / rowCount * 100);
+                            skippedCount++;
+                            progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Пропущено: {skippedCount}"));
+                            continue;
+                        }
+
+                        var parsedEskd = new ESKDNumber().SetCode(eskdNumberString);
+                        if (parsedEskd.ClassNumber == null || string.IsNullOrEmpty(parsedEskd.CompanyCode))
+                        {
+                            skippedCount++;
+                            progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Пропущено (ошибка парсинга): {skippedCount}"));
+                            continue;
+                        }
+
+                        var classifierNumber = parsedEskd.ClassNumber.Number;
+                        var detailNumber = parsedEskd.DetailNumber;
+                        var version = parsedEskd.Version;
+                        var companyCode = parsedEskd.CompanyCode;
+
+                        var exists = await dbContext.ESKDNumbers
+                            .AnyAsync(e => e.CompanyCode == companyCode &&
+                                            e.ClassNumber.Number == classifierNumber &&
+                                            e.DetailNumber == detailNumber &&
+                                            e.Version == version);
+
+                        if (exists)
+                        {
+                            skippedCount++;
+                            progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Пропущено (дубликат): {skippedCount}"));
                             continue;
                         }
 
                         var record = await CreateRecordFromRow(worksheet, row, eskdNumberString, dbContext);
                         dbContext.DocumentRecords.Add(record);
-                        existingEskdNumbers.Add(eskdNumberString);
 
                         if (createRelationships)
                         {
-                            await ProcessRelationships(worksheet, row, record, existingAssemblies, existingProducts, dbContext);
+                            await ProcessRelationships(worksheet, row, record, dbContext);
                         }
 
-                        progress.Report((double)row / rowCount * 100);
+                        processedCount++;
+                        progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Обработано: {processedCount}"));
                     }
                 }
 
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw;
+                // Здесь можно добавить логирование
+                throw new Exception("Ошибка во время импорта: " + ex.Message, ex);
             }
         }
 
@@ -85,37 +115,63 @@ namespace DetailViewer.Core.Services
             };
         }
 
-        private async Task ProcessRelationships(ExcelWorksheet worksheet, int row, DocumentDetailRecord record, Dictionary<string, Assembly> assemblies, Dictionary<string, Product> products, ApplicationDbContext dbContext)
+        private async Task ProcessRelationships(ExcelWorksheet worksheet, int row, DocumentDetailRecord record, ApplicationDbContext dbContext)
         {
-            var assemblyNumber = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
-            if (string.IsNullOrEmpty(assemblyNumber)) return;
+            var assemblyNumberString = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
+            if (string.IsNullOrEmpty(assemblyNumberString)) return;
 
-            if (!assemblies.TryGetValue(assemblyNumber, out var assembly))
+            var parsedAssemblyEskd = new ESKDNumber().SetCode(assemblyNumberString);
+            if (parsedAssemblyEskd.ClassNumber == null || string.IsNullOrEmpty(parsedAssemblyEskd.CompanyCode)) return;
+
+            var assemblyClassifier = parsedAssemblyEskd.ClassNumber.Number;
+            var assemblyDetail = parsedAssemblyEskd.DetailNumber;
+            var assemblyVersion = parsedAssemblyEskd.Version;
+            var assemblyCompany = parsedAssemblyEskd.CompanyCode;
+
+            var assembly = await dbContext.Assemblies.Include(a => a.EskdNumber)
+                .FirstOrDefaultAsync(a => a.EskdNumber.CompanyCode == assemblyCompany &&
+                                        a.EskdNumber.ClassNumber.Number == assemblyClassifier &&
+                                        a.EskdNumber.DetailNumber == assemblyDetail &&
+                                        a.EskdNumber.Version == assemblyVersion);
+
+            if (assembly == null)
             {
                 assembly = new Assembly
                 {
-                    EskdNumber = await GetOrCreateEskdNumber(assemblyNumber, dbContext),
+                    EskdNumber = await GetOrCreateEskdNumber(assemblyNumberString, dbContext),
                     Name = worksheet.Cells[row, 7].Value?.ToString()?.Trim(),
                 };
                 dbContext.Assemblies.Add(assembly);
-                assemblies.Add(assemblyNumber, assembly);
             }
 
-            var assemblyDetail = new AssemblyDetail { Assembly = assembly, Detail = record };
-            dbContext.AssemblyDetails.Add(assemblyDetail);
+            var assemblyDetailRecord = new AssemblyDetail { Assembly = assembly, Detail = record };
+            dbContext.AssemblyDetails.Add(assemblyDetailRecord);
 
-            var productNumber = worksheet.Cells[row, 8].Value?.ToString()?.Trim();
-            if (string.IsNullOrEmpty(productNumber)) return;
+            var productNumberString = worksheet.Cells[row, 8].Value?.ToString()?.Trim();
+            if (string.IsNullOrEmpty(productNumberString)) return;
 
-            if (!products.TryGetValue(productNumber, out var product))
+            var parsedProductEskd = new ESKDNumber().SetCode(productNumberString);
+            if (parsedProductEskd.ClassNumber == null || string.IsNullOrEmpty(parsedProductEskd.CompanyCode)) return;
+
+            var productClassifier = parsedProductEskd.ClassNumber.Number;
+            var productDetail = parsedProductEskd.DetailNumber;
+            var productVersion = parsedProductEskd.Version;
+            var productCompany = parsedProductEskd.CompanyCode;
+
+            var product = await dbContext.Products.Include(p => p.EskdNumber)
+                .FirstOrDefaultAsync(p => p.EskdNumber.CompanyCode == productCompany &&
+                                        p.EskdNumber.ClassNumber.Number == productClassifier &&
+                                        p.EskdNumber.DetailNumber == productDetail &&
+                                        p.EskdNumber.Version == productVersion);
+
+            if (product == null)
             {
                 product = new Product
                 {
-                    EskdNumber = await GetOrCreateEskdNumber(productNumber, dbContext),
+                    EskdNumber = await GetOrCreateEskdNumber(productNumberString, dbContext),
                     Name = worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
                 };
                 dbContext.Products.Add(product);
-                products.Add(productNumber, product);
             }
 
             var productAssembly = new ProductAssembly { Product = product, Assembly = assembly };

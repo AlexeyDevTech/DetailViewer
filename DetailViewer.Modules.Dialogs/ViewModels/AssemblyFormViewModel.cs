@@ -209,7 +209,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             {
 
                 records = records.Where(r => {
-                    if (r.EskdNumber != null)
+                    if (r.EskdNumber != null && r.EskdNumber.ClassNumber != null)
                         return r.EskdNumber.ClassNumber.Number.ToString("D6").StartsWith(ClassNumberString);
                     else return false;
                     });

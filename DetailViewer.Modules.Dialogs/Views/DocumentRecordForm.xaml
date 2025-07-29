@@ -156,6 +156,7 @@
             Grid.Column="0"
             Grid.ColumnSpan="2"
             MinHeight="100"
+            MaxHeight="1100"
             Margin="5"
             VerticalAlignment="Stretch"
             ItemsSource="{Binding FilteredRecords}"

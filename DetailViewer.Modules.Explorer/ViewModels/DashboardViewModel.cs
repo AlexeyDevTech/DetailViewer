@@ -9,6 +9,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System;
 
+using OfficeOpenXml;
+using System.IO;
+
 namespace DetailViewer.Modules.Explorer.ViewModels
 {
     public class DashboardViewModel : BindableBase
@@ -131,16 +134,38 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public DelegateCommand FillBasedOnCommand { get; private set; }
         public DelegateCommand EditRecordCommand { get; private set; }
         public DelegateCommand DeleteRecordCommand { get; private set; }
+        private double _importProgress;
+        public double ImportProgress
+        {
+            get { return _importProgress; }
+            set { SetProperty(ref _importProgress, value); }
+        }
+
+        private string _importStatus;
+        public string ImportStatus
+        {
+            get { return _importStatus; }
+            set { SetProperty(ref _importStatus, value); }
+        }
+
+        private bool _isImporting;
+        public bool IsImporting
+        {
+            get { return _isImporting; }
+            set { SetProperty(ref _isImporting, value); }
+        }
+
         public DelegateCommand ImportFromExcelCommand { get; private set; }
         public DelegateCommand ExportToExcelCommand { get; private set; }
 
         private readonly ISettingsService _settingsService;
 
-        public DashboardViewModel(IDocumentDataService documentDataService, IExcelImportService excelImportService, IExcelExportService excelExportService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService)
+        public DashboardViewModel(IDocumentDataService documentDataService, IExcelExportService excelExportService, IExcelImportService excelImportService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService)
         {
             _documentDataService = documentDataService;
-            _excelImportService = excelImportService;
             _excelExportService = excelExportService;
+            _excelImportService = excelImportService;
+            _dialogService = dialogService;
             _dialogService = dialogService;
             _logger = logger;
             _activeUserService = activeUserService;
@@ -179,6 +204,19 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             }
         }
 
+        private List<string> GetSheetNames(string filePath)
+        {
+            var sheetNames = new List<string>();
+            using (var package = new ExcelPackage(new FileInfo(filePath)))
+            {
+                foreach (var worksheet in package.Workbook.Worksheets)
+                {
+                    sheetNames.Add(worksheet.Name);
+                }
+            }
+            return sheetNames;
+        }
+
         private async void ImportFromExcel()
         {
             var dialogParameters = new DialogParameters();
@@ -194,7 +232,26 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                     {
                         bool createRelationships = r2.Result == ButtonResult.OK;
                         var progress = new Progress<double>(p => StatusText = $"Импорт... {p:F2}%");
-                        await _excelImportService.ImportFromExcelAsync(filePath, progress, createRelationships);
+                        var sheetNames = GetSheetNames(filePath);
+                        dialogParameters.Add("sheetNames", sheetNames);
+                        _dialogService.ShowDialog("SelectSheetDialog", dialogParameters, async (result) =>
+                        {
+                            if (result.Result == ButtonResult.OK)
+                            {
+                                var selectedSheet = result.Parameters.GetValue<string>("selectedSheet");
+                                var createRelationships = result.Parameters.GetValue<bool>("createRelationships");
+
+                                var progress = new Progress<Tuple<double, string>>(p => 
+                                {
+                                    ImportProgress = p.Item1;
+                                    ImportStatus = p.Item2;
+                                });
+
+                                IsImporting = true;
+                                await _excelImportService.ImportFromExcelAsync(filePath, selectedSheet, progress, createRelationships);
+                                IsImporting = false;
+                            }
+                        });
                         await LoadData();
                     });
                 }

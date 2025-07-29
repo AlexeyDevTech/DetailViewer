@@ -66,6 +66,12 @@ namespace DetailViewer
             containerRegistry.RegisterSingleton<IProfileService, ProfileService>();
             containerRegistry.RegisterSingleton<IPasswordService, PasswordService>();
             containerRegistry.RegisterSingleton<IActiveUserService, ActiveUserService>();
+
+            containerRegistry.Register<IDbContextFactory<ApplicationDbContext>>(() =>
+            {
+                var settingsService = Container.Resolve<ISettingsService>();
+                return new ApplicationDbContextFactory(settingsService);
+            });
         }
 
         protected override void OnInitialized()
