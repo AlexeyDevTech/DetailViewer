@@ -139,7 +139,7 @@ namespace DetailViewer.Core.Services
                 assembly = new Assembly
                 {
                     EskdNumber = await GetOrCreateEskdNumber(assemblyNumberString, dbContext),
-                    Name = worksheet.Cells[row, 7].Value?.ToString()?.Trim(),
+                    Name = worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
                 };
                 dbContext.Assemblies.Add(assembly);
             }
@@ -147,7 +147,7 @@ namespace DetailViewer.Core.Services
             var assemblyDetailRecord = new AssemblyDetail { Assembly = assembly, Detail = record };
             dbContext.AssemblyDetails.Add(assemblyDetailRecord);
 
-            var productNumberString = worksheet.Cells[row, 8].Value?.ToString()?.Trim();
+            var productNumberString = worksheet.Cells[row, 9].Value?.ToString()?.Trim();
             if (string.IsNullOrEmpty(productNumberString)) return;
 
             var parsedProductEskd = new ESKDNumber().SetCode(productNumberString);
@@ -169,7 +169,7 @@ namespace DetailViewer.Core.Services
                 product = new Product
                 {
                     EskdNumber = await GetOrCreateEskdNumber(productNumberString, dbContext),
-                    Name = worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
+                    Name = worksheet.Cells[row, 10].Value?.ToString()?.Trim(),
                 };
                 dbContext.Products.Add(product);
             }
