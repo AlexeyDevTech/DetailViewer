@@ -47,39 +47,15 @@ namespace DetailViewer.Core.Services
                     var processedCount = 0;
                     var skippedCount = 0;
 
+                    var existingEskdNumbers = (await dbContext.ESKDNumbers.ToListAsync()).Select(e => e.FullCode).ToHashSet();
+
                     for (int row = 2; row <= rowCount; row++)
                     {
                         var eskdNumberString = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
-                        if (string.IsNullOrWhiteSpace(eskdNumberString))
+                        if (string.IsNullOrWhiteSpace(eskdNumberString) || existingEskdNumbers.Contains(eskdNumberString))
                         {
                             skippedCount++;
                             progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Пропущено: {skippedCount}"));
-                            continue;
-                        }
-
-                        var parsedEskd = new ESKDNumber().SetCode(eskdNumberString);
-                        if (parsedEskd.ClassNumber == null || string.IsNullOrEmpty(parsedEskd.CompanyCode))
-                        {
-                            skippedCount++;
-                            progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Пропущено (ошибка парсинга): {skippedCount}"));
-                            continue;
-                        }
-
-                        var classifierNumber = parsedEskd.ClassNumber.Number;
-                        var detailNumber = parsedEskd.DetailNumber;
-                        var version = parsedEskd.Version;
-                        var companyCode = parsedEskd.CompanyCode;
-
-                        var exists = await dbContext.ESKDNumbers
-                            .AnyAsync(e => e.CompanyCode == companyCode &&
-                                            e.ClassNumber.Number == classifierNumber &&
-                                            e.DetailNumber == detailNumber &&
-                                            e.Version == version);
-
-                        if (exists)
-                        {
-                            skippedCount++;
-                            progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Пропущено (дубликат): {skippedCount}"));
                             continue;
                         }
 
@@ -231,27 +207,60 @@ namespace DetailViewer.Core.Services
 
         private async Task<ESKDNumber> GetOrCreateEskdNumber(string eskdNumberString, ApplicationDbContext dbContext)
         {
-            var eskdNumber = new ESKDNumber().SetCode(eskdNumberString);
-            if (eskdNumber.ClassNumber != null)
+            var parsedEskd = new ESKDNumber().SetCode(eskdNumberString);
+            if (parsedEskd.ClassNumber == null || string.IsNullOrEmpty(parsedEskd.CompanyCode))
             {
-                var classifierCode = eskdNumber.ClassNumber.Number.ToString("D6");
-                var classifier = await dbContext.Classifiers.FirstOrDefaultAsync(c => c.Number.ToString() == classifierCode);
-                if (classifier == null)
-                {
-                    var classifierInfo = _classifierProvider.GetClassifierByCode(classifierCode);
-                    if (classifierInfo != null)
-                    {
-                        classifier = new Classifier
-                        {
-                            Number = int.Parse(classifierInfo.Code),
-                            Description = classifierInfo.Description
-                        };
-                        dbContext.Classifiers.Add(classifier);
-                    }
-                }
-                eskdNumber.ClassNumber = classifier;
+                return null;
             }
-            return eskdNumber;
+
+            var classifierNumber = parsedEskd.ClassNumber.Number;
+            var detailNumber = parsedEskd.DetailNumber;
+            var version = parsedEskd.Version;
+            var companyCode = parsedEskd.CompanyCode;
+
+            var existingEskdNumber = await dbContext.ESKDNumbers
+                .Include(e => e.ClassNumber)
+                .FirstOrDefaultAsync(e => e.CompanyCode == companyCode &&
+                                            e.ClassNumber.Number == classifierNumber &&
+                                            e.DetailNumber == detailNumber &&
+                                            e.Version == version);
+
+            if (existingEskdNumber != null)
+            {
+                return existingEskdNumber;
+            }
+
+            var classifierCode = classifierNumber.ToString("D6");
+
+            var classifier = dbContext.Classifiers.Local.FirstOrDefault(c => c.Number.ToString() == classifierCode) ??
+                             await dbContext.Classifiers.FirstOrDefaultAsync(c => c.Number.ToString() == classifierCode);
+
+            if (classifier == null)
+            {
+                var classifierInfo = _classifierProvider.GetClassifierByCode(classifierCode);
+                if (classifierInfo != null)
+                {
+                    classifier = new Classifier
+                    {
+                        Number = int.Parse(classifierInfo.Code),
+                        Description = classifierInfo.Description
+                    };
+                    dbContext.Classifiers.Add(classifier);
+                }
+            }
+
+            var newEskdNumber = new ESKDNumber
+            {
+                CompanyCode = companyCode,
+                ClassNumber = classifier,
+                DetailNumber = detailNumber,
+                Version = version
+            };
+
+            dbContext.ESKDNumbers.Add(newEskdNumber);
+            await dbContext.SaveChangesAsync();
+
+            return newEskdNumber;
         }
 
         private DateTime ParseDate(object dateValue)
