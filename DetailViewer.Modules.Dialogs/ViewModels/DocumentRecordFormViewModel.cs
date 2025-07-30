@@ -304,16 +304,18 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
         private void FindNextVersionNumber()
         {
-            if (_allRecords == null || string.IsNullOrEmpty(CompanyCode) || string.IsNullOrEmpty(ClassNumberString) || DetailNumber == 0)
+            if (_allRecords == null || SelectedRecordToCopy?.ESKDNumber?.ClassNumber == null)
             {
-                Version = null; // No valid ESKD number to find a version for
+                Version = null; 
                 return;
             }
 
             var existingVersions = _allRecords
-                .Where(r => r.ESKDNumber.CompanyCode == CompanyCode &&
-                            r.ESKDNumber.ClassNumber.Number.ToString("D6") == ClassNumberString &&
-                            r.ESKDNumber.DetailNumber == DetailNumber &&
+                .Where(r => r.ESKDNumber != null &&
+                            r.ESKDNumber.ClassNumber != null &&
+                            r.ESKDNumber.CompanyCode == SelectedRecordToCopy.ESKDNumber.CompanyCode &&
+                            r.ESKDNumber.ClassNumber.Number == SelectedRecordToCopy.ESKDNumber.ClassNumber.Number &&
+                            r.ESKDNumber.DetailNumber == SelectedRecordToCopy.ESKDNumber.DetailNumber &&
                             r.ESKDNumber.Version.HasValue)
                 .Select(r => r.ESKDNumber.Version.Value)
                 .ToList();
