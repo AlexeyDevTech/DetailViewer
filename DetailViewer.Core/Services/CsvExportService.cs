@@ -20,6 +20,7 @@ namespace DetailViewer.Core.Services
 
         public async Task ExportRecordsToCsvAsync(string filePath, List<DocumentDetailRecord> records)
         {
+            _logger.Log($"Exporting {records.Count} records to CSV: {filePath}");
             try
             {
                 using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
@@ -67,6 +68,7 @@ namespace DetailViewer.Core.Services
 
         private string EscapeCsvField(string field)
         {
+            _logger.Log($"Escaping CSV field: {field}");
             if (string.IsNullOrEmpty(field)) return string.Empty;
 
             // If the field contains a comma, double quote, or newline, enclose it in double quotes

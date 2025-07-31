@@ -41,5 +41,8 @@ namespace DetailViewer.Core.Models
         /// Коллекция связей со сборками, входящими в состав изделия.
         /// </summary>
         public virtual ICollection<ProductAssembly> ProductAssemblies { get; set; } = new List<ProductAssembly>();
+
+        [Timestamp]
+        public byte[] Version { get; set; }
     }
 }

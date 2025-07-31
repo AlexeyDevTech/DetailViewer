@@ -83,6 +83,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void EditProduct()
         {
+            _logger.Log("Editing product");
             var parameters = new DialogParameters { { "product", SelectedProduct } };
             _dialogService.ShowDialog("ProductForm", parameters, async r =>
             {
@@ -95,6 +96,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void DeleteProduct()
         {
+            _logger.Log("Deleting product");
             _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedProduct.EskdNumber.FullCode}?" } }, async r =>
             {
                 if (r.Result == ButtonResult.OK)
@@ -107,6 +109,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void AddProduct()
         {
+            _logger.Log("Adding product");
             _dialogService.ShowDialog("ProductForm", null, async r =>
             {
                 if (r.Result == ButtonResult.OK)
@@ -118,6 +121,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private async Task LoadData()
         {
+            _logger.Log("Loading data for ProductsDashboard");
             IsBusy = true;
             StatusText = "Загрузка данных...";
             try
@@ -140,6 +144,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void ApplyFilters()
         {
+            _logger.Log("Applying filters to products");
             if (_allProducts == null) return;
 
             var filteredProducts = _allProducts.AsEnumerable();

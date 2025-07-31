@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
@@ -24,9 +25,10 @@ namespace DetailViewer.Core.Services
 
         public async Task<List<DocumentDetailRecord>> GetAllRecordsAsync()
         {
+            _logger.Log("Getting all records");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 return await dbContext.DocumentRecords
                     .Include(r => r.ESKDNumber)
                     .ThenInclude(e => e.ClassNumber)
@@ -41,11 +43,12 @@ namespace DetailViewer.Core.Services
 
         public async Task AddRecordAsync(DocumentDetailRecord record, List<int> assemblyIds)
         {
+            _logger.Log($"Adding record: {record.Name}");
             if (record == null) throw new ArgumentNullException(nameof(record));
             
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 await using var transaction = await dbContext.Database.BeginTransactionAsync();
                 
                 dbContext.DocumentRecords.Add(record);
@@ -62,6 +65,17 @@ namespace DetailViewer.Core.Services
                     await dbContext.SaveChangesAsync();
                 }
 
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(DocumentDetailRecord),
+                    EntityId = record.Id.ToString(),
+                    OperationType = OperationType.Create,
+                    Payload = JsonSerializer.Serialize(record),
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
+
+                await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
             catch (Exception ex)
@@ -73,11 +87,12 @@ namespace DetailViewer.Core.Services
 
         public async Task UpdateRecordAsync(DocumentDetailRecord record, List<int> assemblyIds)
         {
+            _logger.Log($"Updating record: {record.Name}");
             if (record == null) throw new ArgumentNullException(nameof(record));
 
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 await using var transaction = await dbContext.Database.BeginTransactionAsync();
                 
                 dbContext.DocumentRecords.Update(record);
@@ -96,6 +111,16 @@ namespace DetailViewer.Core.Services
                     dbContext.AssemblyDetails.AddRange(newLinks);
                 }
 
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(DocumentDetailRecord),
+                    EntityId = record.Id.ToString(),
+                    OperationType = OperationType.Update,
+                    Payload = JsonSerializer.Serialize(record),
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
+
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
@@ -108,12 +133,25 @@ namespace DetailViewer.Core.Services
 
         public async Task DeleteRecordAsync(int recordId)
         {
+            _logger.Log($"Deleting record: {recordId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
+
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(DocumentDetailRecord),
+                    EntityId = recordId.ToString(),
+                    OperationType = OperationType.Delete,
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
+
                 await dbContext.DocumentRecords
                     .Where(r => r.Id == recordId)
                     .ExecuteDeleteAsync();
+
+                await dbContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -124,9 +162,10 @@ namespace DetailViewer.Core.Services
 
         public async Task<List<Assembly>> GetAssembliesAsync()
         {
+            _logger.Log("Getting all assemblies");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 return await dbContext.Assemblies
                     .Include(a => a.EskdNumber)
                     .ThenInclude(e => e.ClassNumber)
@@ -141,9 +180,10 @@ namespace DetailViewer.Core.Services
 
         public async Task<List<Product>> GetProductsAsync()
         {
+            _logger.Log("Getting all products");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 return await dbContext.Products
                     .Include(p => p.EskdNumber)
                     .ThenInclude(e => e.ClassNumber)
@@ -158,12 +198,25 @@ namespace DetailViewer.Core.Services
 
         public async Task DeleteAssemblyAsync(int assemblyId)
         {
+            _logger.Log($"Deleting assembly: {assemblyId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
+
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(Assembly),
+                    EntityId = assemblyId.ToString(),
+                    OperationType = OperationType.Delete,
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
+
                 await dbContext.Assemblies
                     .Where(a => a.Id == assemblyId)
                     .ExecuteDeleteAsync();
+
+                await dbContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -174,12 +227,25 @@ namespace DetailViewer.Core.Services
 
         public async Task DeleteProductAsync(int productId)
         {
+            _logger.Log($"Deleting product: {productId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
+
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(Product),
+                    EntityId = productId.ToString(),
+                    OperationType = OperationType.Delete,
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
+
                 await dbContext.Products
                     .Where(p => p.Id == productId)
                     .ExecuteDeleteAsync();
+
+                await dbContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -190,12 +256,24 @@ namespace DetailViewer.Core.Services
 
         public async Task AddAssemblyAsync(Assembly assembly)
         {
+            _logger.Log($"Adding assembly: {assembly.Name}");
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
 
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 dbContext.Assemblies.Add(assembly);
+
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(Assembly),
+                    EntityId = assembly.Id.ToString(),
+                    OperationType = OperationType.Create,
+                    Payload = JsonSerializer.Serialize(assembly),
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
+
                 await dbContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -207,12 +285,24 @@ namespace DetailViewer.Core.Services
 
         public async Task UpdateAssemblyAsync(Assembly assembly)
         {
+            _logger.Log($"Updating assembly: {assembly.Name}");
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
 
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 dbContext.Assemblies.Update(assembly);
+
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(Assembly),
+                    EntityId = assembly.Id.ToString(),
+                    OperationType = OperationType.Update,
+                    Payload = JsonSerializer.Serialize(assembly),
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
+
                 await dbContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -224,12 +314,24 @@ namespace DetailViewer.Core.Services
 
         public async Task AddProductAsync(Product product)
         {
+            _logger.Log($"Adding product: {product.Name}");
             if (product == null) throw new ArgumentNullException(nameof(product));
 
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 dbContext.Products.Add(product);
+
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(Product),
+                    EntityId = product.Id.ToString(),
+                    OperationType = OperationType.Create,
+                    Payload = JsonSerializer.Serialize(product),
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
+
                 await dbContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -241,12 +343,24 @@ namespace DetailViewer.Core.Services
 
         public async Task UpdateProductAsync(Product product)
         {
+            _logger.Log($"Updating product: {product.Name}");
             if (product == null) throw new ArgumentNullException(nameof(product));
 
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 dbContext.Products.Update(product);
+
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(Product),
+                    EntityId = product.Id.ToString(),
+                    OperationType = OperationType.Update,
+                    Payload = JsonSerializer.Serialize(product),
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
+
                 await dbContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -258,11 +372,12 @@ namespace DetailViewer.Core.Services
 
         public async Task CreateProductWithAssembliesAsync(Product product, List<int> parentAssemblyIds)
         {
+            _logger.Log($"Creating product with assemblies: {product.Name}");
             if (product == null) throw new ArgumentNullException(nameof(product));
 
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 await using var transaction = await dbContext.Database.BeginTransactionAsync();
                 
                 dbContext.Products.Add(product);
@@ -290,6 +405,7 @@ namespace DetailViewer.Core.Services
 
         public async Task<Classifier> GetOrCreateClassifierAsync(string code)
         {
+            _logger.Log($"Getting or creating classifier: {code}");
             if (string.IsNullOrWhiteSpace(code) || !int.TryParse(code, out int classifierNumber))
             {
                 return null;
@@ -297,7 +413,7 @@ namespace DetailViewer.Core.Services
 
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 var classifier = await dbContext.Classifiers
                     .FirstOrDefaultAsync(c => c.Number == classifierNumber);
 
@@ -326,9 +442,10 @@ namespace DetailViewer.Core.Services
 
         public async Task<List<Product>> GetProductsByAssemblyId(int assemblyId)
         {
+            _logger.Log($"Getting products by assembly id: {assemblyId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 return await dbContext.ProductAssemblies
                     .Where(pa => pa.AssemblyId == assemblyId)
                     .Join(dbContext.Products.Include(p => p.EskdNumber).ThenInclude(e => e.ClassNumber),
@@ -346,9 +463,10 @@ namespace DetailViewer.Core.Services
 
         public async Task<List<Assembly>> GetParentAssembliesAsync(int assemblyId)
         {
+            _logger.Log($"Getting parent assemblies for assembly: {assemblyId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 return await dbContext.AssemblyParents
                     .Where(ap => ap.ChildAssemblyId == assemblyId)
                     .Join(dbContext.Assemblies.Include(a => a.EskdNumber).ThenInclude(e => e.ClassNumber),
@@ -366,9 +484,10 @@ namespace DetailViewer.Core.Services
 
         public async Task UpdateAssemblyParentAssembliesAsync(int assemblyId, List<Assembly> parentAssemblies)
         {
+            _logger.Log($"Updating parent assemblies for assembly: {assemblyId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 await using var transaction = await dbContext.Database.BeginTransactionAsync();
                 
                 await dbContext.AssemblyParents
@@ -405,9 +524,10 @@ namespace DetailViewer.Core.Services
 
         public async Task UpdateAssemblyRelatedProductsAsync(int assemblyId, List<Product> relatedProducts)
         {
+            _logger.Log($"Updating related products for assembly: {assemblyId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 await using var transaction = await dbContext.Database.BeginTransactionAsync();
                 
                 await dbContext.ProductAssemblies
@@ -436,9 +556,10 @@ namespace DetailViewer.Core.Services
 
         public async Task UpdateProductParentAssembliesAsync(int productId, List<Assembly> parentAssemblies)
         {
+            _logger.Log($"Updating parent assemblies for product: {productId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 await using var transaction = await dbContext.Database.BeginTransactionAsync();
                 
                 var existingLinks = await dbContext.ProductAssemblies
@@ -469,9 +590,10 @@ namespace DetailViewer.Core.Services
 
         public async Task<List<Assembly>> GetProductParentAssembliesAsync(int productId)
         {
+            _logger.Log($"Getting parent assemblies for product: {productId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 return await dbContext.ProductAssemblies
                     .Where(pa => pa.ProductId == productId)
                     .Join(dbContext.Assemblies.Include(a => a.EskdNumber).ThenInclude(e => e.ClassNumber),
@@ -489,9 +611,10 @@ namespace DetailViewer.Core.Services
 
         public async Task<List<Product>> GetRelatedProductsAsync(int assemblyId)
         {
+            _logger.Log($"Getting related products for assembly: {assemblyId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 return await dbContext.ProductAssemblies
                     .Where(pa => pa.AssemblyId == assemblyId)
                     .Join(dbContext.Products.Include(p => p.EskdNumber).ThenInclude(e => e.ClassNumber),
@@ -509,9 +632,10 @@ namespace DetailViewer.Core.Services
 
         public async Task<List<Assembly>> GetParentAssembliesForDetailAsync(int detailId)
         {
+            _logger.Log($"Getting parent assemblies for detail: {detailId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 var assemblyIds = await dbContext.AssemblyDetails
                     .Where(ad => ad.DetailId == detailId)
                     .Select(ad => ad.AssemblyId)
@@ -532,9 +656,10 @@ namespace DetailViewer.Core.Services
 
         public async Task<Assembly> ConvertProductToAssemblyAsync(int productId, List<Product> childProducts)
         {
+            _logger.Log($"Converting product to assembly: {productId}");
             try
             {
-                using var dbContext = _contextFactory.CreateDbContext();
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
                 await using var transaction = await dbContext.Database.BeginTransactionAsync();
                 
                 var productToConvert = await dbContext.Products

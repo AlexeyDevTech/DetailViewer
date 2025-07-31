@@ -7,15 +7,18 @@ namespace DetailViewer.Core.Services
 {
     public class DatabaseSyncService
     {
+        private readonly ILogger _logger;
         private readonly ISettingsService _settingsService;
 
-        public DatabaseSyncService(ISettingsService settingsService)
+        public DatabaseSyncService(ISettingsService settingsService, ILogger logger)
         {
             _settingsService = settingsService;
+            _logger = logger;
         }
 
         public async Task SyncDatabaseAsync()
         {
+            _logger.Log("Syncing database");
             var settings = _settingsService.LoadSettings();
             var remoteDbPath = settings.DatabasePath;
             var localDbPath = settings.LocalDatabasePath;

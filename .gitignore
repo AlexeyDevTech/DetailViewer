@@ -461,3 +461,4 @@ $RECYCLE.BIN/
 /install
 /DetailViewer/version.ps1
 /DetailViewer/version.txt
+/DetailViewer/temp.db

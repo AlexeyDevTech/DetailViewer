@@ -20,5 +20,8 @@ namespace DetailViewer.Core.Models
         public bool IsManualDetailNumber { get; set; }
 
         public virtual ICollection<AssemblyDetail> AssemblyDetails { get; set; } = new List<AssemblyDetail>();
+
+        [Timestamp]
+        public byte[] Version { get; set; }
     }
 }

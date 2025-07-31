@@ -6,12 +6,19 @@ namespace DetailViewer.Core.Services
 {
     public class PasswordService : IPasswordService
     {
+        private readonly ILogger _logger;
         private const int SaltSize = 16;
         private const int HashSize = 20;
         private const int Iterations = 10000;
 
+        public PasswordService(ILogger logger)
+        {
+            _logger = logger;
+        }
+
         public string HashPassword(string password)
         {
+            _logger.Log("Hashing password");
             byte[] salt;
             new RNGCryptoServiceProvider().GetBytes(salt = new byte[SaltSize]);
 
@@ -27,6 +34,7 @@ namespace DetailViewer.Core.Services
 
         public bool VerifyPassword(string password, string hashedPassword)
         {
+            _logger.Log("Verifying password");
             byte[] hashBytes = Convert.FromBase64String(hashedPassword);
             byte[] salt = new byte[SaltSize];
             Array.Copy(hashBytes, 0, salt, 0, SaltSize);

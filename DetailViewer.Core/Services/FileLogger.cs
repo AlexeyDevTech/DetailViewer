@@ -6,6 +6,7 @@ namespace DetailViewer.Core.Services
     public class FileLogger : ILogger
     {
         private readonly string _logFilePath;
+        private static readonly object _logLock = new object();
 
         public FileLogger(string logFilePath)
         {
@@ -33,14 +34,22 @@ namespace DetailViewer.Core.Services
             Log("DEBUG", message);
         }
 
+        public void Log(string message)
+        {
+            Log("INFO", message);
+        }
+
         private void Log(string level, string message, System.Exception ex = null)
         {
-            using (var streamWriter = new StreamWriter(_logFilePath, true))
+            lock (_logLock)
             {
-                streamWriter.WriteLine($"[{System.DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{level}] {message}");
-                if (ex != null)
+                using (var streamWriter = new StreamWriter(_logFilePath, true))
                 {
-                    streamWriter.WriteLine(ex.ToString());
+                    streamWriter.WriteLine($"[{System.DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{level}] {message}");
+                    if (ex != null)
+                    {
+                        streamWriter.WriteLine(ex.ToString());
+                    }
                 }
             }
         }

@@ -78,11 +78,12 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             EditAssemblyCommand = new DelegateCommand(EditAssembly, () => SelectedAssembly != null).ObservesProperty(() => SelectedAssembly);
             DeleteAssemblyCommand = new DelegateCommand(DeleteAssembly, () => SelectedAssembly != null).ObservesProperty(() => SelectedAssembly);
 
-            LoadData();
+            Task.Run(LoadData);
         }
 
         private void EditAssembly()
         {
+            _logger.Log("Editing assembly");
             var parameters = new DialogParameters { { "assembly", SelectedAssembly } };
             _dialogService.ShowDialog("AssemblyForm", parameters, async r =>
             {
@@ -95,6 +96,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void DeleteAssembly()
         {
+            _logger.Log("Deleting assembly");
             _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedAssembly.EskdNumber?.FullCode ?? "<unf>"}?" } }, async r =>
             {
                 if (r.Result == ButtonResult.OK)
@@ -107,6 +109,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void AddAssembly()
         {
+            _logger.Log("Adding assembly");
             _dialogService.ShowDialog("AssemblyForm", null, async r =>
             {
                 if (r.Result == ButtonResult.OK)
@@ -118,6 +121,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private async Task LoadData()
         {
+            _logger.Log("Loading data for AssembliesDashboard");
             IsBusy = true;
             StatusText = "Загрузка данных...";
             try
@@ -140,6 +144,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void ApplyFilters()
         {
+            _logger.Log("Applying filters to assemblies");
             if (_allAssemblies == null) return;
 
             var filteredAssemblies = _allAssemblies.AsEnumerable();

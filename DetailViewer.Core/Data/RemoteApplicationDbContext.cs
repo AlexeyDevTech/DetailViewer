@@ -3,10 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DetailViewer.Core.Data
 {
-    /// <summary>
-    /// контекст для локальной БД
-    /// </summary>
-    public class ApplicationDbContext : DbContext
+    public class RemoteApplicationDbContext : DbContext
     {
         public DbSet<DocumentDetailRecord> DocumentRecords { get; set; }
         public DbSet<Profile> Profiles { get; set; }
@@ -17,10 +14,8 @@ namespace DetailViewer.Core.Data
         public DbSet<AssemblyDetail> AssemblyDetails { get; set; }
         public DbSet<ProductAssembly> ProductAssemblies { get; set; }
         public DbSet<AssemblyParent> AssemblyParents { get; set; }
-        public DbSet<ChangeLog> ChangeLogs { get; set; }
-        public DbSet<ConflictLog> ConflictLogs { get; set; }
 
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+        public RemoteApplicationDbContext(DbContextOptions<RemoteApplicationDbContext> options) : base(options)
         {
 
         }

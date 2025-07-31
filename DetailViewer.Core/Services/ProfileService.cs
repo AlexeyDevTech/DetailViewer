@@ -10,16 +10,20 @@ namespace DetailViewer.Core.Services
 {
     public class ProfileService : IProfileService
     {
-        private readonly ApplicationDbContext _dbContext;
+        private readonly ILogger _logger;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
 
-        public ProfileService(ApplicationDbContext dbContext)
+        public ProfileService(IDbContextFactory<ApplicationDbContext> dbContextFactory, ILogger logger)
         {
-            _dbContext = dbContext;
+            _dbContextFactory = dbContextFactory;
+            _logger = logger;
         }
 
         public async Task<List<Profile>> GetAllProfilesAsync()
         {
-            return await _dbContext.Profiles.Select(p => new Profile
+            _logger.Log("Getting all profiles");
+            using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            return await dbContext.Profiles.Select(p => new Profile
             {
                 Id = p.Id,
                 LastName = p.LastName,
@@ -32,23 +36,29 @@ namespace DetailViewer.Core.Services
 
         public async Task AddProfileAsync(Profile profile)
         {
-            _dbContext.Profiles.Add(profile);
-            await _dbContext.SaveChangesAsync();
+            _logger.Log($"Adding profile: {profile.LastName}");
+            using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            dbContext.Profiles.Add(profile);
+            await dbContext.SaveChangesAsync();
         }
 
         public async Task UpdateProfileAsync(Profile profile)
         {
-            _dbContext.Profiles.Update(profile);
-            await _dbContext.SaveChangesAsync();
+            _logger.Log($"Updating profile: {profile.LastName}");
+            using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            dbContext.Profiles.Update(profile);
+            await dbContext.SaveChangesAsync();
         }
 
         public async Task DeleteProfileAsync(int profileId)
         {
-            var profile = await _dbContext.Profiles.FindAsync(profileId);
+            _logger.Log($"Deleting profile: {profileId}");
+            using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var profile = await dbContext.Profiles.FindAsync(profileId);
             if (profile != null)
             {
-                _dbContext.Profiles.Remove(profile);
-                await _dbContext.SaveChangesAsync();
+                dbContext.Profiles.Remove(profile);
+                await dbContext.SaveChangesAsync();
             }
         }
     }

@@ -7,8 +7,15 @@ namespace DetailViewer.Core.Services
 {
     public class DocumentFilterService : IDocumentFilterService
     {
+        private readonly ILogger _logger;
+
+        public DocumentFilterService(ILogger logger)
+        {
+            _logger = logger;
+        }
         public List<DocumentDetailRecord> FilterRecords(List<DocumentDetailRecord> records, string searchTerm)
         {
+            _logger.Log($"Filtering {records.Count} records with search term: {searchTerm}");
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
                 return records; // Return all records if search term is empty

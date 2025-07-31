@@ -13,18 +13,21 @@ namespace DetailViewer.Core.Services
 {
     public class ExcelImportService : IExcelImportService
     {
+        private readonly ILogger _logger;
         private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
         private readonly IClassifierProvider _classifierProvider;
 
-        public ExcelImportService(IDbContextFactory<ApplicationDbContext> dbContextFactory, IClassifierProvider classifierProvider)
+        public ExcelImportService(IDbContextFactory<ApplicationDbContext> dbContextFactory, IClassifierProvider classifierProvider, ILogger logger)
         {
             _dbContextFactory = dbContextFactory;
             _classifierProvider = classifierProvider;
+            _logger = logger;
             ExcelPackage.License.SetNonCommercialPersonal("My personal project");
         }
 
         public async Task ImportFromExcelAsync(string filePath, string sheetName, IProgress<Tuple<double, string>> progress, bool createRelationships)
         {
+            _logger.Log($"Importing from Excel: {filePath}, sheet: {sheetName}");
             using var dbContext = _dbContextFactory.CreateDbContext();
             await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
@@ -78,13 +81,14 @@ namespace DetailViewer.Core.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                // Здесь можно добавить логирование
+                _logger.LogError($"Error during Excel import: {ex.Message}", ex);
                 throw new Exception("Ошибка во время импорта: " + ex.Message, ex);
             }
         }
 
         private async Task ImportAssembliesAsync(ExcelPackage package, ApplicationDbContext dbContext, IProgress<Tuple<double, string>> progress)
         {
+            _logger.Log("Importing assemblies");
             var assemblySheet = package.Workbook.Worksheets["СБ"];
             if (assemblySheet == null)
             {
@@ -131,6 +135,7 @@ namespace DetailViewer.Core.Services
 
         private async Task<DocumentDetailRecord> CreateRecordFromRow(ExcelWorksheet worksheet, int row, string eskdNumberString, ApplicationDbContext dbContext)
         {
+            _logger.Log($"Creating record from row: {row}");
             var eskdNumber = await GetOrCreateEskdNumber(eskdNumberString, dbContext);
             return new DocumentDetailRecord
             {
@@ -144,6 +149,7 @@ namespace DetailViewer.Core.Services
 
         private async Task ProcessRelationships(ExcelWorksheet worksheet, int row, DocumentDetailRecord record, ApplicationDbContext dbContext)
         {
+            _logger.Log($"Processing relationships for row: {row}");
             var assemblyNumberString = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
             if (string.IsNullOrEmpty(assemblyNumberString)) return;
 
@@ -207,6 +213,7 @@ namespace DetailViewer.Core.Services
 
         private async Task<ESKDNumber> GetOrCreateEskdNumber(string eskdNumberString, ApplicationDbContext dbContext)
         {
+            _logger.Log($"Getting or creating ESKD number: {eskdNumberString}");
             var parsedEskd = new ESKDNumber().SetCode(eskdNumberString);
             if (parsedEskd.ClassNumber == null || string.IsNullOrEmpty(parsedEskd.CompanyCode))
             {
@@ -265,6 +272,7 @@ namespace DetailViewer.Core.Services
 
         private DateTime ParseDate(object dateValue)
         {
+            _logger.Log($"Parsing date: {dateValue}");
             if (dateValue is double oaDate) return DateTime.FromOADate(oaDate);
             return DateTime.TryParse(dateValue?.ToString(), out var date) ? date : DateTime.MinValue;
         }

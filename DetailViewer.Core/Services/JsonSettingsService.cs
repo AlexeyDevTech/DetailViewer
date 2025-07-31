@@ -25,6 +25,7 @@ namespace DetailViewer.Core.Services
 
         public AppSettings LoadSettings()
         {
+            _logger.Log("Loading settings");
             if (!File.Exists(_settingsFilePath))
             {
                 _logger.LogInfo($"Settings file not found at {_settingsFilePath}. Returning default settings.");
@@ -47,6 +48,7 @@ namespace DetailViewer.Core.Services
 
         public async Task SaveSettingsAsync(AppSettings settings)
         {
+            _logger.Log("Saving settings");
             try
             {
                 var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });

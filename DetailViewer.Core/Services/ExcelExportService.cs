@@ -12,16 +12,19 @@ namespace DetailViewer.Core.Services
 {
     public class ExcelExportService : IExcelExportService
     {
+        private readonly ILogger _logger;
         private readonly IDocumentDataService _documentDataService;
 
-        public ExcelExportService(IDocumentDataService documentDataService)
+        public ExcelExportService(IDocumentDataService documentDataService, ILogger logger)
         {
             _documentDataService = documentDataService;
+            _logger = logger;
             ExcelPackage.License.SetNonCommercialPersonal("My personal project");
         }
 
         public async Task ExportToExcelAsync(string filePath)
         {
+            _logger.Log($"Exporting to Excel: {filePath}");
             var records = await _documentDataService.GetAllRecordsAsync();
 
             using (var package = new ExcelPackage())
@@ -40,6 +43,7 @@ namespace DetailViewer.Core.Services
 
         private void AddHeaders(ExcelWorksheet worksheet)
         {
+            _logger.Log("Adding headers to Excel worksheet");
             string[] headers = {
                 "Дата", "ЕСКД номер", "ЯСТ код", "Имя", "Номер сборки",
                 "Имя сборки", "Номер продукта", "Имя продукта", "ФИО",
@@ -54,6 +58,7 @@ namespace DetailViewer.Core.Services
 
         private void AddData(ExcelWorksheet worksheet, List<DocumentDetailRecord> records)
         {
+            _logger.Log($"Adding {records.Count} records to Excel worksheet");
             var row = 2;
             foreach (var record in records)
             {
@@ -113,6 +118,7 @@ namespace DetailViewer.Core.Services
 
         private void ApplyStyling(ExcelWorksheet worksheet, int recordCount)
         {
+            _logger.Log("Applying styling to Excel worksheet");
             using (var range = worksheet.Cells[1, 1, 1, 12])
             {
                 range.Style.Font.Bold = true;

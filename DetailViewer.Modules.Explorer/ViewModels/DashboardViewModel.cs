@@ -186,11 +186,12 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             DeleteRecordCommand = new DelegateCommand(DeleteRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
             ImportFromExcelCommand = new DelegateCommand(ImportFromExcel);
             ExportToExcelCommand = new DelegateCommand(ExportToExcel);
-            LoadData();
+            Task.Run(LoadData);
         }
 
         private async void LoadParentAssembliesAndProducts()
         {
+            _logger.Log("Loading parent assemblies and products");
             ParentAssemblies.Clear();
             ParentProducts.Clear();
 
@@ -206,6 +207,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private List<string> GetSheetNames(string filePath)
         {
+            _logger.Log($"Getting sheet names from: {filePath}");
             var sheetNames = new List<string>();
             using (var package = new ExcelPackage(new FileInfo(filePath)))
             {
@@ -217,8 +219,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             return sheetNames;
         }
 
-        private async void ImportFromExcel()
+        private void ImportFromExcel()
         {
+            _logger.Log("Importing from Excel");
             var dialogParameters = new DialogParameters();
             dialogParameters.Add("filter", "Excel Files (*.xlsx)|*.xlsx|All files (*.*)|*.*");
             dialogParameters.Add("title", "Import from Excel");
@@ -258,8 +261,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             });
         }
 
-        private async void ExportToExcel()
+        private void ExportToExcel()
         {
+            _logger.Log("Exporting to Excel");
             var dialogParameters = new DialogParameters();
             dialogParameters.Add("filter", "Excel Files (*.xlsx)|*.xlsx|All files (*.*)|*.*");
             dialogParameters.Add("title", "Export to Excel");
@@ -276,12 +280,14 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void OnCurrentUserChanged()
         {
+            _logger.Log("Current user changed");
             _activeUserFullName = _activeUserService.CurrentUser?.ShortName;
             ApplyFilters();
         }
 
         private void EditRecord()
         {
+            _logger.Log("Editing record");
             var parameters = new DialogParameters { { "record", SelectedRecord } };
             _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
             {
@@ -297,6 +303,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void DeleteRecord()
         {
+            _logger.Log("Deleting record");
             _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedRecord.ESKDNumber.FullCode}?" } }, async r =>
             {
                 if (r.Result == ButtonResult.OK)
@@ -309,6 +316,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void FillBasedOn()
         {
+            _logger.Log("Filling based on record");
             var parameters = new DialogParameters { { "record", SelectedRecord }, { "activeUserFullName", _activeUserFullName } };
             _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
             {
@@ -324,6 +332,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void FillForm()
         {
+            _logger.Log("Filling form");
             var settings = _settingsService.LoadSettings();
             var parameters = new DialogParameters { { "companyCode", settings.DefaultCompanyCode } };
             _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
@@ -340,6 +349,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private async Task LoadData()
         {
+            _logger.Log("Loading data for Dashboard");
             IsBusy = true;
             StatusText = "Загрузка данных...";
             try
@@ -363,6 +373,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void ApplyFilters()
         {
+            _logger.Log("Applying filters to records");
             if (_allRecords == null) return;
 
             var filteredRecords = _allRecords.AsEnumerable();
@@ -405,11 +416,14 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 }
             }
 
-            DocumentRecords.Clear();
-            foreach (var record in filteredRecords)
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
-                DocumentRecords.Add(record);
-            }
+                DocumentRecords.Clear();
+                foreach (var record in filteredRecords)
+                {
+                    DocumentRecords.Add(record);
+                }
+            });
 
             StatusText = $"Отобрано записей: {DocumentRecords.Count}";
         }
