@@ -459,3 +459,5 @@ $RECYCLE.BIN/
 /temp
 /DetailViewer.iss
 /install
+/DetailViewer/version.ps1
+/DetailViewer/version.txt

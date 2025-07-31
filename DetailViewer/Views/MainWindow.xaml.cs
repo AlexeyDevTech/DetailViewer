@@ -1,4 +1,4 @@
-using System.ComponentModel;using System.Windows;using System.IO;using System.Reflection;using Newtonsoft.Json;using System.Threading.Tasks;using System;
+using System.ComponentModel;using System.Windows;using System.IO;using System.Reflection;using Newtonsoft.Json;using System.Threading.Tasks;using System;using System.Net;
 
 namespace DetailViewer.Views
 {
@@ -11,15 +11,15 @@ namespace DetailViewer.Views
         {
             InitializeComponent();
             Closing += MainWindow_Closing;
-            Loaded += async (s, e) => await CheckForUpdatesAsync();
+            CheckForUpdatesAsync();
         }
 
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
-            // Отменяем закрытие окна
-            e.Cancel = true;
-            // Скрываем окно вместо закрытия
-            Hide();
+            //// Отменяем закрытие окна
+            //e.Cancel = true;
+            //// Скрываем окно вместо закрытия
+            //Hide();
         }
 
         private async Task CheckForUpdatesAsync()
@@ -27,19 +27,24 @@ namespace DetailViewer.Views
             try
             {
                 // ЗАМЕНИТЕ ПУТЬ НА ВАШ РЕАЛЬНЫЙ СЕТЕВОЙ ПУТЬ
-                string versionFilePath = "\\192.168.157.29\\cod2\\soft\\version.json";
-                string content = File.ReadAllText(versionFilePath);
-                var remoteVersion = JsonConvert.DeserializeObject<VersionInfo>(content);
+                string versionFilePath = "file://192.168.157.29/cod2/soft/version.json";
+                string content = new WebClient().DownloadString(versionFilePath);
+                var remoteVersionInfo = JsonConvert.DeserializeObject<VersionInfo>(content);
 
                 var assembly = Assembly.GetExecutingAssembly();
                 var localVersion = new Version(assembly.GetName().Version.ToString());
+                var remoteVersion = new Version(remoteVersionInfo.Version);
 
-                if (new Version(remoteVersion.Version) > localVersion)
+                // Сравниваем только первые три компонента версии
+                var localVersionThreeComponents = new Version(localVersion.Major, localVersion.Minor, localVersion.Build);
+                var remoteVersionThreeComponents = new Version(remoteVersion.Major, remoteVersion.Minor, remoteVersion.Build);
+
+                if (remoteVersionThreeComponents > localVersionThreeComponents)
                 {
-                    var result = MessageBox.Show($"Доступна новая версия {remoteVersion.Version}. Хотите установить ее?", "Обновление", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    var result = MessageBox.Show($"Доступна новая версия {remoteVersionInfo.Version}. Хотите установить ее?", "Обновление", MessageBoxButton.YesNo, MessageBoxImage.Information);
                     if (result == MessageBoxResult.Yes)
                     {
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(remoteVersion.DownloadUrl) { UseShellExecute = true });
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(remoteVersionInfo.DownloadUrl) { UseShellExecute = true });
                         Application.Current.Shutdown();
                     }
                 }

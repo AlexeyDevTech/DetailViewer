@@ -35,32 +35,26 @@ namespace DetailViewer
         private void OnMainWindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             var settings = _settingsService.LoadSettings();
-            if (settings.RunInTray)
-            {
-                e.Cancel = true;
-                Application.Current.MainWindow.Hide();
-            }
+            //if (settings.RunInTray)
+            //{
+            //    e.Cancel = true;
+            //    Application.Current.MainWindow.Hide();
+            //}
         }
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
             string logFilePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Logs", "app.log");
             containerRegistry.RegisterSingleton<ILogger>(() => new FileLogger(logFilePath));
+
             containerRegistry.RegisterSingleton<ISettingsService, JsonSettingsService>();
             containerRegistry.RegisterSingleton<IDocumentFilterService, DocumentFilterService>();
             containerRegistry.RegisterSingleton<ICsvExportService, CsvExportService>();
 
-            // Register AppSettings as a singleton
             var settingsService = Container.Resolve<ISettingsService>();
             var appSettings = settingsService.LoadSettings();
             containerRegistry.RegisterInstance(appSettings);
 
-            // Register and migrate the DbContext
-            containerRegistry.RegisterSingleton<ApplicationDbContext>();
-            var dbContext = Container.Resolve<ApplicationDbContext>();
-            // dbContext.Database.Migrate();
-
-            // Register the data service
             containerRegistry.RegisterSingleton<IClassifierProvider, ClassifierProvider>();
             containerRegistry.RegisterSingleton<IDocumentDataService, SqliteDocumentDataService>();
             containerRegistry.RegisterSingleton<IProfileService, ProfileService>();
@@ -130,7 +124,7 @@ namespace DetailViewer
         {
             try
             {
-                var dbContext = Container.Resolve<ApplicationDbContext>();
+                using var dbContext = Container.Resolve<IDbContextFactory<ApplicationDbContext>>().CreateDbContext();
                 bool canConnect = await dbContext.Database.CanConnectAsync();
                 if (canConnect)
                 {
@@ -188,6 +182,7 @@ namespace DetailViewer
 
         private void OnExitClick(object sender, EventArgs e)
         {
+            _dbCheckTimer.Stop();
             _notifyIcon.Dispose();
             _dbCheckTimer.Dispose();
             Application.Current.Shutdown();
