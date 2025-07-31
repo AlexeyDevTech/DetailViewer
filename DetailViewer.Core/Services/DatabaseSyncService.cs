@@ -25,17 +25,17 @@ namespace DetailViewer.Core.Services
 
             if (string.IsNullOrEmpty(localDbPath))
             {
-                localDbPath = Path.Combine(Path.GetTempPath(), "DetailViewer", "local_database.db");
+                localDbPath = Path.Combine(Directory.GetCurrentDirectory(), "local_database.db");
                 settings.LocalDatabasePath = localDbPath;
                 await _settingsService.SaveSettingsAsync(settings);
             }
 
             var localDbDirectory = Path.GetDirectoryName(localDbPath);
-            if(!string.IsNullOrEmpty(localDbDirectory))
-                if (!Directory.Exists(localDbDirectory))
-                {
-                    Directory.CreateDirectory(localDbDirectory);
-                }
+            //if(!string.IsNullOrEmpty(localDbDirectory))
+            //    if (!Directory.Exists(localDbDirectory))
+            //    {
+            //        Directory.CreateDirectory(localDbDirectory);
+            //    }
 
             if (File.Exists(remoteDbPath))
             {
