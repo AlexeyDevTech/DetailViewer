@@ -125,7 +125,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 _allAssemblies = await _documentDataService.GetAssembliesAsync();
                 ApplyFilters();
                 StatusText = $"Данные успешно загружены.";
-                _logger.LogInformation("Assemblies loaded successfully.");
+                _logger.LogInfo("Assemblies loaded successfully.");
             }
             catch (Exception ex)
             {

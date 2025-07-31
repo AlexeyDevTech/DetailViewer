@@ -27,7 +27,7 @@ namespace DetailViewer.Core.Services
         {
             if (!File.Exists(_settingsFilePath))
             {
-                _logger.LogInformation($"Settings file not found at {_settingsFilePath}. Returning default settings.");
+                _logger.LogInfo($"Settings file not found at {_settingsFilePath}. Returning default settings.");
                 return new AppSettings(); // Return default settings if file doesn't exist
             }
 
@@ -35,7 +35,7 @@ namespace DetailViewer.Core.Services
             {
                 var json = File.ReadAllText(_settingsFilePath);
                 var settings = JsonSerializer.Deserialize<AppSettings>(json);
-                _logger.LogInformation($"Settings loaded from {_settingsFilePath}.");
+                _logger.LogInfo($"Settings loaded from {_settingsFilePath}.");
                 return settings ?? new AppSettings();
             }
             catch (Exception ex)
@@ -51,7 +51,7 @@ namespace DetailViewer.Core.Services
             {
                 var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
                 await File.WriteAllTextAsync(_settingsFilePath, json);
-                _logger.LogInformation($"Settings saved to {_settingsFilePath}.");
+                _logger.LogInfo($"Settings saved to {_settingsFilePath}.");
             }
             catch (Exception ex)
             {

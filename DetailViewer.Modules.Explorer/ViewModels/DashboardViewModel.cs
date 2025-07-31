@@ -348,7 +348,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 UniqueFullNames = new ObservableCollection<string>(_allRecords.Select(r => r.FullName).Distinct().OrderBy(n => n));
                 ApplyFilters();
                 StatusText = $"Данные успешно загружены.";
-                _logger.LogInformation("Data loaded successfully.");
+                _logger.LogInfo("Data loaded successfully.");
             }
             catch (Exception ex)
             {

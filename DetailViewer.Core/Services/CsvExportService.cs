@@ -56,7 +56,7 @@ namespace DetailViewer.Core.Services
                         }
                     }
                 }
-                _logger.LogInformation($"Successfully exported {records.Count} records to CSV: {filePath}");
+                _logger.LogInfo($"Successfully exported {records.Count} records to CSV: {filePath}");
             }
             catch (Exception ex)
             {

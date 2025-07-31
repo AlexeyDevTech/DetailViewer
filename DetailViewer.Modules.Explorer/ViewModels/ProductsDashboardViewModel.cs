@@ -125,7 +125,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 _allProducts = await _documentDataService.GetProductsAsync();
                 ApplyFilters();
                 StatusText = $"Данные успешно загружены.";
-                _logger.LogInformation("Products loaded successfully.");
+                _logger.LogInfo("Products loaded successfully.");
             }
             catch (Exception ex)
             {

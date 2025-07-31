@@ -11,33 +11,45 @@ namespace DetailViewer.Core.Services
 {
     public class SqliteDocumentDataService : IDocumentDataService
     {
-        private readonly ApplicationDbContext _dbContext;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly IClassifierProvider _classifierProvider;
+        private readonly ILogger _logger;
 
-        public SqliteDocumentDataService(ApplicationDbContext dbContext, IClassifierProvider classifierProvider)
+        public SqliteDocumentDataService(IDbContextFactory<ApplicationDbContext> contextFactory, IClassifierProvider classifierProvider, ILogger logger)
         {
-            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
             _classifierProvider = classifierProvider ?? throw new ArgumentNullException(nameof(classifierProvider));
-            _dbContext.Database.EnsureCreated();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<List<DocumentDetailRecord>> GetAllRecordsAsync()
         {
-            return await _dbContext.DocumentRecords
-                .Include(r => r.ESKDNumber)
-                .ThenInclude(e => e.ClassNumber)
-                .ToListAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                return await dbContext.DocumentRecords
+                    .Include(r => r.ESKDNumber)
+                    .ThenInclude(e => e.ClassNumber)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error getting all records", ex);
+                throw;
+            }
         }
 
         public async Task AddRecordAsync(DocumentDetailRecord record, List<int> assemblyIds)
         {
             if (record == null) throw new ArgumentNullException(nameof(record));
-
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            
             try
             {
-                _dbContext.DocumentRecords.Add(record);
-                await _dbContext.SaveChangesAsync();
+                using var dbContext = _contextFactory.CreateDbContext();
+                await using var transaction = await dbContext.Database.BeginTransactionAsync();
+                
+                dbContext.DocumentRecords.Add(record);
+                await dbContext.SaveChangesAsync();
 
                 if (assemblyIds?.Any() == true)
                 {
@@ -46,15 +58,15 @@ namespace DetailViewer.Core.Services
                         AssemblyId = id,
                         DetailId = record.Id
                     }).ToList();
-                    _dbContext.AssemblyDetails.AddRange(assemblyDetails);
-                    await _dbContext.SaveChangesAsync();
+                    dbContext.AssemblyDetails.AddRange(assemblyDetails);
+                    await dbContext.SaveChangesAsync();
                 }
 
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                _logger.LogError("Error adding record", ex);
                 throw;
             }
         }
@@ -63,12 +75,14 @@ namespace DetailViewer.Core.Services
         {
             if (record == null) throw new ArgumentNullException(nameof(record));
 
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                _dbContext.DocumentRecords.Update(record);
+                using var dbContext = _contextFactory.CreateDbContext();
+                await using var transaction = await dbContext.Database.BeginTransactionAsync();
+                
+                dbContext.DocumentRecords.Update(record);
 
-                await _dbContext.AssemblyDetails
+                await dbContext.AssemblyDetails
                     .Where(ad => ad.DetailId == record.Id)
                     .ExecuteDeleteAsync();
 
@@ -79,118 +93,197 @@ namespace DetailViewer.Core.Services
                         AssemblyId = id,
                         DetailId = record.Id
                     }).ToList();
-                    _dbContext.AssemblyDetails.AddRange(newLinks);
+                    dbContext.AssemblyDetails.AddRange(newLinks);
                 }
 
-                await _dbContext.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                _logger.LogError("Error updating record", ex);
                 throw;
             }
         }
 
         public async Task DeleteRecordAsync(int recordId)
         {
-            await _dbContext.DocumentRecords
-                .Where(r => r.Id == recordId)
-                .ExecuteDeleteAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                await dbContext.DocumentRecords
+                    .Where(r => r.Id == recordId)
+                    .ExecuteDeleteAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting record with id {recordId}", ex);
+                throw;
+            }
         }
 
         public async Task<List<Assembly>> GetAssembliesAsync()
         {
-            return await _dbContext.Assemblies
-                .Include(a => a.EskdNumber)
-                .ThenInclude(e => e.ClassNumber)
-                .ToListAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                return await dbContext.Assemblies
+                    .Include(a => a.EskdNumber)
+                    .ThenInclude(e => e.ClassNumber)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error getting assemblies", ex);
+                throw;
+            }
         }
 
         public async Task<List<Product>> GetProductsAsync()
         {
-            return await _dbContext.Products
-                .Include(p => p.EskdNumber)
-                .ThenInclude(e => e.ClassNumber)
-                .ToListAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                return await dbContext.Products
+                    .Include(p => p.EskdNumber)
+                    .ThenInclude(e => e.ClassNumber)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error getting products", ex);
+                throw;
+            }
         }
 
         public async Task DeleteAssemblyAsync(int assemblyId)
         {
-            await _dbContext.Assemblies
-                .Where(a => a.Id == assemblyId)
-                .ExecuteDeleteAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                await dbContext.Assemblies
+                    .Where(a => a.Id == assemblyId)
+                    .ExecuteDeleteAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting assembly with id {assemblyId}", ex);
+                throw;
+            }
         }
 
         public async Task DeleteProductAsync(int productId)
         {
-            await _dbContext.Products
-                .Where(p => p.Id == productId)
-                .ExecuteDeleteAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                await dbContext.Products
+                    .Where(p => p.Id == productId)
+                    .ExecuteDeleteAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting product with id {productId}", ex);
+                throw;
+            }
         }
 
         public async Task AddAssemblyAsync(Assembly assembly)
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
 
-            _dbContext.Assemblies.Add(assembly);
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                dbContext.Assemblies.Add(assembly);
+                await dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error adding assembly", ex);
+                throw;
+            }
         }
 
         public async Task UpdateAssemblyAsync(Assembly assembly)
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
 
-            _dbContext.Assemblies.Update(assembly);
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                dbContext.Assemblies.Update(assembly);
+                await dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error updating assembly", ex);
+                throw;
+            }
         }
 
         public async Task AddProductAsync(Product product)
         {
             if (product == null) throw new ArgumentNullException(nameof(product));
 
-            _dbContext.Products.Add(product);
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                dbContext.Products.Add(product);
+                await dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error adding product", ex);
+                throw;
+            }
         }
 
         public async Task UpdateProductAsync(Product product)
         {
             if (product == null) throw new ArgumentNullException(nameof(product));
 
-            _dbContext.Products.Update(product);
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                dbContext.Products.Update(product);
+                await dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error updating product", ex);
+                throw;
+            }
         }
 
         public async Task CreateProductWithAssembliesAsync(Product product, List<int> parentAssemblyIds)
         {
             if (product == null) throw new ArgumentNullException(nameof(product));
 
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                // 1. Добавляем продукт в контекст и сохраняем, чтобы получить его Id
-                _dbContext.Products.Add(product);
-                await _dbContext.SaveChangesAsync();
+                using var dbContext = _contextFactory.CreateDbContext();
+                await using var transaction = await dbContext.Database.BeginTransactionAsync();
+                
+                dbContext.Products.Add(product);
+                await dbContext.SaveChangesAsync();
 
-                // 2. Если есть сборки для связи, создаем записи в таблице ProductAssemblies
                 if (parentAssemblyIds?.Any() == true)
                 {
                     var newLinks = parentAssemblyIds.Select(assemblyId => new ProductAssembly
                     {
-                        ProductId = product.Id, // Используем Id только что созданного продукта
+                        ProductId = product.Id,
                         AssemblyId = assemblyId
                     }).ToList();
-                    _dbContext.ProductAssemblies.AddRange(newLinks);
-                    await _dbContext.SaveChangesAsync();
+                    dbContext.ProductAssemblies.AddRange(newLinks);
+                    await dbContext.SaveChangesAsync();
                 }
 
-                // 3. Подтверждаем транзакцию
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                // В случае ошибки откатываем все изменения
-                await transaction.RollbackAsync();
+                _logger.LogError("Error creating product with assemblies", ex);
                 throw;
             }
         }
@@ -202,60 +295,87 @@ namespace DetailViewer.Core.Services
                 return null;
             }
 
-            var classifier = await _dbContext.Classifiers
-                .FirstOrDefaultAsync(c => c.Number == classifierNumber);
-
-            if (classifier == null)
+            try
             {
-                var classifierInfo = _classifierProvider.GetClassifierByCode(code);
-                if (classifierInfo == null) return null;
+                using var dbContext = _contextFactory.CreateDbContext();
+                var classifier = await dbContext.Classifiers
+                    .FirstOrDefaultAsync(c => c.Number == classifierNumber);
 
-                classifier = new Classifier
+                if (classifier == null)
                 {
-                    Number = classifierNumber,
-                    Description = classifierInfo.Description
-                };
-                _dbContext.Classifiers.Add(classifier);
-                await _dbContext.SaveChangesAsync();
-            }
+                    var classifierInfo = _classifierProvider.GetClassifierByCode(code);
+                    if (classifierInfo == null) return null;
 
-            return classifier;
+                    classifier = new Classifier
+                    {
+                        Number = classifierNumber,
+                        Description = classifierInfo.Description
+                    };
+                    dbContext.Classifiers.Add(classifier);
+                    await dbContext.SaveChangesAsync();
+                }
+
+                return classifier;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting or creating classifier with code {code}", ex);
+                throw;
+            }
         }
 
         public async Task<List<Product>> GetProductsByAssemblyId(int assemblyId)
         {
-            return await _dbContext.ProductAssemblies
-                .Where(pa => pa.AssemblyId == assemblyId)
-                .Join(_dbContext.Products.Include(p => p.EskdNumber).ThenInclude(e => e.ClassNumber),
-                    pa => pa.ProductId,
-                    p => p.Id,
-                    (pa, p) => p)
-                .ToListAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                return await dbContext.ProductAssemblies
+                    .Where(pa => pa.AssemblyId == assemblyId)
+                    .Join(dbContext.Products.Include(p => p.EskdNumber).ThenInclude(e => e.ClassNumber),
+                        pa => pa.ProductId,
+                        p => p.Id,
+                        (pa, p) => p)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting products by assembly id {assemblyId}", ex);
+                throw;
+            }
         }
 
         public async Task<List<Assembly>> GetParentAssembliesAsync(int assemblyId)
         {
-            return await _dbContext.AssemblyParents
-                .Where(ap => ap.ChildAssemblyId == assemblyId)
-                .Join(_dbContext.Assemblies.Include(a => a.EskdNumber).ThenInclude(e => e.ClassNumber),
-                    ap => ap.ParentAssemblyId,
-                    a => a.Id,
-                    (ap, a) => a)
-                .ToListAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                return await dbContext.AssemblyParents
+                    .Where(ap => ap.ChildAssemblyId == assemblyId)
+                    .Join(dbContext.Assemblies.Include(a => a.EskdNumber).ThenInclude(e => e.ClassNumber),
+                        ap => ap.ParentAssemblyId,
+                        a => a.Id,
+                        (ap, a) => a)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting parent assemblies for assembly with id {assemblyId}", ex);
+                throw;
+            }
         }
 
         public async Task UpdateAssemblyParentAssembliesAsync(int assemblyId, List<Assembly> parentAssemblies)
         {
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                // 1. Удаляем записи напрямую из БД
-                await _dbContext.AssemblyParents
+                using var dbContext = _contextFactory.CreateDbContext();
+                await using var transaction = await dbContext.Database.BeginTransactionAsync();
+                
+                await dbContext.AssemblyParents
                     .Where(ap => ap.ChildAssemblyId == assemblyId)
                     .ExecuteDeleteAsync();
 
-                // 2. Вручную отсоединяем отслеживаемые сущности, чтобы избежать конфликта
-                var trackedEntries = _dbContext.ChangeTracker.Entries<AssemblyParent>()
+                var trackedEntries = dbContext.ChangeTracker.Entries<AssemblyParent>()
                     .Where(e => e.Entity.ChildAssemblyId == assemblyId)
                     .ToList();
                 foreach (var entry in trackedEntries)
@@ -263,7 +383,6 @@ namespace DetailViewer.Core.Services
                     entry.State = EntityState.Detached;
                 }
 
-                // 3. Добавляем новые связи
                 if (parentAssemblies?.Any() == true)
                 {
                     var newLinks = parentAssemblies.Select(parent => new AssemblyParent
@@ -271,25 +390,27 @@ namespace DetailViewer.Core.Services
                         ParentAssemblyId = parent.Id,
                         ChildAssemblyId = assemblyId
                     }).ToList();
-                    _dbContext.AssemblyParents.AddRange(newLinks);
+                    dbContext.AssemblyParents.AddRange(newLinks);
                 }
 
-                await _dbContext.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                _logger.LogError($"Error updating parent assemblies for assembly with id {assemblyId}", ex);
                 throw;
             }
         }
 
         public async Task UpdateAssemblyRelatedProductsAsync(int assemblyId, List<Product> relatedProducts)
         {
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                await _dbContext.ProductAssemblies
+                using var dbContext = _contextFactory.CreateDbContext();
+                await using var transaction = await dbContext.Database.BeginTransactionAsync();
+                
+                await dbContext.ProductAssemblies
                     .Where(pa => pa.AssemblyId == assemblyId)
                     .ExecuteDeleteAsync();
 
@@ -300,39 +421,32 @@ namespace DetailViewer.Core.Services
                         ProductId = product.Id,
                         AssemblyId = assemblyId
                     }).ToList();
-                    _dbContext.ProductAssemblies.AddRange(newLinks);
+                    dbContext.ProductAssemblies.AddRange(newLinks);
                 }
 
-                await _dbContext.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                _logger.LogError($"Error updating related products for assembly with id {assemblyId}", ex);
                 throw;
             }
         }
 
         public async Task UpdateProductParentAssembliesAsync(int productId, List<Assembly> parentAssemblies)
         {
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                // 1. Удаляем записи напрямую из БД
-                await _dbContext.ProductAssemblies
+                using var dbContext = _contextFactory.CreateDbContext();
+                await using var transaction = await dbContext.Database.BeginTransactionAsync();
+                
+                var existingLinks = await dbContext.ProductAssemblies
                     .Where(pa => pa.ProductId == productId)
-                    .ExecuteDeleteAsync();
+                    .ToListAsync();
 
-                // 2. Вручную отсоединяем отслеживаемые сущности, чтобы избежать конфликта
-                var trackedEntries = _dbContext.ChangeTracker.Entries<ProductAssembly>()
-                    .Where(e => e.Entity.ProductId == productId)
-                    .ToList();
-                foreach (var entry in trackedEntries)
-                {
-                    entry.State = EntityState.Detached;
-                }
+                dbContext.ProductAssemblies.RemoveRange(existingLinks);
 
-                // 3. Добавляем новые связи
                 if (parentAssemblies?.Any() == true)
                 {
                     var newLinks = parentAssemblies.Select(assembly => new ProductAssembly
@@ -340,87 +454,111 @@ namespace DetailViewer.Core.Services
                         ProductId = productId,
                         AssemblyId = assembly.Id
                     }).ToList();
-                    _dbContext.ProductAssemblies.AddRange(newLinks);
+                    dbContext.ProductAssemblies.AddRange(newLinks);
                 }
 
-                await _dbContext.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                _logger.LogError($"Error updating parent assemblies for product with id {productId}", ex);
                 throw;
             }
         }
 
         public async Task<List<Assembly>> GetProductParentAssembliesAsync(int productId)
         {
-            return await _dbContext.ProductAssemblies
-                .Where(pa => pa.ProductId == productId)
-                .Join(_dbContext.Assemblies.Include(a => a.EskdNumber).ThenInclude(e => e.ClassNumber),
-                    pa => pa.AssemblyId,
-                    a => a.Id,
-                    (pa, a) => a)
-                .ToListAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                return await dbContext.ProductAssemblies
+                    .Where(pa => pa.ProductId == productId)
+                    .Join(dbContext.Assemblies.Include(a => a.EskdNumber).ThenInclude(e => e.ClassNumber),
+                        pa => pa.AssemblyId,
+                        a => a.Id,
+                        (pa, a) => a)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting parent assemblies for product with id {productId}", ex);
+                throw;
+            }
         }
 
         public async Task<List<Product>> GetRelatedProductsAsync(int assemblyId)
         {
-            return await _dbContext.ProductAssemblies
-                .Where(pa => pa.AssemblyId == assemblyId)
-                .Join(_dbContext.Products.Include(p => p.EskdNumber).ThenInclude(e => e.ClassNumber),
-                    pa => pa.ProductId,
-                    p => p.Id,
-                    (pa, p) => p)
-                .ToListAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                return await dbContext.ProductAssemblies
+                    .Where(pa => pa.AssemblyId == assemblyId)
+                    .Join(dbContext.Products.Include(p => p.EskdNumber).ThenInclude(e => e.ClassNumber),
+                        pa => pa.ProductId,
+                        p => p.Id,
+                        (pa, p) => p)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting related products for assembly with id {assemblyId}", ex);
+                throw;
+            }
         }
 
         public async Task<List<Assembly>> GetParentAssembliesForDetailAsync(int detailId)
         {
-            var assemblyIds = await _dbContext.AssemblyDetails
-                .Where(ad => ad.DetailId == detailId)
-                .Select(ad => ad.AssemblyId)
-                .ToListAsync();
+            try
+            {
+                using var dbContext = _contextFactory.CreateDbContext();
+                var assemblyIds = await dbContext.AssemblyDetails
+                    .Where(ad => ad.DetailId == detailId)
+                    .Select(ad => ad.AssemblyId)
+                    .ToListAsync();
 
-            return await _dbContext.Assemblies
-                .Include(a => a.EskdNumber)
-                .ThenInclude(e => e.ClassNumber)
-                .Where(a => assemblyIds.Contains(a.Id))
-                .ToListAsync();
+                return await dbContext.Assemblies
+                    .Include(a => a.EskdNumber)
+                    .ThenInclude(e => e.ClassNumber)
+                    .Where(a => assemblyIds.Contains(a.Id))
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting parent assemblies for detail with id {detailId}", ex);
+                throw;
+            }
         }
 
         public async Task<Assembly> ConvertProductToAssemblyAsync(int productId, List<Product> childProducts)
         {
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                // 1. Находим исходный продукт
-                var productToConvert = await _dbContext.Products
+                using var dbContext = _contextFactory.CreateDbContext();
+                await using var transaction = await dbContext.Database.BeginTransactionAsync();
+                
+                var productToConvert = await dbContext.Products
                     .Include(p => p.EskdNumber)
                     .FirstOrDefaultAsync(p => p.Id == productId);
 
                 if (productToConvert == null)
                 {
-                    throw new KeyNotFoundException($"Продукт с Id={productId} не найден.");
+                    throw new KeyNotFoundException($"Product with Id={productId} not found.");
                 }
 
-                // 2. Находим родительские сборки для продукта
-                var parentAssemblies = await _dbContext.ProductAssemblies
+                var parentAssemblies = await dbContext.ProductAssemblies
                     .Where(pa => pa.ProductId == productId)
                     .Select(pa => pa.AssemblyId)
                     .ToListAsync();
 
-                // 3. Создаем новую сборку на основе данных продукта
                 var newAssembly = new Assembly
                 {
                     Name = productToConvert.Name,
                     EskdNumber = productToConvert.EskdNumber,
-                    // Копируем другие релевантные поля, если они есть
                 };
-                _dbContext.Assemblies.Add(newAssembly);
-                await _dbContext.SaveChangesAsync(); // Сохраняем, чтобы получить Id новой сборки
+                dbContext.Assemblies.Add(newAssembly);
+                await dbContext.SaveChangesAsync();
 
-                // 4. Перенаправляем родительские связи на новую сборку
                 if (parentAssemblies.Any())
                 {
                     var newParentLinks = parentAssemblies.Select(parentId => new AssemblyParent
@@ -428,10 +566,9 @@ namespace DetailViewer.Core.Services
                         ParentAssemblyId = parentId,
                         ChildAssemblyId = newAssembly.Id
                     }).ToList();
-                    _dbContext.AssemblyParents.AddRange(newParentLinks);
+                    dbContext.AssemblyParents.AddRange(newParentLinks);
                 }
 
-                // 5. Добавляем новые дочерние продукты к сборке
                 if (childProducts?.Any() == true)
                 {
                     var newChildLinks = childProducts.Select(child => new ProductAssembly
@@ -439,21 +576,20 @@ namespace DetailViewer.Core.Services
                         AssemblyId = newAssembly.Id,
                         ProductId = child.Id
                     }).ToList();
-                    _dbContext.ProductAssemblies.AddRange(newChildLinks);
+                    dbContext.ProductAssemblies.AddRange(newChildLinks);
                 }
 
-                // 6. Удаляем старый продукт и его связи
-                await _dbContext.ProductAssemblies.Where(pa => pa.ProductId == productId).ExecuteDeleteAsync();
-                _dbContext.Products.Remove(productToConvert);
+                await dbContext.ProductAssemblies.Where(pa => pa.ProductId == productId).ExecuteDeleteAsync();
+                dbContext.Products.Remove(productToConvert);
                 
-                await _dbContext.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return newAssembly;
             }
-            catch
+            catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                _logger.LogError($"Error converting product to assembly for product with id {productId}", ex);
                 throw;
             }
         }
