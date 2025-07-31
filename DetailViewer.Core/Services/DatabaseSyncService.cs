@@ -31,10 +31,11 @@ namespace DetailViewer.Core.Services
             }
 
             var localDbDirectory = Path.GetDirectoryName(localDbPath);
-            if (!Directory.Exists(localDbDirectory))
-            {
-                Directory.CreateDirectory(localDbDirectory);
-            }
+            if(!string.IsNullOrEmpty(localDbDirectory))
+                if (!Directory.Exists(localDbDirectory))
+                {
+                    Directory.CreateDirectory(localDbDirectory);
+                }
 
             if (File.Exists(remoteDbPath))
             {

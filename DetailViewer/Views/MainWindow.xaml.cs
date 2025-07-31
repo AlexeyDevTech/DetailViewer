@@ -1,4 +1,12 @@
-using System.ComponentModel;using System.Windows;using System.IO;using System.Reflection;using Newtonsoft.Json;using System.Threading.Tasks;using System;using System.Net;
+using System.ComponentModel;
+using System.Windows;
+using System.IO;
+using System.Reflection;
+using Newtonsoft.Json;
+using System.Threading.Tasks;
+using System;
+using System.Net;
+using DetailViewer.Core.Interfaces;
 
 namespace DetailViewer.Views
 {
@@ -7,8 +15,11 @@ namespace DetailViewer.Views
     /// </summary>
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        private readonly ILogger _logger;
+
+        public MainWindow(ILogger logger)
         {
+            _logger = logger;
             InitializeComponent();
             Closing += MainWindow_Closing;
             CheckForUpdatesAsync();
@@ -16,6 +27,7 @@ namespace DetailViewer.Views
 
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
+            _logger.Log("Main window closing");
             //// Отменяем закрытие окна
             //e.Cancel = true;
             //// Скрываем окно вместо закрытия
@@ -24,6 +36,7 @@ namespace DetailViewer.Views
 
         private async Task CheckForUpdatesAsync()
         {
+            _logger.Log("Checking for updates");
             try
             {
                 // ЗАМЕНИТЕ ПУТЬ НА ВАШ РЕАЛЬНЫЙ СЕТЕВОЙ ПУТЬ
@@ -51,6 +64,7 @@ namespace DetailViewer.Views
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error checking for updates", ex);
                 // Ошибки (например, нет доступа к сети) будут проигнорированы
             }
         }

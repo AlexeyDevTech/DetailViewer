@@ -92,49 +92,49 @@ namespace DetailViewer
 
             var dbContextFactory = Container.Resolve<IDbContextFactory<ApplicationDbContext>>();
 
-            // Manually fix migrations history if needed
-            using (var dbContext = dbContextFactory.CreateDbContext())
-            {
-                var connection = dbContext.Database.GetDbConnection();
-                connection.Open();
+            //// Manually fix migrations history if needed
+            //using (var dbContext = dbContextFactory.CreateDbContext())
+            //{
+            //    var connection = dbContext.Database.GetDbConnection();
+            //    connection.Open();
 
-                using (var command = connection.CreateCommand())
-                {
-                    command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='Classifiers';";
-                    var classifiersExists = command.ExecuteScalar() != null;
+            //    using (var command = connection.CreateCommand())
+            //    {
+            //        command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='Classifiers';";
+            //        var classifiersExists = command.ExecuteScalar() != null;
 
-                    command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory';";
-                    var migrationsHistoryExists = command.ExecuteScalar() != null;
+            //        command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory';";
+            //        var migrationsHistoryExists = command.ExecuteScalar() != null;
 
-                    if (classifiersExists && !migrationsHistoryExists)
-                    {
-                        _logger.Log("Manually creating migrations history table.");
-                        command.CommandText = "CREATE TABLE \"__EFMigrationsHistory\" (\"MigrationId\" TEXT NOT NULL CONSTRAINT \"PK___EFMigrationsHistory\" PRIMARY KEY, \"ProductVersion\" TEXT NOT NULL);";
-                        command.ExecuteNonQuery();
+            //        if (classifiersExists && !migrationsHistoryExists)
+            //        {
+            //            _logger.Log("Manually creating migrations history table.");
+            //            command.CommandText = "CREATE TABLE \"__EFMigrationsHistory\" (\"MigrationId\" TEXT NOT NULL CONSTRAINT \"PK___EFMigrationsHistory\" PRIMARY KEY, \"ProductVersion\" TEXT NOT NULL);";
+            //            command.ExecuteNonQuery();
 
-                        _logger.Log("Manually inserting initial migration record.");
-                        command.CommandText = "INSERT INTO \"__EFMigrationsHistory\" VALUES ('20250731075054_AddChangeLogTable', '8.0.7');";
-                        command.ExecuteNonQuery();
-                    }
-                }
-                connection.Close();
-            }
+            //            _logger.Log("Manually inserting initial migration record.");
+            //            command.CommandText = "INSERT INTO \"__EFMigrationsHistory\" VALUES ('20250731075054_AddChangeLogTable', '8.0.7');";
+            //            command.ExecuteNonQuery();
+            //        }
+            //    }
+            //    connection.Close();
+            //}
 
             // Run migrations using a new DbContext
-            try
-            {
-                _logger.Log("Applying migrations...");
-                using (var dbContext = dbContextFactory.CreateDbContext())
-                {
-                    // dbContext.Database.Migrate();
-                }
-                _logger.Log("Migrations applied successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Error applying migrations", ex);
-                throw;
-            }
+            //try
+            //{
+            //    _logger.Log("Applying migrations...");
+            //    using (var dbContext = dbContextFactory.CreateDbContext())
+            //    {
+            //        // dbContext.Database.Migrate();
+            //    }
+            //    _logger.Log("Migrations applied successfully.");
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.LogError("Error applying migrations", ex);
+            //    throw;
+            //}
 
             _settingsService = Container.Resolve<ISettingsService>();
             _synchronizationService = Container.Resolve<SynchronizationService>();

@@ -1,5 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using DetailViewer.Core.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Data
@@ -17,7 +18,7 @@ namespace DetailViewer.Core.Data
         {
             var settings = _settingsService.LoadSettings();
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-            optionsBuilder.UseSqlite($"Data Source={settings.LocalDatabasePath}");
+            optionsBuilder.UseSqlite($"Data Source={Path.Combine(Directory.GetCurrentDirectory(), settings.LocalDatabasePath) }");
 
             return new ApplicationDbContext(optionsBuilder.Options);
         }
