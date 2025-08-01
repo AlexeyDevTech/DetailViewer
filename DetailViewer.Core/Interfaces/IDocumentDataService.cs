@@ -152,5 +152,6 @@ namespace DetailViewer.Core.Interfaces
 
         Task CreateProductWithAssembliesAsync(Product product, List<int> ParentassemblyIds);
         Task<Assembly> ConvertProductToAssemblyAsync(int productId, List<Product> childProducts);
+        Task<List<ChangeLog>> GetChangesSince(DateTime timestamp);
     }
 }

@@ -718,5 +718,22 @@ namespace DetailViewer.Core.Services
                 throw;
             }
         }
+
+        public async Task<List<ChangeLog>> GetChangesSince(DateTime timestamp)
+        {
+            _logger.Log($"Getting changes since: {timestamp}");
+            try
+            {
+                using var dbContext = await _contextFactory.CreateDbContextAsync();
+                return await dbContext.ChangeLogs
+                    .Where(cl => cl.Timestamp > timestamp)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error getting changes", ex);
+                throw;
+            }
+        }
     }
 }

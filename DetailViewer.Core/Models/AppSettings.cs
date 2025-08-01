@@ -6,5 +6,6 @@ namespace DetailViewer.Core.Models
         public string LocalDatabasePath { get; set; }
         public string DefaultCompanyCode { get; set; } = "ДТМЛ";
         public bool RunInTray { get; set; } = true;
+        public System.DateTime LastSyncTimestamp { get; set; }
     }
 }
