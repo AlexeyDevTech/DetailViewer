@@ -1,3 +1,4 @@
+#nullable enable
 
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
@@ -16,7 +17,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 {
     public class AssemblyFormViewModel : BindableBase, IDialogAware
     {
-        private readonly IDocumentDataService _documentDataService;
+        private readonly IAssemblyService _assemblyService;
+        private readonly IProductService _productService;
+        private readonly IClassifierService _classifierService;
         private readonly ILogger _logger;
         private readonly ISettingsService _settingsService;
         private readonly IActiveUserService _activeUserService;
@@ -24,7 +27,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public string Title => "Форма сборки";
 
-        public event Action<IDialogResult> RequestClose;
+        public event Action<IDialogResult>? RequestClose;
 
         private Assembly _assembly;
         public Assembly Assembly
@@ -47,12 +50,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set { SetProperty(ref _relatedProducts, value); }
         }
 
-        private string _companyCode, _classNumberString;
+        private string? _companyCode, _classNumberString;
         private int _detailNumber;
         private int? _version;
 
-        public string CompanyCode { get => _companyCode; set => SetProperty(ref _companyCode, value, OnESKDNumberPartChanged); }
-        public string ClassNumberString { get => _classNumberString; set => SetProperty(ref _classNumberString, value, OnClassNumberStringChanged); }
+        public string? CompanyCode { get => _companyCode; set => SetProperty(ref _companyCode, value, OnESKDNumberPartChanged); }
+        public string? ClassNumberString { get => _classNumberString; set => SetProperty(ref _classNumberString, value, OnClassNumberStringChanged); }
         public int DetailNumber { get => _detailNumber; set => SetProperty(ref _detailNumber, value, OnESKDNumberPartChanged); }
         public int? Version { get => _version; set => SetProperty(ref _version, value, OnESKDNumberPartChanged); }
 
@@ -77,14 +80,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
-        private ObservableCollection<ClassifierData> _allClassifiers;
-        public ObservableCollection<ClassifierData> AllClassifiers { get => _allClassifiers; set => SetProperty(ref _allClassifiers, value); }
+        private ObservableCollection<ClassifierData>? _allClassifiers;
+        public ObservableCollection<ClassifierData>? AllClassifiers { get => _allClassifiers; set => SetProperty(ref _allClassifiers, value); }
 
-        private ObservableCollection<ClassifierData> _filteredClassifiers;
-        public ObservableCollection<ClassifierData> FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
+        private ObservableCollection<ClassifierData>? _filteredClassifiers;
+        public ObservableCollection<ClassifierData>? FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
 
-        private ClassifierData _selectedClassifier;
-        public ClassifierData SelectedClassifier
+        private ClassifierData? _selectedClassifier;
+        public ClassifierData? SelectedClassifier
         {
             get => _selectedClassifier;
             set
@@ -94,9 +97,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
-        private List<Assembly> _allAssemblies;
-        private ObservableCollection<Assembly> _filteredAssemblies;
-        public ObservableCollection<Assembly> FilteredAssemblies { get => _filteredAssemblies; set => SetProperty(ref _filteredAssemblies, value); }
+        private List<Assembly>? _allAssemblies;
+        private ObservableCollection<Assembly>? _filteredAssemblies;
+        public ObservableCollection<Assembly>? FilteredAssemblies { get => _filteredAssemblies; set => SetProperty(ref _filteredAssemblies, value); }
 
         public DelegateCommand SaveCommand { get; private set; }
         public DelegateCommand CancelCommand { get; private set; }
@@ -106,15 +109,17 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public DelegateCommand<Product> RemoveRelatedProductCommand { get; private set; }
 
 
-        public AssemblyFormViewModel(IDocumentDataService documentDataService, ILogger logger, ISettingsService settingsService, IActiveUserService activeUserService, IDialogService dialogService)
+        public AssemblyFormViewModel(IAssemblyService assemblyService, IProductService productService, IClassifierService classifierService, ILogger logger, ISettingsService settingsService, IActiveUserService activeUserService, IDialogService dialogService)
         {
-            _documentDataService = documentDataService;
+            _assemblyService = assemblyService;
+            _productService = productService;
+            _classifierService = classifierService;
             _logger = logger;
             _settingsService = settingsService;
             _activeUserService = activeUserService;
             _dialogService = dialogService;
 
-            Assembly = new Assembly
+            _assembly = new Assembly
             {
                 EskdNumber = new ESKDNumber()
                 {
@@ -123,8 +128,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 Author = _activeUserService.CurrentUser?.ShortName
             };
 
-            ParentAssemblies = new ObservableCollection<Assembly>();
-            RelatedProducts = new ObservableCollection<Product>();
+            _parentAssemblies = new ObservableCollection<Assembly>();
+            _relatedProducts = new ObservableCollection<Product>();
 
             SaveCommand = new DelegateCommand(Save);
             CancelCommand = new DelegateCommand(Cancel);
@@ -137,46 +142,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             LoadAssemblies();
         }
 
-        private async void LoadClassifiers()
+        private void LoadClassifiers()
         {
-            try
-            {
-                string jsonFilePath = "eskd_classifiers.json";
-                if (File.Exists(jsonFilePath))
-                {
-                    string jsonContent = await File.ReadAllTextAsync(jsonFilePath);
-                    var rootClassifiers = JsonSerializer.Deserialize<List<ClassifierData>>(jsonContent);
-                    AllClassifiers = new ObservableCollection<ClassifierData>(FlattenClassifiers(rootClassifiers));
-                    FilterClassifiers();
-                }
-                else
-                {
-                    _logger.LogWarning($"eskd_classifiers.json not found at {jsonFilePath}");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error loading classifiers: {ex.Message}", ex);
-            }
-        }
-
-        private List<ClassifierData> FlattenClassifiers(List<ClassifierData> classifiers)
-        {
-            var flattenedList = new List<ClassifierData>();
-            foreach (var classifier in classifiers)
-            {
-                flattenedList.Add(classifier);
-                if (classifier.Children != null && classifier.Children.Any())
-                {
-                    flattenedList.AddRange(FlattenClassifiers(classifier.Children));
-                }
-            }
-            return flattenedList;
+            AllClassifiers = new ObservableCollection<ClassifierData>(_classifierService.GetAllClassifiers());
+            FilterClassifiers();
         }
 
         private async void LoadAssemblies()
         {
-            _allAssemblies = await _documentDataService.GetAssembliesAsync();
+            _allAssemblies = await _assemblyService.GetAssembliesAsync();
             FilterAssemblies();
         }
 
@@ -287,8 +261,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
             if (!string.IsNullOrWhiteSpace(ClassNumberString))
             {
-                var classifier = await _documentDataService.GetOrCreateClassifierAsync(ClassNumberString);
-                Assembly.EskdNumber.ClassNumber = classifier;
+                var classifier = _classifierService.GetClassifierByCode(ClassNumberString);
+                Assembly.EskdNumber.ClassNumber = new Classifier { Number = int.Parse(classifier.Code), Description = classifier.Description };
             }
             else
             {
@@ -297,15 +271,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
             if (Assembly.Id == 0)
             {
-                await _documentDataService.AddAssemblyAsync(Assembly);
+                await _assemblyService.AddAssemblyAsync(Assembly);
             }
             else
             {
-                await _documentDataService.UpdateAssemblyAsync(Assembly);
+                await _assemblyService.UpdateAssemblyAsync(Assembly);
             }
 
-            await _documentDataService.UpdateAssemblyParentAssembliesAsync(Assembly.Id, ParentAssemblies.ToList());
-            await _documentDataService.UpdateAssemblyRelatedProductsAsync(Assembly.Id, RelatedProducts.ToList());
+            await _assemblyService.UpdateAssemblyParentAssembliesAsync(Assembly.Id, ParentAssemblies.ToList());
+            await _assemblyService.UpdateAssemblyRelatedProductsAsync(Assembly.Id, RelatedProducts.ToList());
 
             RequestClose?.Invoke(new DialogResult(ButtonResult.OK));
         }
@@ -318,6 +292,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public async void OnDialogOpened(IDialogParameters parameters)
         {
+            AllClassifiers = new ObservableCollection<ClassifierData>(_classifierService.GetAllClassifiers());
+
             if (parameters.ContainsKey("assembly"))
             {
                 Assembly = parameters.GetValue<Assembly>("assembly");
@@ -326,13 +302,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 DetailNumber = Assembly.EskdNumber.DetailNumber;
                 Version = Assembly.EskdNumber.Version;
 
-                var parentAssemblies = await _documentDataService.GetParentAssembliesAsync(Assembly.Id);
+                var parentAssemblies = await _assemblyService.GetParentAssembliesAsync(Assembly.Id);
                 foreach(var item in parentAssemblies)
                 {
                     ParentAssemblies.Add(item);
                 }
 
-                var relatedProducts = await _documentDataService.GetRelatedProductsAsync(Assembly.Id);
+                var relatedProducts = await _assemblyService.GetRelatedProductsAsync(Assembly.Id);
                 foreach(var item in relatedProducts)
                 {
                     RelatedProducts.Add(item);
@@ -346,4 +322,3 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
     }
 }
-

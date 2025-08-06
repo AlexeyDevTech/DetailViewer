@@ -19,10 +19,9 @@ namespace DetailViewer.Core.Services
         public string HashPassword(string password)
         {
             _logger.Log("Hashing password");
-            byte[] salt;
-            new RNGCryptoServiceProvider().GetBytes(salt = new byte[SaltSize]);
+            byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
 
-            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations);
+            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
             byte[] hash = pbkdf2.GetBytes(HashSize);
 
             byte[] hashBytes = new byte[SaltSize + HashSize];
@@ -39,7 +38,7 @@ namespace DetailViewer.Core.Services
             byte[] salt = new byte[SaltSize];
             Array.Copy(hashBytes, 0, salt, 0, SaltSize);
 
-            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations);
+            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
             byte[] hash = pbkdf2.GetBytes(HashSize);
 
             for (int i = 0; i < HashSize; i++)
@@ -53,3 +52,4 @@ namespace DetailViewer.Core.Services
         }
     }
 }
+

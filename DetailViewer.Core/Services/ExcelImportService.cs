@@ -1,3 +1,4 @@
+#nullable enable
 using DetailViewer.Core.Data;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
@@ -15,12 +16,12 @@ namespace DetailViewer.Core.Services
     {
         private readonly ILogger _logger;
         private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
-        private readonly IClassifierProvider _classifierProvider;
+        private readonly IClassifierService _classifierService;
 
-        public ExcelImportService(IDbContextFactory<ApplicationDbContext> dbContextFactory, IClassifierProvider classifierProvider, ILogger logger)
+        public ExcelImportService(IDbContextFactory<ApplicationDbContext> dbContextFactory, IClassifierService classifierService, ILogger logger)
         {
             _dbContextFactory = dbContextFactory;
-            _classifierProvider = classifierProvider;
+            _classifierService = classifierService;
             _logger = logger;
             ExcelPackage.License.SetNonCommercialPersonal("My personal project");
         }
@@ -105,7 +106,10 @@ namespace DetailViewer.Core.Services
                 if (string.IsNullOrWhiteSpace(eskdNumberString)) continue;
 
                 var parsedEskd = new ESKDNumber().SetCode(eskdNumberString);
-                if (parsedEskd.ClassNumber == null || string.IsNullOrEmpty(parsedEskd.CompanyCode)) continue;
+                if (parsedEskd.ClassNumber == null || string.IsNullOrEmpty(parsedEskd.CompanyCode))
+                {
+                    continue;
+                }
 
                 var classifierNumber = parsedEskd.ClassNumber.Number;
                 var detailNumber = parsedEskd.DetailNumber;
@@ -113,7 +117,9 @@ namespace DetailViewer.Core.Services
                 var companyCode = parsedEskd.CompanyCode;
 
                 var exists = await dbContext.Assemblies.Include(a => a.EskdNumber)
-                    .AnyAsync(a => a.EskdNumber.CompanyCode == companyCode &&
+                    .AnyAsync(a => a.EskdNumber != null &&
+                                    a.EskdNumber.CompanyCode == companyCode &&
+                                    a.EskdNumber.ClassNumber != null &&
                                     a.EskdNumber.ClassNumber.Number == classifierNumber &&
                                     a.EskdNumber.DetailNumber == detailNumber &&
                                     a.EskdNumber.Version == version);
@@ -154,7 +160,10 @@ namespace DetailViewer.Core.Services
             if (string.IsNullOrEmpty(assemblyNumberString)) return;
 
             var parsedAssemblyEskd = new ESKDNumber().SetCode(assemblyNumberString);
-            if (parsedAssemblyEskd.ClassNumber == null || string.IsNullOrEmpty(parsedAssemblyEskd.CompanyCode)) return;
+            if (parsedAssemblyEskd.ClassNumber == null || string.IsNullOrEmpty(parsedAssemblyEskd.CompanyCode))
+            {
+                return;
+            }
 
             var assemblyClassifier = parsedAssemblyEskd.ClassNumber.Number;
             var assemblyDetail = parsedAssemblyEskd.DetailNumber;
@@ -162,7 +171,9 @@ namespace DetailViewer.Core.Services
             var assemblyCompany = parsedAssemblyEskd.CompanyCode;
 
             var assembly = await dbContext.Assemblies.Include(a => a.EskdNumber)
-                .FirstOrDefaultAsync(a => a.EskdNumber.CompanyCode == assemblyCompany &&
+                .FirstOrDefaultAsync(a => a.EskdNumber != null &&
+                                        a.EskdNumber.CompanyCode == assemblyCompany &&
+                                        a.EskdNumber.ClassNumber != null &&
                                         a.EskdNumber.ClassNumber.Number == assemblyClassifier &&
                                         a.EskdNumber.DetailNumber == assemblyDetail &&
                                         a.EskdNumber.Version == assemblyVersion);
@@ -184,7 +195,10 @@ namespace DetailViewer.Core.Services
             if (string.IsNullOrEmpty(productNumberString)) return;
 
             var parsedProductEskd = new ESKDNumber().SetCode(productNumberString);
-            if (parsedProductEskd.ClassNumber == null || string.IsNullOrEmpty(parsedProductEskd.CompanyCode)) return;
+            if (parsedProductEskd.ClassNumber == null || string.IsNullOrEmpty(parsedProductEskd.CompanyCode))
+            {
+                return;
+            }
 
             var productClassifier = parsedProductEskd.ClassNumber.Number;
             var productDetail = parsedProductEskd.DetailNumber;
@@ -192,7 +206,9 @@ namespace DetailViewer.Core.Services
             var productCompany = parsedProductEskd.CompanyCode;
 
             var product = await dbContext.Products.Include(p => p.EskdNumber)
-                .FirstOrDefaultAsync(p => p.EskdNumber.CompanyCode == productCompany &&
+                .FirstOrDefaultAsync(p => p.EskdNumber != null &&
+                                        p.EskdNumber.CompanyCode == productCompany &&
+                                        p.EskdNumber.ClassNumber != null &&
                                         p.EskdNumber.ClassNumber.Number == productClassifier &&
                                         p.EskdNumber.DetailNumber == productDetail &&
                                         p.EskdNumber.Version == productVersion);
@@ -211,7 +227,7 @@ namespace DetailViewer.Core.Services
             dbContext.ProductAssemblies.Add(productAssembly);
         }
 
-        private async Task<ESKDNumber> GetOrCreateEskdNumber(string eskdNumberString, ApplicationDbContext dbContext)
+        private async Task<ESKDNumber?> GetOrCreateEskdNumber(string eskdNumberString, ApplicationDbContext dbContext)
         {
             _logger.Log($"Getting or creating ESKD number: {eskdNumberString}");
             var parsedEskd = new ESKDNumber().SetCode(eskdNumberString);
@@ -228,6 +244,7 @@ namespace DetailViewer.Core.Services
             var existingEskdNumber = await dbContext.ESKDNumbers
                 .Include(e => e.ClassNumber)
                 .FirstOrDefaultAsync(e => e.CompanyCode == companyCode &&
+                                            e.ClassNumber != null &&
                                             e.ClassNumber.Number == classifierNumber &&
                                             e.DetailNumber == detailNumber &&
                                             e.Version == version);
@@ -244,7 +261,7 @@ namespace DetailViewer.Core.Services
 
             if (classifier == null)
             {
-                var classifierInfo = _classifierProvider.GetClassifierByCode(classifierCode);
+                var classifierInfo = _classifierService.GetClassifierByCode(classifierCode);
                 if (classifierInfo != null)
                 {
                     classifier = new Classifier
@@ -270,7 +287,7 @@ namespace DetailViewer.Core.Services
             return newEskdNumber;
         }
 
-        private DateTime ParseDate(object dateValue)
+        private DateTime ParseDate(object? dateValue)
         {
             _logger.Log($"Parsing date: {dateValue}");
             if (dateValue is double oaDate) return DateTime.FromOADate(oaDate);

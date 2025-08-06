@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DetailViewer.Core.Data
 {
     /// <summary>
-    /// контекст для локальной БД
+    /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ
     /// </summary>
     public class ApplicationDbContext : DbContext
     {
@@ -22,7 +22,6 @@ namespace DetailViewer.Core.Data
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
-            Database.EnsureCreated();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

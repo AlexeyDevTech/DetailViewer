@@ -1,3 +1,4 @@
+#nullable enable
 
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -16,11 +17,11 @@ namespace DetailViewer.Core.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
-        public string EntityName { get; set; }
+                [Required]
+        public required string EntityName { get; set; }
 
         [Required]
-        public string EntityId { get; set; }
+        public required string EntityId { get; set; }
 
         [Required]
         public OperationType OperationType { get; set; }

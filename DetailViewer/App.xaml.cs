@@ -54,7 +54,7 @@ namespace DetailViewer
             string logFilePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Logs", "app.log");
             containerRegistry.RegisterSingleton<ILogger>(() => new FileLogger(logFilePath));
             _logger = Container.Resolve<ILogger>();
-            _logger.Log("Registering types");
+            _logger.Log("Initializing application");
             containerRegistry.RegisterSingleton<ISettingsService, JsonSettingsService>();
             containerRegistry.RegisterSingleton<IDocumentFilterService, DocumentFilterService>();
             containerRegistry.RegisterSingleton<ICsvExportService, CsvExportService>();
@@ -63,13 +63,18 @@ namespace DetailViewer
             var appSettings = settingsService.LoadSettings();
             containerRegistry.RegisterInstance(appSettings);
 
-            containerRegistry.RegisterSingleton<IClassifierProvider, ClassifierProvider>();
-            containerRegistry.RegisterSingleton<IDocumentDataService, SqliteDocumentDataService>();
+            containerRegistry.RegisterSingleton<IClassifierService, ClassifierService>();
+                        containerRegistry.RegisterSingleton<IDocumentRecordService, DocumentRecordService>();
+            containerRegistry.RegisterSingleton<IAssemblyService, AssemblyService>();
+            containerRegistry.RegisterSingleton<IProductService, ProductService>();
             containerRegistry.RegisterSingleton<IProfileService, ProfileService>();
             containerRegistry.RegisterSingleton<IPasswordService, PasswordService>();
             containerRegistry.RegisterSingleton<IActiveUserService, ActiveUserService>();
 
-            containerRegistry.RegisterSingleton<DatabaseSyncService>();
+            containerRegistry.RegisterSingleton<DatabaseSyncService>(container => new DatabaseSyncService(
+                container.Resolve<ISettingsService>(),
+                container.Resolve<ILogger>(),
+                container.Resolve<IDialogService>()));
 
             containerRegistry.Register<IDbContextFactory<ApplicationDbContext>>(() =>
             {
@@ -82,15 +87,21 @@ namespace DetailViewer
             containerRegistry.RegisterSingleton<SynchronizationService>();
         }
 
-        protected override void OnInitialized()
-        {
-            _logger.Log("Initializing application");
+        
+           
+
+            protected override void OnInitialized()
+            {
             base.OnInitialized();
+
+            var dbContextFactory = Container.Resolve<IDbContextFactory<ApplicationDbContext>>();
+            using (var dbContext = dbContextFactory.CreateDbContext())
+            {
+                dbContext.Database.EnsureCreated();
+            }
 
             var syncService = Container.Resolve<DatabaseSyncService>();
             syncService.SyncDatabaseAsync().GetAwaiter().GetResult();
-
-            var dbContextFactory = Container.Resolve<IDbContextFactory<ApplicationDbContext>>();
 
             //// Manually fix migrations history if needed
             //using (var dbContext = dbContextFactory.CreateDbContext())
@@ -196,7 +207,7 @@ namespace DetailViewer
             _logger.Log("Checking DB connection");
             try
             {
-                using var dbContext = await (Container.Resolve<IDbContextFactory<ApplicationDbContext>>() as ApplicationDbContextFactory).CreateDbContextAsync();
+                using var dbContext = (Container.Resolve<IDbContextFactory<ApplicationDbContext>>() as ApplicationDbContextFactory).CreateDbContext();
                 bool canConnect = await dbContext.Database.CanConnectAsync();
                 if (canConnect)
                 {

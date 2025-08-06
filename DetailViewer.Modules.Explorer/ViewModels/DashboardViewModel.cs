@@ -1,3 +1,5 @@
+#nullable enable
+
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Prism.Commands;
@@ -16,16 +18,16 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 {
     public class DashboardViewModel : BindableBase
     {
-        private readonly IDocumentDataService _documentDataService;
+        private readonly IDocumentRecordService _documentRecordService;
         private readonly IExcelImportService _excelImportService;
         private readonly IExcelExportService _excelExportService;
         private readonly IDialogService _dialogService;
         private readonly ILogger _logger;
         private readonly IActiveUserService _activeUserService;
-        private string _activeUserFullName;
+        private string? _activeUserFullName;
 
-        private string _statusText;
-        public string StatusText
+        private string? _statusText;
+        public string? StatusText
         {
             get { return _statusText; }
             set { SetProperty(ref _statusText, value); }
@@ -45,8 +47,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set { SetProperty(ref _documentRecords, value); }
         }
 
-        private DocumentDetailRecord _selectedRecord;
-        public DocumentDetailRecord SelectedRecord
+        private DocumentDetailRecord? _selectedRecord;
+        public DocumentDetailRecord? SelectedRecord
         {
             get => _selectedRecord;
             set
@@ -72,31 +74,31 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set => SetProperty(ref _parentProducts, value);
         }
 
-        private List<DocumentDetailRecord> _allRecords;
+        private List<DocumentDetailRecord>? _allRecords;
 
-        private string _eskdNumberFilter;
-        public string EskdNumberFilter
+        private string? _eskdNumberFilter;
+        public string? EskdNumberFilter
         {
             get { return _eskdNumberFilter; }
             set { SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
         }
 
-        private string _nameFilter;
-        public string NameFilter
+        private string? _nameFilter;
+        public string? NameFilter
         {
             get { return _nameFilter; }
             set { SetProperty(ref _nameFilter, value, ApplyFilters); }
         }
 
-        private string _fullNameFilter;
-        public string FullNameFilter
+        private string? _fullNameFilter;
+        public string? FullNameFilter
         {
             get { return _fullNameFilter; }
             set { SetProperty(ref _fullNameFilter, value, ApplyFilters); }
         }
 
-        private string _yastCodeFilter;
-        public string YastCodeFilter
+        private string? _yastCodeFilter;
+        public string? YastCodeFilter
         {
             get { return _yastCodeFilter; }
             set { SetProperty(ref _yastCodeFilter, value, ApplyFilters); }
@@ -116,15 +118,15 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set { SetProperty(ref _selectedDate, value, ApplyFilters); }
         }
 
-        private ObservableCollection<string> _uniqueFullNames;
-        public ObservableCollection<string> UniqueFullNames
+        private ObservableCollection<string>? _uniqueFullNames;
+        public ObservableCollection<string>? UniqueFullNames
         {
             get { return _uniqueFullNames; }
             set { SetProperty(ref _uniqueFullNames, value); }
         }
 
-        private string _selectedFullName;
-        public string SelectedFullName
+        private string? _selectedFullName;
+        public string? SelectedFullName
         {
             get { return _selectedFullName; }
             set { SetProperty(ref _selectedFullName, value, ApplyFilters); }
@@ -141,8 +143,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set { SetProperty(ref _importProgress, value); }
         }
 
-        private string _importStatus;
-        public string ImportStatus
+        private string? _importStatus;
+        public string? ImportStatus
         {
             get { return _importStatus; }
             set { SetProperty(ref _importStatus, value); }
@@ -160,12 +162,11 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private readonly ISettingsService _settingsService;
 
-        public DashboardViewModel(IDocumentDataService documentDataService, IExcelExportService excelExportService, IExcelImportService excelImportService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService)
+        public DashboardViewModel(IDocumentRecordService documentRecordService, IExcelExportService excelExportService, IExcelImportService excelImportService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService)
         {
-            _documentDataService = documentDataService;
+            _documentRecordService = documentRecordService;
             _excelExportService = excelExportService;
             _excelImportService = excelImportService;
-            _dialogService = dialogService;
             _dialogService = dialogService;
             _logger = logger;
             _activeUserService = activeUserService;
@@ -174,11 +175,11 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             _activeUserService.CurrentUserChanged += OnCurrentUserChanged;
             OnCurrentUserChanged();
 
-            DocumentRecords = new ObservableCollection<DocumentDetailRecord>();
+            _documentRecords = new ObservableCollection<DocumentDetailRecord>();
             StatusText = "Готово";
 
-            ParentAssemblies = new ObservableCollection<Assembly>();
-            ParentProducts = new ObservableCollection<DocumentDetailRecord>();
+            _parentAssemblies = new ObservableCollection<Assembly>();
+            _parentProducts = new ObservableCollection<DocumentDetailRecord>();
 
             FillFormCommand = new DelegateCommand(FillForm);
             FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null).ObservesProperty(() => SelectedRecord);
@@ -198,7 +199,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             if (SelectedRecord == null)
                 return;
 
-            var parentAssemblies = await _documentDataService.GetParentAssembliesForDetailAsync(SelectedRecord.Id);
+            var parentAssemblies = await _documentRecordService.GetParentAssembliesForDetailAsync(SelectedRecord.Id);
             foreach(var item in parentAssemblies)
             {
                 ParentAssemblies.Add(item);
@@ -273,7 +274,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 if (r.Result == ButtonResult.OK)
                 {
                     var filePath = r.Parameters.GetValue<string>("filePath");
-                    await _excelExportService.ExportToExcelAsync(filePath);
+                    await _excelExportService.ExportToExcelAsync(filePath, DocumentRecords.ToList());
                 }
             });
         }
@@ -295,7 +296,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 {
                     var updatedRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
                     var linkedAssemblies = r.Parameters.GetValue<List<Assembly>>("linkedAssemblies");
-                    await _documentDataService.UpdateRecordAsync(updatedRecord, linkedAssemblies.Select(a => a.Id).ToList());
+                    await _documentRecordService.UpdateRecordAsync(updatedRecord, linkedAssemblies.Select(a => a.Id).ToList());
                     await LoadData();
                 }
             });
@@ -308,7 +309,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             {
                 if (r.Result == ButtonResult.OK)
                 {
-                    await _documentDataService.DeleteRecordAsync(SelectedRecord.Id);
+                    await _documentRecordService.DeleteRecordAsync(SelectedRecord.Id);
                     await LoadData();
                 }
             });
@@ -324,7 +325,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 {
                     var newRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
                     var linkedAssemblies = r.Parameters.GetValue<List<Assembly>>("linkedAssemblies");
-                    await _documentDataService.AddRecordAsync(newRecord, linkedAssemblies.Select(a => a.Id).ToList());
+                    await _documentRecordService.AddRecordAsync(newRecord, linkedAssemblies.Select(a => a.Id).ToList());
                     await LoadData();
                 }
             });
@@ -341,7 +342,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
                 {
                     var newRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
                     var linkedAssemblies = r.Parameters.GetValue<List<Assembly>>("linkedAssemblies");
-                    await _documentDataService.AddRecordAsync(newRecord, linkedAssemblies.Select(a => a.Id).ToList());
+                    await _documentRecordService.AddRecordAsync(newRecord, linkedAssemblies.Select(a => a.Id).ToList());
                     await LoadData();
                 }
             });
@@ -354,7 +355,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             StatusText = "Загрузка данных...";
             try
             {
-                _allRecords = await _documentDataService.GetAllRecordsAsync();
+                _allRecords = await _documentRecordService.GetAllRecordsAsync();
                 UniqueFullNames = new ObservableCollection<string>(_allRecords.Select(r => r.FullName).Distinct().OrderBy(n => n));
                 ApplyFilters();
                 StatusText = $"Данные успешно загружены.";

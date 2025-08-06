@@ -1,145 +1,52 @@
-
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using OfficeOpenXml;
-using OfficeOpenXml.Style;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
 {
     public class ExcelExportService : IExcelExportService
     {
-        private readonly ILogger _logger;
-        private readonly IDocumentDataService _documentDataService;
+        private readonly IDocumentRecordService _documentRecordService;
 
-        public ExcelExportService(IDocumentDataService documentDataService, ILogger logger)
+        public ExcelExportService(IDocumentRecordService documentRecordService)
         {
-            _documentDataService = documentDataService;
-            _logger = logger;
-            ExcelPackage.License.SetNonCommercialPersonal("My personal project");
+            _documentRecordService = documentRecordService;
         }
 
-        public async Task ExportToExcelAsync(string filePath)
+        public async Task ExportToExcelAsync(string filePath, List<DocumentDetailRecord> records)
         {
-            _logger.Log($"Exporting to Excel: {filePath}");
-            var records = await _documentDataService.GetAllRecordsAsync();
+            if (records == null)
+            {
+                records = await _documentRecordService.GetAllRecordsAsync();
+            }
+
+            ExcelPackage.License.SetNonCommercialPersonal("My personal project");
 
             using (var package = new ExcelPackage())
             {
                 var worksheet = package.Workbook.Worksheets.Add("Детали");
 
-                AddHeaders(worksheet);
-                AddData(worksheet, records);
-                ApplyStyling(worksheet, records.Count);
+                // Заголовки
+                worksheet.Cells[1, 1].Value = "Наименование";
+                worksheet.Cells[1, 2].Value = "Обозначение";
+                worksheet.Cells[1, 3].Value = "Код ЯАСП";
+                worksheet.Cells[1, 4].Value = "Дата";
+                worksheet.Cells[1, 5].Value = "Автор";
 
-                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                // Данные
+                for (int i = 0; i < records.Count; i++)
+                {
+                    worksheet.Cells[i + 2, 1].Value = records[i].Name;
+                    worksheet.Cells[i + 2, 2].Value = records[i].ESKDNumber.FullCode;
+                    worksheet.Cells[i + 2, 3].Value = records[i].YASTCode;
+                    worksheet.Cells[i + 2, 4].Value = records[i].Date.ToShortDateString();
+                    worksheet.Cells[i + 2, 5].Value = records[i].FullName;
+                }
 
                 await package.SaveAsAsync(new FileInfo(filePath));
-            }
-        }
-
-        private void AddHeaders(ExcelWorksheet worksheet)
-        {
-            _logger.Log("Adding headers to Excel worksheet");
-            string[] headers = {
-                "Дата", "ЕСКД номер", "ЯСТ код", "Имя", "Номер сборки",
-                "Имя сборки", "Номер продукта", "Имя продукта", "ФИО",
-                "Наименование классификатора", "Номер классификатора", "Описание классификатора"
-            };
-
-            for (int i = 0; i < headers.Length; i++)
-            {
-                worksheet.Cells[1, i + 1].Value = headers[i];
-            }
-        }
-
-        private void AddData(ExcelWorksheet worksheet, List<DocumentDetailRecord> records)
-        {
-            _logger.Log($"Adding {records.Count} records to Excel worksheet");
-            var row = 2;
-            foreach (var record in records)
-            {
-                if (record.AssemblyDetails.Any())
-                {
-                    foreach (var ad in record.AssemblyDetails)
-                    {
-                        if (ad.Assembly.ProductAssemblies.Any())
-                        {
-                            foreach (var pa in ad.Assembly.ProductAssemblies)
-                            {
-                                worksheet.Cells[row, 1].Value = record.Date.ToShortDateString();
-                                worksheet.Cells[row, 2].Value = record.ESKDNumber?.FullCode;
-                                worksheet.Cells[row, 3].Value = record.YASTCode;
-                                worksheet.Cells[row, 4].Value = record.Name;
-                                worksheet.Cells[row, 5].Value = ad.Assembly.EskdNumber.FullCode;
-                                worksheet.Cells[row, 6].Value = ad.Assembly.Name;
-                                worksheet.Cells[row, 7].Value = pa.Product.EskdNumber.FullCode;
-                                worksheet.Cells[row, 8].Value = pa.Product.Name;
-                                worksheet.Cells[row, 9].Value = record.FullName;
-                                worksheet.Cells[row, 10].Value = record.ESKDNumber?.ClassNumber?.Name;
-                                worksheet.Cells[row, 11].Value = record.ESKDNumber?.ClassNumber?.Number;
-                                worksheet.Cells[row, 12].Value = record.ESKDNumber?.ClassNumber?.Description;
-                                row++;
-                            }
-                        }
-                        else
-                        {
-                            worksheet.Cells[row, 1].Value = record.Date.ToShortDateString();
-                            worksheet.Cells[row, 2].Value = record.ESKDNumber?.FullCode;
-                            worksheet.Cells[row, 3].Value = record.YASTCode;
-                            worksheet.Cells[row, 4].Value = record.Name;
-                            worksheet.Cells[row, 5].Value = ad.Assembly.EskdNumber.FullCode;
-                            worksheet.Cells[row, 6].Value = ad.Assembly.Name;
-                            worksheet.Cells[row, 9].Value = record.FullName;
-                            worksheet.Cells[row, 10].Value = record.ESKDNumber?.ClassNumber?.Name;
-                            worksheet.Cells[row, 11].Value = record.ESKDNumber?.ClassNumber?.Number;
-                            worksheet.Cells[row, 12].Value = record.ESKDNumber?.ClassNumber?.Description;
-                            row++;
-                        }
-                    }
-                }
-                else
-                {
-                    worksheet.Cells[row, 1].Value = record.Date.ToShortDateString();
-                    worksheet.Cells[row, 2].Value = record.ESKDNumber?.FullCode;
-                    worksheet.Cells[row, 3].Value = record.YASTCode;
-                    worksheet.Cells[row, 4].Value = record.Name;
-                    worksheet.Cells[row, 9].Value = record.FullName;
-                    worksheet.Cells[row, 10].Value = record.ESKDNumber?.ClassNumber?.Name;
-                    worksheet.Cells[row, 11].Value = record.ESKDNumber?.ClassNumber?.Number;
-                    worksheet.Cells[row, 12].Value = record.ESKDNumber?.ClassNumber?.Description;
-                    row++;
-                }
-            }
-        }
-
-        private void ApplyStyling(ExcelWorksheet worksheet, int recordCount)
-        {
-            _logger.Log("Applying styling to Excel worksheet");
-            using (var range = worksheet.Cells[1, 1, 1, 12])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                range.Style.Fill.PatternType = ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            using (var range = worksheet.Cells[1, 1, recordCount + 1, 12])
-            {
-                range.Style.Font.Name = "Calibri";
-                range.Style.Font.Size = 11;
-                range.Style.Font.Color.SetColor(System.Drawing.Color.Black);
-                range.Style.Border.Top.Style = ExcelBorderStyle.Thin;
-                range.Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
-                range.Style.Border.Left.Style = ExcelBorderStyle.Thin;
-                range.Style.Border.Right.Style = ExcelBorderStyle.Thin;
-                range.Style.Border.Top.Color.SetColor(System.Drawing.Color.Gray);
-                range.Style.Border.Bottom.Color.SetColor(System.Drawing.Color.Gray);
-                range.Style.Border.Left.Color.SetColor(System.Drawing.Color.Gray);
-                range.Style.Border.Right.Color.SetColor(System.Drawing.Color.Gray);
             }
         }
     }

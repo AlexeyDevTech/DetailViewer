@@ -1,3 +1,5 @@
+#nullable enable
+
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Prism.Commands;
@@ -28,28 +30,29 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
     public class SelectAssemblyDialogViewModel : BindableBase, IDialogAware
     {
-        private readonly IDocumentDataService _documentDataService;
+        private readonly IAssemblyService _assemblyService;
+        private readonly IProductService _productService;
 
         public string Title => "Выбор сборок";
-        public event System.Action<IDialogResult> RequestClose;
+        public event System.Action<IDialogResult>? RequestClose;
 
-        private string _searchText;
-        public string SearchText
+        private string? _searchText;
+        public string? SearchText
         {
             get { return _searchText; }
             set { SetProperty(ref _searchText, value, OnSearchTextChanged); }
         }
 
-        private ObservableCollection<SelectableItem<Assembly>> _allAssemblies;
-        private ObservableCollection<SelectableItem<Assembly>> _filteredAssemblies;
-        public ObservableCollection<SelectableItem<Assembly>> FilteredAssemblies
+        private ObservableCollection<SelectableItem<Assembly>>? _allAssemblies;
+        private ObservableCollection<SelectableItem<Assembly>>? _filteredAssemblies;
+        public ObservableCollection<SelectableItem<Assembly>>? FilteredAssemblies
         {
             get { return _filteredAssemblies; }
             set { SetProperty(ref _filteredAssemblies, value); }
         }
 
-        private SelectableItem<Assembly> _selectedAssembly;
-        public SelectableItem<Assembly> SelectedAssembly
+        private SelectableItem<Assembly>? _selectedAssembly;
+        public SelectableItem<Assembly>? SelectedAssembly
         {
             get { return _selectedAssembly; }
             set { SetProperty(ref _selectedAssembly, value, OnSelectedAssemblyChanged); }
@@ -65,18 +68,19 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public DelegateCommand OkCommand { get; private set; }
         public DelegateCommand CancelCommand { get; private set; }
 
-        public SelectAssemblyDialogViewModel(IDocumentDataService documentDataService)
+        public SelectAssemblyDialogViewModel(IAssemblyService assemblyService, IProductService productService)
         {
-            _documentDataService = documentDataService;
+            _assemblyService = assemblyService;
+            _productService = productService;
             OkCommand = new DelegateCommand(Ok);
             CancelCommand = new DelegateCommand(Cancel);
-            RelatedProducts = new ObservableCollection<Product>();
+            _relatedProducts = new ObservableCollection<Product>();
             LoadAssemblies();
         }
 
         private async void LoadAssemblies()
         {
-            var assemblies = await _documentDataService.GetAssembliesAsync();
+            var assemblies = await _assemblyService.GetAssembliesAsync();
             _allAssemblies = new ObservableCollection<SelectableItem<Assembly>>(assemblies.Select(a => new SelectableItem<Assembly>(a)));
             FilteredAssemblies = new ObservableCollection<SelectableItem<Assembly>>(_allAssemblies);
         }
@@ -99,7 +103,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             RelatedProducts.Clear();
             if (SelectedAssembly != null)
             {
-                var products = await _documentDataService.GetProductsByAssemblyId(SelectedAssembly.Item.Id);
+                var products = await _productService.GetProductsByAssemblyId(SelectedAssembly.Item.Id);
                 foreach (var product in products)
                 {
                     RelatedProducts.Add(product);

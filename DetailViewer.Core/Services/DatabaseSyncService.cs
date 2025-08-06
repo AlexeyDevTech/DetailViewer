@@ -2,6 +2,7 @@ using DetailViewer.Core.Data;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Microsoft.EntityFrameworkCore;
+using Prism.Services.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,13 +17,15 @@ namespace DetailViewer.Core.Services
     {
         private readonly ILogger _logger;
         private readonly ISettingsService _settingsService;
+        private readonly IDialogService _dialogService;
         private static bool _isSyncing = false;
         private static readonly object _syncLock = new object();
 
-        public DatabaseSyncService(ISettingsService settingsService, ILogger logger)
+        public DatabaseSyncService(ISettingsService settingsService, ILogger logger, IDialogService dialogService)
         {
             _settingsService = settingsService;
             _logger = logger;
+            _dialogService = dialogService;
         }
 
         public async Task SyncDatabaseAsync()
@@ -38,17 +41,30 @@ namespace DetailViewer.Core.Services
 
                 if (!ArePathsConfigured(localDbPath, remoteDbPath)) return;
 
-                var localDbContextFactory = new DbContextFactory(localDbPath);
-                var remoteDbContextFactory = new DbContextFactory(remoteDbPath);
+                var isFirstSync = !File.Exists(localDbPath);
 
-                using var localDbContext = localDbContextFactory.CreateDbContext();
-                using var remoteDbContext = remoteDbContextFactory.CreateDbContext();
+                var dbContextFactory = new ApplicationDbContextFactory(_settingsService);
+                using var localDbContext = dbContextFactory.CreateDbContext();
+                localDbContext.Database.EnsureCreated();
 
-                // Шаг 1: Убедиться, что схемы баз данных совместимы
+                if (isFirstSync)
+                {
+                    _logger.LogInfo("First sync detected. Performing initial data population from remote database.");
+                    using var remoteDbContextForCopy = dbContextFactory.CreateRemoteDbContext();
+                    await PerformInitialBulkCopy(localDbContext, remoteDbContextForCopy);
+
+                    settings.LastSyncTimestamp = DateTime.UtcNow;
+                    await _settingsService.SaveSettingsAsync(settings);
+                    _logger.LogInfo("Initial sync complete.");
+                    return; 
+                }
+
+                using var remoteDbContext = dbContextFactory.CreateRemoteDbContext();
+
                 await EnsureSchemaCompatibilityAsync(localDbContext, remoteDbContext);
 
-                // Шаг 2: Синхронизация данных
                 var lastSyncTimestamp = settings.LastSyncTimestamp;
+                
                 var localChanges = await GetChangesSince(localDbContext, lastSyncTimestamp);
                 var remoteChanges = await GetChangesSince(remoteDbContext, lastSyncTimestamp);
 
@@ -58,7 +74,12 @@ namespace DetailViewer.Core.Services
                     return;
                 }
 
-                var (toLocal, toRemote) = ResolveChanges(localChanges, remoteChanges);
+                var (toLocal, toRemote, conflicts) = await ResolveChanges(localChanges, remoteChanges, localDbContext);
+
+                if (conflicts.Any())
+                {
+                    await HandleConflicts(conflicts, localDbContext, remoteDbContext);
+                }
 
                 await ApplyChangesInTransaction(remoteDbContext, toRemote, "remote");
                 await ApplyChangesInTransaction(localDbContext, toLocal, "local");
@@ -78,52 +99,117 @@ namespace DetailViewer.Core.Services
             }
         }
 
-        private async Task EnsureSchemaCompatibilityAsync(ApplicationDbContext localContext, ApplicationDbContext remoteContext)
+        private async Task PerformInitialBulkCopy(ApplicationDbContext localContext, ApplicationDbContext remoteContext)
         {
-            _logger.LogInfo("Checking for schema compatibility...");
-
-            var localMigrations = await localContext.Database.GetPendingMigrationsAsync();
-            if (localMigrations.Any())
+            _logger.LogInfo("Performing initial bulk data copy from remote to local.");
+            await using var transaction = await localContext.Database.BeginTransactionAsync();
+            try
             {
-                _logger.LogWarning($"Local database schema is outdated. Applying {localMigrations.Count()} migrations...");
-                await localContext.Database.MigrateAsync();
-                _logger.LogInfo("Local database schema updated successfully.");
-            }
+                await localContext.Classifiers.AddRangeAsync(await remoteContext.Classifiers.AsNoTracking().ToListAsync());
+                await localContext.ESKDNumbers.AddRangeAsync(await remoteContext.ESKDNumbers.AsNoTracking().ToListAsync());
+                await localContext.Products.AddRangeAsync(await remoteContext.Products.AsNoTracking().ToListAsync());
+                await localContext.Assemblies.AddRangeAsync(await remoteContext.Assemblies.AsNoTracking().ToListAsync());
+                await localContext.DocumentRecords.AddRangeAsync(await remoteContext.DocumentRecords.AsNoTracking().ToListAsync());
+                await localContext.Profiles.AddRangeAsync(await remoteContext.Profiles.AsNoTracking().ToListAsync());
+                await localContext.AssemblyDetails.AddRangeAsync(await remoteContext.AssemblyDetails.AsNoTracking().ToListAsync());
+                await localContext.ProductAssemblies.AddRangeAsync(await remoteContext.ProductAssemblies.AsNoTracking().ToListAsync());
+                await localContext.AssemblyParents.AddRangeAsync(await remoteContext.AssemblyParents.AsNoTracking().ToListAsync());
 
-            var remoteMigrations = await remoteContext.Database.GetPendingMigrationsAsync();
-            if (remoteMigrations.Any())
+                await localContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+                _logger.LogInfo("Initial bulk data copy completed successfully.");
+            }
+            catch (Exception ex)
             {
-                _logger.LogError($"CRITICAL: Remote (shared) database schema is outdated and requires manual migration. Halting synchronization.");
-                throw new Exception("Remote database schema is outdated. Please contact administrator.");
+                await transaction.RollbackAsync();
+                _logger.LogError("Error during initial bulk data copy.", ex);
+                throw;
             }
-
-            _logger.LogInfo("Database schemas are compatible.");
         }
 
-        private (List<ChangeLog> toLocal, List<ChangeLog> toRemote) ResolveChanges(List<ChangeLog> localChanges, List<ChangeLog> remoteChanges)
+        private async Task HandleConflicts(List<ConflictLog> conflicts, ApplicationDbContext localDbContext, ApplicationDbContext remoteDbContext)
+        {
+            foreach (var conflict in conflicts)
+            {
+                var localEntityType = GetEntityType(conflict.EntityName);
+                var localEntity = JsonSerializer.Deserialize(conflict.LocalPayload, localEntityType);
+
+                var remoteEntityType = GetEntityType(conflict.EntityName);
+                var remoteEntity = JsonSerializer.Deserialize(conflict.RemotePayload, remoteEntityType);
+
+                var parameters = new DialogParameters
+                {
+                    { "localEntity", localEntity },
+                    { "remoteEntity", remoteEntity }
+                };
+
+                var tcs = new TaskCompletionSource<IDialogResult>();
+                _dialogService.ShowDialog("ConflictResolutionView", parameters, r => tcs.SetResult(r));
+                var result = await tcs.Task;
+
+                if (result.Result == ButtonResult.Yes) // Keep local
+                {
+                    var changeLog = new ChangeLog
+                    {
+                        EntityName = conflict.EntityName,
+                        EntityId = conflict.EntityId,
+                        OperationType = OperationType.Update, // Or determine dynamically
+                        Payload = conflict.LocalPayload,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ApplyChangesInTransaction(remoteDbContext, new List<ChangeLog> { changeLog }, "remote");
+                }
+                else if (result.Result == ButtonResult.No) // Keep remote
+                {
+                    var changeLog = new ChangeLog
+                    {
+                        EntityName = conflict.EntityName,
+                        EntityId = conflict.EntityId,
+                        OperationType = OperationType.Update, // Or determine dynamically
+                        Payload = conflict.RemotePayload,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ApplyChangesInTransaction(localDbContext, new List<ChangeLog> { changeLog }, "local");
+                }
+
+                localDbContext.ConflictLogs.Remove(conflict);
+                await localDbContext.SaveChangesAsync();
+            }
+        }
+
+        private async Task<(List<ChangeLog> toLocal, List<ChangeLog> toRemote, List<ConflictLog> conflicts)> ResolveChanges(List<ChangeLog> localChanges, List<ChangeLog> remoteChanges, ApplicationDbContext localDbContext)
         {
             var changesToApplyLocally = new List<ChangeLog>(remoteChanges);
             var changesToApplyRemotely = new List<ChangeLog>(localChanges);
+            var conflicts = new List<ConflictLog>();
 
-            var conflicts = localChanges.Select(c => new { c.EntityId, c.EntityName })
+            var conflictKeys = localChanges.Select(c => new { c.EntityId, c.EntityName })
                                       .Intersect(remoteChanges.Select(c => new { c.EntityId, c.EntityName }))
                                       .ToList();
 
-            foreach (var conflictKey in conflicts)
+            foreach (var conflictKey in conflictKeys)
             {
-                var latestLocal = localChanges.First(c => c.EntityId == conflictKey.EntityId && c.EntityName == conflictKey.EntityName);
-                var latestRemote = remoteChanges.First(c => c.EntityId == conflictKey.EntityId && c.EntityName == conflictKey.EntityName);
+                var localChange = localChanges.First(c => c.EntityId == conflictKey.EntityId && c.EntityName == conflictKey.EntityName);
+                var remoteChange = remoteChanges.First(c => c.EntityId == conflictKey.EntityId && c.EntityName == conflictKey.EntityName);
 
-                if (latestLocal.Timestamp > latestRemote.Timestamp)
+                var conflict = new ConflictLog
                 {
-                    changesToApplyLocally.RemoveAll(c => c.EntityId == conflictKey.EntityId && c.EntityName == conflictKey.EntityName);
-                }
-                else
-                {
-                    changesToApplyRemotely.RemoveAll(c => c.EntityId == conflictKey.EntityId && c.EntityName == conflictKey.EntityName);
-                }
+                    EntityName = localChange.EntityName,
+                    EntityId = localChange.EntityId,
+                    LocalPayload = localChange.Payload,
+                    RemotePayload = remoteChange.Payload,
+                    Timestamp = DateTime.UtcNow
+                };
+
+                conflicts.Add(conflict);
+                await localDbContext.ConflictLogs.AddAsync(conflict);
+
+                changesToApplyLocally.RemoveAll(c => c.EntityId == conflictKey.EntityId && c.EntityName == conflictKey.EntityName);
+                changesToApplyRemotely.RemoveAll(c => c.EntityId == conflictKey.EntityId && c.EntityName == conflictKey.EntityName);
             }
-            return (changesToApplyLocally, changesToApplyRemotely);
+
+            await localDbContext.SaveChangesAsync();
+            return (changesToApplyLocally, changesToApplyRemotely, conflicts);
         }
 
         private async Task ApplyChangesInTransaction(ApplicationDbContext dbContext, List<ChangeLog> changes, string dbName)
@@ -218,6 +304,28 @@ namespace DetailViewer.Core.Services
             var type = assembly.GetType(entityName);
             if (type != null) return type;
             return assembly.GetTypes().FirstOrDefault(t => t.Name == entityName);
+        }
+
+        private async Task EnsureSchemaCompatibilityAsync(ApplicationDbContext localContext, ApplicationDbContext remoteContext)
+        {
+            _logger.LogInfo("Checking for schema compatibility...");
+
+            var localMigrations = await localContext.Database.GetPendingMigrationsAsync();
+            if (localMigrations.Any())
+            {
+                _logger.LogWarning($"Local database schema is outdated. Applying {localMigrations.Count()} migrations...");
+                await localContext.Database.MigrateAsync();
+                _logger.LogInfo("Local database schema updated successfully.");
+            }
+
+            var remoteMigrations = await remoteContext.Database.GetPendingMigrationsAsync();
+            if (remoteMigrations.Any())
+            {
+                _logger.LogError($"CRITICAL: Remote (shared) database schema is outdated and requires manual migration. Halting synchronization.");
+                throw new Exception("Remote database schema is outdated. Please contact administrator.");
+            }
+
+            _logger.LogInfo("Database schemas are compatible.");
         }
 
         #endregion

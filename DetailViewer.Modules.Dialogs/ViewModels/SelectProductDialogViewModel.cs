@@ -1,3 +1,5 @@
+#nullable enable
+
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Prism.Commands;
@@ -11,21 +13,21 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 {
     public class SelectProductDialogViewModel : BindableBase, IDialogAware
     {
-        private readonly IDocumentDataService _documentDataService;
+        private readonly IProductService _productService;
 
         public string Title => "Выбор изделий";
-        public event System.Action<IDialogResult> RequestClose;
+        public event System.Action<IDialogResult>? RequestClose;
 
-        private string _searchText;
-        public string SearchText
+        private string? _searchText;
+        public string? SearchText
         {
             get { return _searchText; }
             set { SetProperty(ref _searchText, value, OnSearchTextChanged); }
         }
 
-        private ObservableCollection<SelectableItem<Product>> _allProducts;
-        private ObservableCollection<SelectableItem<Product>> _filteredProducts;
-        public ObservableCollection<SelectableItem<Product>> FilteredProducts
+        private ObservableCollection<SelectableItem<Product>>? _allProducts;
+        private ObservableCollection<SelectableItem<Product>>? _filteredProducts;
+        public ObservableCollection<SelectableItem<Product>>? FilteredProducts
         {
             get { return _filteredProducts; }
             set { SetProperty(ref _filteredProducts, value); }
@@ -34,9 +36,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public DelegateCommand OkCommand { get; private set; }
         public DelegateCommand CancelCommand { get; private set; }
 
-        public SelectProductDialogViewModel(IDocumentDataService documentDataService)
+        public SelectProductDialogViewModel(IProductService productService)
         {
-            _documentDataService = documentDataService;
+            _productService = productService;
             OkCommand = new DelegateCommand(Ok);
             CancelCommand = new DelegateCommand(Cancel);
             LoadProducts();
@@ -44,9 +46,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private async void LoadProducts()
         {
-            var products = await _documentDataService.GetProductsAsync();
+            var products = await _productService.GetProductsAsync();
             _allProducts = new ObservableCollection<SelectableItem<Product>>(products.Select(p => new SelectableItem<Product>(p)));
-            FilteredProducts = new ObservableCollection<SelectableItem<Product>>(_allProducts);
+            _filteredProducts = new ObservableCollection<SelectableItem<Product>>(_allProducts);
         }
 
         private void OnSearchTextChanged()

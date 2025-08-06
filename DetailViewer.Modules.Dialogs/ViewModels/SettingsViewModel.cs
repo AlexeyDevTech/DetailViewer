@@ -270,7 +270,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             var saveFileDialog = new SaveFileDialog { Filter = "Excel Files|*.xlsx" };
             if (saveFileDialog.ShowDialog() == true)
             {
-                await _exportService.ExportToExcelAsync(saveFileDialog.FileName);
+                await _exportService.ExportToExcelAsync(saveFileDialog.FileName, null);
             }
         }
 

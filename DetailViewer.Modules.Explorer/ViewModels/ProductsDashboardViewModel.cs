@@ -1,3 +1,5 @@
+#nullable enable
+
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Prism.Commands;
@@ -13,12 +15,12 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 {
     public class ProductsDashboardViewModel : BindableBase
     {
-        private readonly IDocumentDataService _documentDataService;
+        private readonly IProductService _productService;
         private readonly IDialogService _dialogService;
         private readonly ILogger _logger;
 
-        private string _statusText;
-        public string StatusText
+        private string? _statusText;
+        public string? StatusText
         {
             get { return _statusText; }
             set { SetProperty(ref _statusText, value); }
@@ -38,24 +40,24 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set { SetProperty(ref _products, value); }
         }
 
-        private Product _selectedProduct;
-        public Product SelectedProduct
+        private Product? _selectedProduct;
+        public Product? SelectedProduct
         {
             get => _selectedProduct;
             set => SetProperty(ref _selectedProduct, value);
         }
 
-        private List<Product> _allProducts;
+        private List<Product>? _allProducts;
 
-        private string _eskdNumberFilter;
-        public string EskdNumberFilter
+        private string? _eskdNumberFilter;
+        public string? EskdNumberFilter
         {
             get { return _eskdNumberFilter; }
             set { SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
         }
 
-        private string _nameFilter;
-        public string NameFilter
+        private string? _nameFilter;
+        public string? NameFilter
         {
             get { return _nameFilter; }
             set { SetProperty(ref _nameFilter, value, ApplyFilters); }
@@ -65,20 +67,20 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public DelegateCommand EditProductCommand { get; private set; }
         public DelegateCommand DeleteProductCommand { get; private set; }
 
-        public ProductsDashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger)
+        public ProductsDashboardViewModel(IProductService productService, IDialogService dialogService, ILogger logger)
         {
-            _documentDataService = documentDataService;
+            _productService = productService;
             _dialogService = dialogService;
             _logger = logger;
 
-            Products = new ObservableCollection<Product>();
+            _products = new ObservableCollection<Product>();
             StatusText = "Готово";
 
             AddProductCommand = new DelegateCommand(AddProduct);
             EditProductCommand = new DelegateCommand(EditProduct, () => SelectedProduct != null).ObservesProperty(() => SelectedProduct);
             DeleteProductCommand = new DelegateCommand(DeleteProduct, () => SelectedProduct != null).ObservesProperty(() => SelectedProduct);
 
-            LoadData();
+            Task.Run(LoadData);
         }
 
         private void EditProduct()
@@ -101,7 +103,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             {
                 if (r.Result == ButtonResult.OK)
                 {
-                    await _documentDataService.DeleteProductAsync(SelectedProduct.Id);
+                    await _productService.DeleteProductAsync(SelectedProduct.Id);
                     await LoadData();
                 }
             });
@@ -126,7 +128,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             StatusText = "Загрузка данных...";
             try
             {
-                _allProducts = await _documentDataService.GetProductsAsync();
+                _allProducts = await _productService.GetProductsAsync();
                 ApplyFilters();
                 StatusText = $"Данные успешно загружены.";
                 _logger.LogInfo("Products loaded successfully.");

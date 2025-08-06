@@ -1,3 +1,5 @@
+#nullable enable
+
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Prism.Commands;
@@ -13,12 +15,12 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 {
     public class AssembliesDashboardViewModel : BindableBase
     {
-        private readonly IDocumentDataService _documentDataService;
+        private readonly IAssemblyService _assemblyService;
         private readonly IDialogService _dialogService;
         private readonly ILogger _logger;
 
-        private string _statusText;
-        public string StatusText
+        private string? _statusText;
+        public string? StatusText
         {
             get { return _statusText; }
             set { SetProperty(ref _statusText, value); }
@@ -38,24 +40,24 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set { SetProperty(ref _assemblies, value); }
         }
 
-        private Assembly _selectedAssembly;
-        public Assembly SelectedAssembly
+        private Assembly? _selectedAssembly;
+        public Assembly? SelectedAssembly
         {
             get => _selectedAssembly;
             set => SetProperty(ref _selectedAssembly, value);
         }
 
-        private List<Assembly> _allAssemblies;
+        private List<Assembly>? _allAssemblies;
 
-        private string _eskdNumberFilter;
-        public string EskdNumberFilter
+        private string? _eskdNumberFilter;
+        public string? EskdNumberFilter
         {
             get { return _eskdNumberFilter; }
             set { SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
         }
 
-        private string _nameFilter;
-        public string NameFilter
+        private string? _nameFilter;
+        public string? NameFilter
         {
             get { return _nameFilter; }
             set { SetProperty(ref _nameFilter, value, ApplyFilters); }
@@ -65,13 +67,13 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public DelegateCommand EditAssemblyCommand { get; private set; }
         public DelegateCommand DeleteAssemblyCommand { get; private set; }
 
-        public AssembliesDashboardViewModel(IDocumentDataService documentDataService, IDialogService dialogService, ILogger logger)
+        public AssembliesDashboardViewModel(IAssemblyService assemblyService, IDialogService dialogService, ILogger logger)
         {
-            _documentDataService = documentDataService;
+            _assemblyService = assemblyService;
             _dialogService = dialogService;
             _logger = logger;
 
-            Assemblies = new ObservableCollection<Assembly>();
+            _assemblies = new ObservableCollection<Assembly>();
             StatusText = "Готово";
 
             AddAssemblyCommand = new DelegateCommand(AddAssembly);
@@ -101,7 +103,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             {
                 if (r.Result == ButtonResult.OK)
                 {
-                    await _documentDataService.DeleteAssemblyAsync(SelectedAssembly.Id);
+                    await _assemblyService.DeleteAssemblyAsync(SelectedAssembly.Id);
                     await LoadData();
                 }
             });
@@ -126,7 +128,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             StatusText = "Загрузка данных...";
             try
             {
-                _allAssemblies = await _documentDataService.GetAssembliesAsync();
+                _allAssemblies = await _assemblyService.GetAssembliesAsync();
                 ApplyFilters();
                 StatusText = $"Данные успешно загружены.";
                 _logger.LogInfo("Assemblies loaded successfully.");

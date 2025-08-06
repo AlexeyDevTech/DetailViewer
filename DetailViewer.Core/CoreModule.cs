@@ -21,8 +21,10 @@ namespace DetailViewer.Core
             containerRegistry.RegisterSingleton<DatabaseSyncService>();
             containerRegistry.RegisterSingleton<IDbContextFactory<ApplicationDbContext>, ApplicationDbContextFactory>();
 
-            containerRegistry.RegisterSingleton<IClassifierProvider, ClassifierProvider>();
-            containerRegistry.Register<IDocumentDataService, SqliteDocumentDataService>();
+            containerRegistry.RegisterSingleton<IClassifierService, ClassifierService>();
+                        containerRegistry.Register<IDocumentRecordService, DocumentRecordService>();
+            containerRegistry.Register<IAssemblyService, AssemblyService>();
+            containerRegistry.Register<IProductService, ProductService>();
             containerRegistry.Register<IExcelImportService, ExcelImportService>();
             containerRegistry.Register<IExcelExportService, ExcelExportService>();
         }

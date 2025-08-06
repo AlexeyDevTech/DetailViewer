@@ -1,4 +1,5 @@
 
+using System.Collections.Generic;
 using DetailViewer.Core.Data;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
@@ -38,6 +39,23 @@ namespace DetailViewer.Core.Services
             _timer?.Change(Timeout.Infinite, 0);
         }
 
+        public async Task<List<ChangeLog>> GetChangesSince(DateTime timestamp)
+        {
+            _logger.Log($"Getting changes since: {timestamp}");
+            try
+            {
+                using var dbContext = await _localContextFactory.CreateDbContextAsync();
+                return await dbContext.ChangeLogs
+                    .Where(cl => cl.Timestamp > timestamp)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error getting changes", ex);
+                throw;
+            }
+        }
+
         private async Task SynchronizeAsync()
         {
             var settings = _settingsService.LoadSettings();
@@ -48,11 +66,11 @@ namespace DetailViewer.Core.Services
 
             try
             {
-                var remoteOptionsBuilder = new DbContextOptionsBuilder<RemoteApplicationDbContext>();
+                var remoteOptionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
                 remoteOptionsBuilder.UseSqlite($"Data Source={settings.DatabasePath}");
 
                 using var localDbContext = await _localContextFactory.CreateDbContextAsync();
-                using var remoteDbContext = new RemoteApplicationDbContext(remoteOptionsBuilder.Options);
+                using var remoteDbContext = new ApplicationDbContext(remoteOptionsBuilder.Options);
                 // await remoteDbContext.Database.MigrateAsync();
 
                 var pendingChanges = await localDbContext.ChangeLogs.ToListAsync();
