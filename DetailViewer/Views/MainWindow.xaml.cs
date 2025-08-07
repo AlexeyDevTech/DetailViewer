@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System;
 using System.Net;
 using DetailViewer.Core.Interfaces;
+using DetailViewer.Core.Services;
+using Prism.Ioc;
 
 namespace DetailViewer.Views
 {
@@ -16,13 +18,22 @@ namespace DetailViewer.Views
     public partial class MainWindow : Window
     {
         private readonly ILogger _logger;
+        private readonly IContainerProvider _containerProvider;
 
-        public MainWindow(ILogger logger)
+        public MainWindow(ILogger logger, IContainerProvider containerProvider)
         {
             _logger = logger;
+            _containerProvider = containerProvider;
             InitializeComponent();
             Closing += MainWindow_Closing;
-            CheckForUpdatesAsync();
+            Loaded += MainWindow_Loaded;
+        }
+
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            await CheckForUpdatesAsync();
+            var syncService = _containerProvider.Resolve<DatabaseSyncService>();
+            await syncService.SyncDatabaseAsync();
         }
 
         private void MainWindow_Closing(object sender, CancelEventArgs e)

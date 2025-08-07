@@ -56,7 +56,6 @@ namespace DetailViewer.Core.Services
                     settings.LastSyncTimestamp = DateTime.UtcNow;
                     await _settingsService.SaveSettingsAsync(settings);
                     _logger.LogInfo("Initial sync complete.");
-                    return; 
                 }
 
                 using var remoteDbContext = dbContextFactory.CreateRemoteDbContext();

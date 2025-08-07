@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DetailViewer.Core.Data
 {
     /// <summary>
-    /// �������� ��� ��������� ��
+    /// удаленная база данных
     /// </summary>
     public class ApplicationDbContext : DbContext
     {
