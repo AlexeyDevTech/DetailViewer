@@ -1,20 +1,16 @@
-using System.ComponentModel;
-using System.Windows;
-using System.IO;
-using System.Reflection;
-using Newtonsoft.Json;
-using System.Threading.Tasks;
-using System;
-using System.Net;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Services;
+using Newtonsoft.Json;
 using Prism.Ioc;
+using System;
+using System.ComponentModel;
+using System.Net;
+using System.Reflection;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace DetailViewer.Views
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         private readonly ILogger _logger;
@@ -25,24 +21,20 @@ namespace DetailViewer.Views
             _logger = logger;
             _containerProvider = containerProvider;
             InitializeComponent();
-            Closing += MainWindow_Closing;
             Loaded += MainWindow_Loaded;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            await CheckForUpdatesAsync();
+            var splashScreen = new SplashScreenView();
+            splashScreen.Show();
+
             var syncService = _containerProvider.Resolve<DatabaseSyncService>();
             await syncService.SyncDatabaseAsync();
-        }
 
-        private void MainWindow_Closing(object sender, CancelEventArgs e)
-        {
-            _logger.Log("Main window closing");
-            //// Отменяем закрытие окна
-            //e.Cancel = true;
-            //// Скрываем окно вместо закрытия
-            //Hide();
+            splashScreen.Close();
+
+            await CheckForUpdatesAsync();
         }
 
         private async Task CheckForUpdatesAsync()
@@ -50,7 +42,6 @@ namespace DetailViewer.Views
             _logger.Log("Checking for updates");
             try
             {
-                // ЗАМЕНИТЕ ПУТЬ НА ВАШ РЕАЛЬНЫЙ СЕТЕВОЙ ПУТЬ
                 string versionFilePath = "file://192.168.157.29/cod2/soft/version.json";
                 string content = new WebClient().DownloadString(versionFilePath);
                 var remoteVersionInfo = JsonConvert.DeserializeObject<VersionInfo>(content);
@@ -59,7 +50,6 @@ namespace DetailViewer.Views
                 var localVersion = new Version(assembly.GetName().Version.ToString());
                 var remoteVersion = new Version(remoteVersionInfo.Version);
 
-                // Сравниваем только первые три компонента версии
                 var localVersionThreeComponents = new Version(localVersion.Major, localVersion.Minor, localVersion.Build);
                 var remoteVersionThreeComponents = new Version(remoteVersion.Major, remoteVersion.Minor, remoteVersion.Build);
 
@@ -76,7 +66,6 @@ namespace DetailViewer.Views
             catch (Exception ex)
             {
                 _logger.LogError("Error checking for updates", ex);
-                // Ошибки (например, нет доступа к сети) будут проигнорированы
             }
         }
     }

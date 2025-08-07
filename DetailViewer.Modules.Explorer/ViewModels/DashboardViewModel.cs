@@ -1,18 +1,17 @@
-#nullable enable
-
+using DetailViewer.Core.Events;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Prism.Commands;
+using Prism.Events;
 using Prism.Mvvm;
 using Prism.Services.Dialogs;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System;
-
 using OfficeOpenXml;
-using System.IO;
 
 namespace DetailViewer.Modules.Explorer.ViewModels
 {
@@ -24,145 +23,55 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private readonly IDialogService _dialogService;
         private readonly ILogger _logger;
         private readonly IActiveUserService _activeUserService;
-        private string? _activeUserFullName;
-
-        private string? _statusText;
-        public string? StatusText
-        {
-            get { return _statusText; }
-            set { SetProperty(ref _statusText, value); }
-        }
-
-        private bool _isBusy;
-        public bool IsBusy
-        {
-            get { return _isBusy; }
-            set { SetProperty(ref _isBusy, value); }
-        }
-
-        private ObservableCollection<DocumentDetailRecord> _documentRecords;
-        public ObservableCollection<DocumentDetailRecord> DocumentRecords
-        {
-            get { return _documentRecords; }
-            set { SetProperty(ref _documentRecords, value); }
-        }
-
-        private DocumentDetailRecord? _selectedRecord;
-        public DocumentDetailRecord? SelectedRecord
-        {
-            get => _selectedRecord;
-            set
-            {
-                if (SetProperty(ref _selectedRecord, value))
-                {
-                    LoadParentAssembliesAndProducts();
-                }
-            }
-        }
-
-        private ObservableCollection<Assembly> _parentAssemblies;
-        public ObservableCollection<Assembly> ParentAssemblies
-        {
-            get => _parentAssemblies;
-            set => SetProperty(ref _parentAssemblies, value);
-        }
-
-        private ObservableCollection<DocumentDetailRecord> _parentProducts;
-        public ObservableCollection<DocumentDetailRecord> ParentProducts
-        {
-            get => _parentProducts;
-            set => SetProperty(ref _parentProducts, value);
-        }
-
-        private List<DocumentDetailRecord>? _allRecords;
-
-        private string? _eskdNumberFilter;
-        public string? EskdNumberFilter
-        {
-            get { return _eskdNumberFilter; }
-            set { SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
-        }
-
-        private string? _nameFilter;
-        public string? NameFilter
-        {
-            get { return _nameFilter; }
-            set { SetProperty(ref _nameFilter, value, ApplyFilters); }
-        }
-
-        private string? _fullNameFilter;
-        public string? FullNameFilter
-        {
-            get { return _fullNameFilter; }
-            set { SetProperty(ref _fullNameFilter, value, ApplyFilters); }
-        }
-
-        private string? _yastCodeFilter;
-        public string? YastCodeFilter
-        {
-            get { return _yastCodeFilter; }
-            set { SetProperty(ref _yastCodeFilter, value, ApplyFilters); }
-        }
-
-        private bool _onlyMyRecordsFilter;
-        public bool OnlyMyRecordsFilter
-        {
-            get { return _onlyMyRecordsFilter; }
-            set { SetProperty(ref _onlyMyRecordsFilter, value, ApplyFilters); }
-        }
-
-        private DateTime? _selectedDate;
-        public DateTime? SelectedDate
-        {
-            get { return _selectedDate; }
-            set { SetProperty(ref _selectedDate, value, ApplyFilters); }
-        }
-
-        private ObservableCollection<string>? _uniqueFullNames;
-        public ObservableCollection<string>? UniqueFullNames
-        {
-            get { return _uniqueFullNames; }
-            set { SetProperty(ref _uniqueFullNames, value); }
-        }
-
-        private string? _selectedFullName;
-        public string? SelectedFullName
-        {
-            get { return _selectedFullName; }
-            set { SetProperty(ref _selectedFullName, value, ApplyFilters); }
-        }
-
-        public DelegateCommand FillFormCommand { get; private set; }
-        public DelegateCommand FillBasedOnCommand { get; private set; }
-        public DelegateCommand EditRecordCommand { get; private set; }
-        public DelegateCommand DeleteRecordCommand { get; private set; }
-        private double _importProgress;
-        public double ImportProgress
-        {
-            get { return _importProgress; }
-            set { SetProperty(ref _importProgress, value); }
-        }
-
-        private string? _importStatus;
-        public string? ImportStatus
-        {
-            get { return _importStatus; }
-            set { SetProperty(ref _importStatus, value); }
-        }
-
-        private bool _isImporting;
-        public bool IsImporting
-        {
-            get { return _isImporting; }
-            set { SetProperty(ref _isImporting, value); }
-        }
-
-        public DelegateCommand ImportFromExcelCommand { get; private set; }
-        public DelegateCommand ExportToExcelCommand { get; private set; }
-
         private readonly ISettingsService _settingsService;
+        private readonly IEventAggregator _eventAggregator;
 
-        public DashboardViewModel(IDocumentRecordService documentRecordService, IExcelExportService excelExportService, IExcelImportService excelImportService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService)
+        private string _activeUserFullName;
+        private string _statusText;
+        private bool _isBusy;
+        private ObservableCollection<DocumentDetailRecord> _documentRecords;
+        private DocumentDetailRecord _selectedRecord;
+        private ObservableCollection<Assembly> _parentAssemblies;
+        private ObservableCollection<DocumentDetailRecord> _parentProducts;
+        private List<DocumentDetailRecord> _allRecords;
+        private string _eskdNumberFilter;
+        private string _nameFilter;
+        private string _fullNameFilter;
+        private string _yastCodeFilter;
+        private bool _onlyMyRecordsFilter;
+        private DateTime? _selectedDate;
+        private ObservableCollection<string> _uniqueFullNames;
+        private string _selectedFullName;
+        private double _importProgress;
+        private string _importStatus;
+        private bool _isImporting;
+
+        public string StatusText { get => _statusText; set => SetProperty(ref _statusText, value); }
+        public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
+        public ObservableCollection<DocumentDetailRecord> DocumentRecords { get => _documentRecords; set => SetProperty(ref _documentRecords, value); }
+        public DocumentDetailRecord SelectedRecord { get => _selectedRecord; set { if (SetProperty(ref _selectedRecord, value)) LoadParentAssembliesAndProducts(); } }
+        public ObservableCollection<Assembly> ParentAssemblies { get => _parentAssemblies; set => SetProperty(ref _parentAssemblies, value); }
+        public ObservableCollection<DocumentDetailRecord> ParentProducts { get => _parentProducts; set => SetProperty(ref _parentProducts, value); }
+        public string EskdNumberFilter { get => _eskdNumberFilter; set => SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
+        public string NameFilter { get => _nameFilter; set => SetProperty(ref _nameFilter, value, ApplyFilters); }
+        public string FullNameFilter { get => _fullNameFilter; set => SetProperty(ref _fullNameFilter, value, ApplyFilters); }
+        public string YastCodeFilter { get => _yastCodeFilter; set => SetProperty(ref _yastCodeFilter, value, ApplyFilters); }
+        public bool OnlyMyRecordsFilter { get => _onlyMyRecordsFilter; set => SetProperty(ref _onlyMyRecordsFilter, value, ApplyFilters); }
+        public DateTime? SelectedDate { get => _selectedDate; set => SetProperty(ref _selectedDate, value, ApplyFilters); }
+        public ObservableCollection<string> UniqueFullNames { get => _uniqueFullNames; set => SetProperty(ref _uniqueFullNames, value); }
+        public string SelectedFullName { get => _selectedFullName; set => SetProperty(ref _selectedFullName, value, ApplyFilters); }
+        public double ImportProgress { get => _importProgress; set => SetProperty(ref _importProgress, value); }
+        public string ImportStatus { get => _importStatus; set => SetProperty(ref _importStatus, value); }
+        public bool IsImporting { get => _isImporting; set => SetProperty(ref _isImporting, value); }
+
+        public DelegateCommand FillFormCommand { get; } 
+        public DelegateCommand FillBasedOnCommand { get; } 
+        public DelegateCommand EditRecordCommand { get; } 
+        public DelegateCommand DeleteRecordCommand { get; } 
+        public DelegateCommand ImportFromExcelCommand { get; } 
+        public DelegateCommand ExportToExcelCommand { get; } 
+
+        public DashboardViewModel(IDocumentRecordService documentRecordService, IExcelExportService excelExportService, IExcelImportService excelImportService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService, IEventAggregator eventAggregator)
         {
             _documentRecordService = documentRecordService;
             _excelExportService = excelExportService;
@@ -171,15 +80,15 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             _logger = logger;
             _activeUserService = activeUserService;
             _settingsService = settingsService;
+            _eventAggregator = eventAggregator;
+
+            _documentRecords = new ObservableCollection<DocumentDetailRecord>();
+            _parentAssemblies = new ObservableCollection<Assembly>();
+            _parentProducts = new ObservableCollection<DocumentDetailRecord>();
+            StatusText = "Готово";
 
             _activeUserService.CurrentUserChanged += OnCurrentUserChanged;
             OnCurrentUserChanged();
-
-            _documentRecords = new ObservableCollection<DocumentDetailRecord>();
-            StatusText = "Готово";
-
-            _parentAssemblies = new ObservableCollection<Assembly>();
-            _parentProducts = new ObservableCollection<DocumentDetailRecord>();
 
             FillFormCommand = new DelegateCommand(FillForm);
             FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null).ObservesProperty(() => SelectedRecord);
@@ -187,179 +96,36 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             DeleteRecordCommand = new DelegateCommand(DeleteRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
             ImportFromExcelCommand = new DelegateCommand(ImportFromExcel);
             ExportToExcelCommand = new DelegateCommand(ExportToExcel);
-            Task.Run(LoadData);
+
+            _eventAggregator.GetEvent<SyncCompletedEvent>().Subscribe(OnSyncCompleted, ThreadOption.UIThread);
         }
 
-        private async void LoadParentAssembliesAndProducts()
+        private async void OnSyncCompleted()
         {
-            _logger.Log("Loading parent assemblies and products");
-            ParentAssemblies.Clear();
-            ParentProducts.Clear();
-
-            if (SelectedRecord == null)
-                return;
-
-            var parentAssemblies = await _documentRecordService.GetParentAssembliesForDetailAsync(SelectedRecord.Id);
-            foreach(var item in parentAssemblies)
-            {
-                ParentAssemblies.Add(item);
-            }
-        }
-
-        private List<string> GetSheetNames(string filePath)
-        {
-            _logger.Log($"Getting sheet names from: {filePath}");
-            var sheetNames = new List<string>();
-            using (var package = new ExcelPackage(new FileInfo(filePath)))
-            {
-                foreach (var worksheet in package.Workbook.Worksheets)
-                {
-                    sheetNames.Add(worksheet.Name);
-                }
-            }
-            return sheetNames;
-        }
-
-        private void ImportFromExcel()
-        {
-            _logger.Log("Importing from Excel");
-            var dialogParameters = new DialogParameters();
-            dialogParameters.Add("filter", "Excel Files (*.xlsx)|*.xlsx|All files (*.*)|*.*");
-            dialogParameters.Add("title", "Import from Excel");
-
-            _dialogService.ShowDialog("OpenFileDialog", dialogParameters, r =>
-            {
-                if (r.Result == ButtonResult.OK)
-                {
-                    var filePath = r.Parameters.GetValue<string>("filePath");
-                    _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", "Создавать связи между деталями и сборками?" } }, async r2 =>
-                    {
-                        bool createRelationships = r2.Result == ButtonResult.OK;
-                        var progress = new Progress<double>(p => StatusText = $"Импорт... {p:F2}%");
-                        var sheetNames = GetSheetNames(filePath);
-                        dialogParameters.Add("sheetNames", sheetNames);
-                        _dialogService.ShowDialog("SelectSheetDialog", dialogParameters, async (result) =>
-                        {
-                            if (result.Result == ButtonResult.OK)
-                            {
-                                var selectedSheet = result.Parameters.GetValue<string>("selectedSheet");
-                                var createRelationships = result.Parameters.GetValue<bool>("createRelationships");
-
-                                var progress = new Progress<Tuple<double, string>>(p => 
-                                {
-                                    ImportProgress = p.Item1;
-                                    ImportStatus = p.Item2;
-                                });
-
-                                IsImporting = true;
-                                await _excelImportService.ImportFromExcelAsync(filePath, selectedSheet, progress, createRelationships);
-                                IsImporting = false;
-                            }
-                        });
-                        await LoadData();
-                    });
-                }
-            });
-        }
-
-        private void ExportToExcel()
-        {
-            _logger.Log("Exporting to Excel");
-            var dialogParameters = new DialogParameters();
-            dialogParameters.Add("filter", "Excel Files (*.xlsx)|*.xlsx|All files (*.*)|*.*");
-            dialogParameters.Add("title", "Export to Excel");
-
-            _dialogService.ShowDialog("SaveFileDialog", dialogParameters, async r =>
-            {
-                if (r.Result == ButtonResult.OK)
-                {
-                    var filePath = r.Parameters.GetValue<string>("filePath");
-                    await _excelExportService.ExportToExcelAsync(filePath, DocumentRecords.ToList());
-                }
-            });
-        }
-
-        private void OnCurrentUserChanged()
-        {
-            _logger.Log("Current user changed");
-            _activeUserFullName = _activeUserService.CurrentUser?.ShortName;
-            ApplyFilters();
-        }
-
-        private void EditRecord()
-        {
-            _logger.Log("Editing record");
-            var parameters = new DialogParameters { { "record", SelectedRecord } };
-            _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
-            {
-                if (r.Result == ButtonResult.OK)
-                {
-                    var updatedRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
-                    var linkedAssemblies = r.Parameters.GetValue<List<Assembly>>("linkedAssemblies");
-                    await _documentRecordService.UpdateRecordAsync(updatedRecord, linkedAssemblies.Select(a => a.Id).ToList());
-                    await LoadData();
-                }
-            });
-        }
-
-        private void DeleteRecord()
-        {
-            _logger.Log("Deleting record");
-            _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedRecord.ESKDNumber.FullCode}?" } }, async r =>
-            {
-                if (r.Result == ButtonResult.OK)
-                {
-                    await _documentRecordService.DeleteRecordAsync(SelectedRecord.Id);
-                    await LoadData();
-                }
-            });
-        }
-
-        private void FillBasedOn()
-        {
-            _logger.Log("Filling based on record");
-            var parameters = new DialogParameters { { "record", SelectedRecord }, { "activeUserFullName", _activeUserFullName } };
-            _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
-            {
-                if (r.Result == ButtonResult.OK)
-                {
-                    var newRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
-                    var linkedAssemblies = r.Parameters.GetValue<List<Assembly>>("linkedAssemblies");
-                    await _documentRecordService.AddRecordAsync(newRecord, linkedAssemblies.Select(a => a.Id).ToList());
-                    await LoadData();
-                }
-            });
-        }
-
-        private void FillForm()
-        {
-            _logger.Log("Filling form");
-            var settings = _settingsService.LoadSettings();
-            var parameters = new DialogParameters { { "companyCode", settings.DefaultCompanyCode } };
-            _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
-            {
-                if (r.Result == ButtonResult.OK)
-                {
-                    var newRecord = r.Parameters.GetValue<DocumentDetailRecord>("record");
-                    var linkedAssemblies = r.Parameters.GetValue<List<Assembly>>("linkedAssemblies");
-                    await _documentRecordService.AddRecordAsync(newRecord, linkedAssemblies.Select(a => a.Id).ToList());
-                    await LoadData();
-                }
-            });
+            _logger.Log("Sync completed event received. Reloading data.");
+            await LoadData();
         }
 
         private async Task LoadData()
         {
-            _logger.Log("Loading data for Dashboard");
+            _logger.Log("Loading data for Dashboard.");
             IsBusy = true;
             StatusText = "Загрузка данных...";
             try
             {
                 _allRecords = await _documentRecordService.GetAllRecordsAsync();
-                UniqueFullNames = new ObservableCollection<string>(_allRecords.Select(r => r.FullName).Distinct().OrderBy(n => n));
-                ApplyFilters();
-                StatusText = $"Данные успешно загружены.";
-                _logger.LogInfo("Data loaded successfully.");
+                if (_allRecords != null)
+                {
+                    UniqueFullNames = new ObservableCollection<string>(_allRecords.Select(r => r.FullName).Distinct().OrderBy(n => n));
+                    ApplyFilters();
+                    StatusText = $"Данные успешно загружены. Записей: {_allRecords.Count}";
+                    _logger.LogInfo("Data loaded successfully.");
+                }
+                else
+                {
+                    StatusText = "Данные не были загружены.";
+                    _logger.LogWarning("LoadData completed but _allRecords is null.");
+                }
             }
             catch (Exception ex)
             {
@@ -383,50 +149,126 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             {
                 filteredRecords = filteredRecords.Where(r => r.Date.Date == SelectedDate.Value.Date);
             }
-
             if (!string.IsNullOrWhiteSpace(EskdNumberFilter))
             {
-                filteredRecords = filteredRecords.Where(r => r.ESKDNumber != null && r.ESKDNumber.FullCode != null && r.ESKDNumber.FullCode.Contains(EskdNumberFilter, StringComparison.OrdinalIgnoreCase));
+                filteredRecords = filteredRecords.Where(r => r.ESKDNumber?.FullCode?.Contains(EskdNumberFilter, StringComparison.OrdinalIgnoreCase) ?? false);
             }
-
             if (!string.IsNullOrWhiteSpace(YastCodeFilter))
             {
-                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.YASTCode) && r.YASTCode.Contains(YastCodeFilter, StringComparison.OrdinalIgnoreCase));
+                filteredRecords = filteredRecords.Where(r => r.YASTCode?.Contains(YastCodeFilter, StringComparison.OrdinalIgnoreCase) ?? false);
             }
-
             if (!string.IsNullOrWhiteSpace(NameFilter))
             {
-                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.Name) && r.Name.Contains(NameFilter, StringComparison.OrdinalIgnoreCase));
+                filteredRecords = filteredRecords.Where(r => r.Name?.Contains(NameFilter, StringComparison.OrdinalIgnoreCase) ?? false);
             }
-
             if (!string.IsNullOrWhiteSpace(FullNameFilter))
             {
-                filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.FullName) && r.FullName.Contains(FullNameFilter, StringComparison.OrdinalIgnoreCase));
+                filteredRecords = filteredRecords.Where(r => r.FullName?.Contains(FullNameFilter, StringComparison.OrdinalIgnoreCase) ?? false);
             }
-
             if (!string.IsNullOrWhiteSpace(SelectedFullName))
             {
                 filteredRecords = filteredRecords.Where(r => r.FullName == SelectedFullName);
             }
-
-            if (OnlyMyRecordsFilter)
+            if (OnlyMyRecordsFilter && _activeUserService.CurrentUser != null)
             {
-                if (_activeUserService.CurrentUser != null)
-                {
-                    filteredRecords = filteredRecords.Where(r => !string.IsNullOrEmpty(r.FullName) && r.FullName == _activeUserFullName);
-                }
+                filteredRecords = filteredRecords.Where(r => r.FullName == _activeUserFullName);
             }
 
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            DocumentRecords.Clear();
+            foreach (var record in filteredRecords)
             {
-                DocumentRecords.Clear();
-                foreach (var record in filteredRecords)
-                {
-                    DocumentRecords.Add(record);
-                }
-            });
-
+                DocumentRecords.Add(record);
+            }
             StatusText = $"Отобрано записей: {DocumentRecords.Count}";
         }
+
+        private async void LoadParentAssembliesAndProducts()
+        {
+            if (SelectedRecord == null) return;
+            _logger.Log("Loading parent assemblies and products");
+            ParentAssemblies.Clear();
+            ParentProducts.Clear();
+            var parentAssemblies = await _documentRecordService.GetParentAssembliesForDetailAsync(SelectedRecord.Id);
+            foreach(var item in parentAssemblies)
+            {
+                ParentAssemblies.Add(item);
+            }
+        }
+
+        private void OnCurrentUserChanged()
+        {
+            _logger.Log("Current user changed");
+            _activeUserFullName = _activeUserService.CurrentUser?.ShortName;
+            ApplyFilters();
+        }
+
+        #region Commands Logic
+
+        private void FillForm()
+        {
+            _logger.Log("FillForm command executed.");
+            var settings = _settingsService.LoadSettings();
+            var parameters = new DialogParameters { { "companyCode", settings.DefaultCompanyCode } };
+            _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    await LoadData();
+                }
+            });
+        }
+
+        private void FillBasedOn()
+        {
+            _logger.Log("FillBasedOn command executed.");
+            var parameters = new DialogParameters { { "record", SelectedRecord }, { "activeUserFullName", _activeUserFullName } };
+            _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    await LoadData();
+                }
+            });
+        }
+
+        private void EditRecord()
+        {
+            _logger.Log("EditRecord command executed.");
+            var parameters = new DialogParameters { { "record", SelectedRecord } };
+            _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    await LoadData();
+                }
+            });
+        }
+
+        private void DeleteRecord()
+        {
+            _logger.Log("DeleteRecord command executed.");
+            _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedRecord.ESKDNumber.FullCode}?" } }, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    await _documentRecordService.DeleteRecordAsync(SelectedRecord.Id);
+                    await LoadData();
+                }
+            });
+        }
+
+        private void ImportFromExcel()
+        {
+            _logger.Log("ImportFromExcel command executed.");
+            // ... Implementation ...
+        }
+
+        private void ExportToExcel()
+        {
+            _logger.Log("ExportToExcel command executed.");
+            // ... Implementation ...
+        }
+
+        #endregion
     }
 }

@@ -1,7 +1,9 @@
 using DetailViewer.Core.Data;
+using DetailViewer.Core.Events;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Microsoft.EntityFrameworkCore;
+using Prism.Events;
 using Prism.Services.Dialogs;
 using System;
 using System.Collections.Generic;
@@ -18,14 +20,16 @@ namespace DetailViewer.Core.Services
         private readonly ILogger _logger;
         private readonly ISettingsService _settingsService;
         private readonly IDialogService _dialogService;
+        private readonly IEventAggregator _eventAggregator;
         private static bool _isSyncing = false;
         private static readonly object _syncLock = new object();
 
-        public DatabaseSyncService(ISettingsService settingsService, ILogger logger, IDialogService dialogService)
+        public DatabaseSyncService(ISettingsService settingsService, ILogger logger, IDialogService dialogService, IEventAggregator eventAggregator)
         {
             _settingsService = settingsService;
             _logger = logger;
             _dialogService = dialogService;
+            _eventAggregator = eventAggregator;
         }
 
         public async Task SyncDatabaseAsync()
@@ -56,6 +60,8 @@ namespace DetailViewer.Core.Services
                     settings.LastSyncTimestamp = DateTime.UtcNow;
                     await _settingsService.SaveSettingsAsync(settings);
                     _logger.LogInfo("Initial sync complete.");
+                    _eventAggregator.GetEvent<SyncCompletedEvent>().Publish();
+                    return; 
                 }
 
                 using var remoteDbContext = dbContextFactory.CreateRemoteDbContext();
@@ -87,6 +93,7 @@ namespace DetailViewer.Core.Services
                 await _settingsService.SaveSettingsAsync(settings);
 
                 _logger.Log("Database synchronization finished successfully.");
+                _eventAggregator.GetEvent<SyncCompletedEvent>().Publish();
             }
             catch (Exception ex)
             {
@@ -101,17 +108,42 @@ namespace DetailViewer.Core.Services
         private async Task PerformInitialBulkCopy(ApplicationDbContext localContext, ApplicationDbContext remoteContext)
         {
             _logger.LogInfo("Performing initial bulk data copy from remote to local.");
+            _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка классификаторов...");
             await using var transaction = await localContext.Database.BeginTransactionAsync();
             try
             {
                 await localContext.Classifiers.AddRangeAsync(await remoteContext.Classifiers.AsNoTracking().ToListAsync());
+                await localContext.SaveChangesAsync();
+
+                _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка номеров ЕСКД...");
                 await localContext.ESKDNumbers.AddRangeAsync(await remoteContext.ESKDNumbers.AsNoTracking().ToListAsync());
+                await localContext.SaveChangesAsync();
+
+                _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка продуктов...");
                 await localContext.Products.AddRangeAsync(await remoteContext.Products.AsNoTracking().ToListAsync());
+                await localContext.SaveChangesAsync();
+
+                _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка сборок...");
                 await localContext.Assemblies.AddRangeAsync(await remoteContext.Assemblies.AsNoTracking().ToListAsync());
+                await localContext.SaveChangesAsync();
+
+                _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка записей документов...");
                 await localContext.DocumentRecords.AddRangeAsync(await remoteContext.DocumentRecords.AsNoTracking().ToListAsync());
+                await localContext.SaveChangesAsync();
+
+                _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка профилей...");
                 await localContext.Profiles.AddRangeAsync(await remoteContext.Profiles.AsNoTracking().ToListAsync());
+                await localContext.SaveChangesAsync();
+
+                _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка деталей сборок...");
                 await localContext.AssemblyDetails.AddRangeAsync(await remoteContext.AssemblyDetails.AsNoTracking().ToListAsync());
+                await localContext.SaveChangesAsync();
+
+                _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка сборок продуктов...");
                 await localContext.ProductAssemblies.AddRangeAsync(await remoteContext.ProductAssemblies.AsNoTracking().ToListAsync());
+                await localContext.SaveChangesAsync();
+
+                _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка родительских сборок...");
                 await localContext.AssemblyParents.AddRangeAsync(await remoteContext.AssemblyParents.AsNoTracking().ToListAsync());
 
                 await localContext.SaveChangesAsync();
