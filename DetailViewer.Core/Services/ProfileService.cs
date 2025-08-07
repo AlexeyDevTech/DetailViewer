@@ -4,7 +4,9 @@ using DetailViewer.Core.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
+using System;
 
 namespace DetailViewer.Core.Services
 {
@@ -40,6 +42,17 @@ namespace DetailViewer.Core.Services
             using var dbContext = await _dbContextFactory.CreateDbContextAsync();
             dbContext.Profiles.Add(profile);
             await dbContext.SaveChangesAsync();
+
+            var changeLog = new ChangeLog
+            {
+                EntityName = nameof(Profile),
+                EntityId = profile.Id.ToString(),
+                OperationType = OperationType.Create,
+                Payload = JsonSerializer.Serialize(profile),
+                Timestamp = DateTime.UtcNow
+            };
+            dbContext.ChangeLogs.Add(changeLog);
+            await dbContext.SaveChangesAsync();
         }
 
         public async Task UpdateProfileAsync(Profile profile)
@@ -47,6 +60,17 @@ namespace DetailViewer.Core.Services
             _logger.Log($"Updating profile: {profile.LastName}");
             using var dbContext = await _dbContextFactory.CreateDbContextAsync();
             dbContext.Profiles.Update(profile);
+
+            var changeLog = new ChangeLog
+            {
+                EntityName = nameof(Profile),
+                EntityId = profile.Id.ToString(),
+                OperationType = OperationType.Update,
+                Payload = JsonSerializer.Serialize(profile),
+                Timestamp = DateTime.UtcNow
+            };
+            dbContext.ChangeLogs.Add(changeLog);
+
             await dbContext.SaveChangesAsync();
         }
 
@@ -57,6 +81,16 @@ namespace DetailViewer.Core.Services
             var profile = await dbContext.Profiles.FindAsync(profileId);
             if (profile != null)
             {
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(Profile),
+                    EntityId = profileId.ToString(),
+                    OperationType = OperationType.Delete,
+                    Payload = JsonSerializer.Serialize(profile),
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
+
                 dbContext.Profiles.Remove(profile);
                 await dbContext.SaveChangesAsync();
             }

@@ -1,8 +1,10 @@
 #nullable enable
 
+using DetailViewer.Core.Events;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Prism.Commands;
+using Prism.Events;
 using Prism.Mvvm;
 using Prism.Services.Dialogs;
 using System;
@@ -18,9 +20,10 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private readonly IProductService _productService;
         private readonly IDialogService _dialogService;
         private readonly ILogger _logger;
+        private readonly IEventAggregator _eventAggregator;
 
-        private string? _statusText;
-        public string? StatusText
+        private string _statusText = string.Empty;
+        public string StatusText
         {
             get { return _statusText; }
             set { SetProperty(ref _statusText, value); }
@@ -47,17 +50,17 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set => SetProperty(ref _selectedProduct, value);
         }
 
-        private List<Product>? _allProducts;
+        private List<Product> _allProducts = new List<Product>();
 
-        private string? _eskdNumberFilter;
-        public string? EskdNumberFilter
+        private string _eskdNumberFilter = string.Empty;
+        public string EskdNumberFilter
         {
             get { return _eskdNumberFilter; }
             set { SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
         }
 
-        private string? _nameFilter;
-        public string? NameFilter
+        private string _nameFilter = string.Empty;
+        public string NameFilter
         {
             get { return _nameFilter; }
             set { SetProperty(ref _nameFilter, value, ApplyFilters); }
@@ -67,11 +70,12 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public DelegateCommand EditProductCommand { get; private set; }
         public DelegateCommand DeleteProductCommand { get; private set; }
 
-        public ProductsDashboardViewModel(IProductService productService, IDialogService dialogService, ILogger logger)
+        public ProductsDashboardViewModel(IProductService productService, IDialogService dialogService, ILogger logger, IEventAggregator eventAggregator)
         {
             _productService = productService;
             _dialogService = dialogService;
             _logger = logger;
+            _eventAggregator = eventAggregator;
 
             _products = new ObservableCollection<Product>();
             StatusText = "Готово";
@@ -80,7 +84,14 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             EditProductCommand = new DelegateCommand(EditProduct, () => SelectedProduct != null).ObservesProperty(() => SelectedProduct);
             DeleteProductCommand = new DelegateCommand(DeleteProduct, () => SelectedProduct != null).ObservesProperty(() => SelectedProduct);
 
-            Task.Run(LoadData);
+            _eventAggregator.GetEvent<SyncCompletedEvent>().Subscribe(OnSyncCompleted, ThreadOption.UIThread);
+
+            _ = LoadData();
+        }
+
+        private async void OnSyncCompleted()
+        {
+            await LoadData();
         }
 
         private void EditProduct()

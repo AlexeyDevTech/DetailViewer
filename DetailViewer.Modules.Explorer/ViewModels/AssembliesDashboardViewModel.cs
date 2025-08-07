@@ -1,8 +1,8 @@
-#nullable enable
-
+using DetailViewer.Core.Events;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Prism.Commands;
+using Prism.Events;
 using Prism.Mvvm;
 using Prism.Services.Dialogs;
 using System;
@@ -18,9 +18,10 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private readonly IAssemblyService _assemblyService;
         private readonly IDialogService _dialogService;
         private readonly ILogger _logger;
+        private readonly IEventAggregator _eventAggregator;
 
-        private string? _statusText;
-        public string? StatusText
+        private string _statusText = string.Empty;
+        public string StatusText
         {
             get { return _statusText; }
             set { SetProperty(ref _statusText, value); }
@@ -47,17 +48,17 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             set => SetProperty(ref _selectedAssembly, value);
         }
 
-        private List<Assembly>? _allAssemblies;
+        private List<Assembly> _allAssemblies = new List<Assembly>();
 
-        private string? _eskdNumberFilter;
-        public string? EskdNumberFilter
+        private string _eskdNumberFilter = string.Empty;
+        public string EskdNumberFilter
         {
             get { return _eskdNumberFilter; }
             set { SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
         }
 
-        private string? _nameFilter;
-        public string? NameFilter
+        private string _nameFilter = string.Empty;
+        public string NameFilter
         {
             get { return _nameFilter; }
             set { SetProperty(ref _nameFilter, value, ApplyFilters); }
@@ -67,11 +68,12 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public DelegateCommand EditAssemblyCommand { get; private set; }
         public DelegateCommand DeleteAssemblyCommand { get; private set; }
 
-        public AssembliesDashboardViewModel(IAssemblyService assemblyService, IDialogService dialogService, ILogger logger)
+        public AssembliesDashboardViewModel(IAssemblyService assemblyService, IDialogService dialogService, ILogger logger, IEventAggregator eventAggregator)
         {
             _assemblyService = assemblyService;
             _dialogService = dialogService;
             _logger = logger;
+            _eventAggregator = eventAggregator;
 
             _assemblies = new ObservableCollection<Assembly>();
             StatusText = "Готово";
@@ -80,7 +82,14 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             EditAssemblyCommand = new DelegateCommand(EditAssembly, () => SelectedAssembly != null).ObservesProperty(() => SelectedAssembly);
             DeleteAssemblyCommand = new DelegateCommand(DeleteAssembly, () => SelectedAssembly != null).ObservesProperty(() => SelectedAssembly);
 
-            Task.Run(LoadData);
+            _eventAggregator.GetEvent<SyncCompletedEvent>().Subscribe(OnSyncCompleted, ThreadOption.UIThread);
+
+            _ = LoadData();
+        }
+
+        private async void OnSyncCompleted()
+        {
+            await LoadData();
         }
 
         private void EditAssembly()

@@ -136,18 +136,20 @@ namespace DetailViewer.Core.Services
             {
                 using var dbContext = await _contextFactory.CreateDbContextAsync();
 
+                var record = await dbContext.DocumentRecords.FindAsync(recordId);
+                if (record == null) return;
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(DocumentDetailRecord),
                     EntityId = recordId.ToString(),
                     OperationType = OperationType.Delete,
+                    Payload = JsonSerializer.Serialize(record), // Serialize before deleting
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);
 
-                await dbContext.DocumentRecords
-                    .Where(r => r.Id == recordId)
-                    .ExecuteDeleteAsync();
+                dbContext.DocumentRecords.Remove(record);
 
                 await dbContext.SaveChangesAsync();
             }

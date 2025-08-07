@@ -46,18 +46,20 @@ namespace DetailViewer.Core.Services
             {
                 using var dbContext = await _contextFactory.CreateDbContextAsync();
 
+                var assembly = await dbContext.Assemblies.FindAsync(assemblyId);
+                if (assembly == null) return;
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(Assembly),
                     EntityId = assemblyId.ToString(),
                     OperationType = OperationType.Delete,
+                    Payload = JsonSerializer.Serialize(assembly), // Serialize before deleting
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);
 
-                await dbContext.Assemblies
-                    .Where(a => a.Id == assemblyId)
-                    .ExecuteDeleteAsync();
+                dbContext.Assemblies.Remove(assembly);
 
                 await dbContext.SaveChangesAsync();
             }
@@ -155,17 +157,11 @@ namespace DetailViewer.Core.Services
                 using var dbContext = await _contextFactory.CreateDbContextAsync();
                 await using var transaction = await dbContext.Database.BeginTransactionAsync();
                 
-                await dbContext.AssemblyParents
+                var existingLinks = await dbContext.AssemblyParents
                     .Where(ap => ap.ChildAssemblyId == assemblyId)
-                    .ExecuteDeleteAsync();
+                    .ToListAsync();
 
-                var trackedEntries = dbContext.ChangeTracker.Entries<AssemblyParent>()
-                    .Where(e => e.Entity.ChildAssemblyId == assemblyId)
-                    .ToList();
-                foreach (var entry in trackedEntries)
-                {
-                    entry.State = EntityState.Detached;
-                }
+                dbContext.AssemblyParents.RemoveRange(existingLinks);
 
                 if (parentAssemblies?.Any() == true)
                 {
@@ -176,6 +172,16 @@ namespace DetailViewer.Core.Services
                     }).ToList();
                     dbContext.AssemblyParents.AddRange(newLinks);
                 }
+
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(Assembly),
+                    EntityId = assemblyId.ToString(),
+                    OperationType = OperationType.Update,
+                    Payload = JsonSerializer.Serialize(await dbContext.Assemblies.FindAsync(assemblyId)),
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
 
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();

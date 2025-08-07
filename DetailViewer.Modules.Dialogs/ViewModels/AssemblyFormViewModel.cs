@@ -86,6 +86,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private ObservableCollection<ClassifierData>? _filteredClassifiers;
         public ObservableCollection<ClassifierData>? FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
 
+        private bool _isUpdatingFromSelection = false;
         private ClassifierData? _selectedClassifier;
         public ClassifierData? SelectedClassifier
         {
@@ -93,7 +94,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set
             {
                 SetProperty(ref _selectedClassifier, value);
-                if (value != null) ClassNumberString = value.Code;
+                if (value != null)
+                {
+                    _isUpdatingFromSelection = true;
+                    ClassNumberString = value.Code;
+                    _isUpdatingFromSelection = false;
+                }
             }
         }
 
@@ -138,7 +144,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             AddRelatedProductCommand = new DelegateCommand(AddRelatedProduct);
             RemoveRelatedProductCommand = new DelegateCommand<Product>(RemoveRelatedProduct);
 
-            LoadClassifiers();
             LoadAssemblies();
         }
 
@@ -156,11 +161,18 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private void FilterClassifiers()
         {
-            if (AllClassifiers == null || string.IsNullOrWhiteSpace(ClassNumberString))
+            if (AllClassifiers == null)
             {
                 FilteredClassifiers = new ObservableCollection<ClassifierData>();
                 return;
             }
+
+            if (string.IsNullOrWhiteSpace(ClassNumberString))
+            {
+                FilteredClassifiers = new ObservableCollection<ClassifierData>(AllClassifiers);
+                return;
+            }
+
             FilteredClassifiers = new ObservableCollection<ClassifierData>(
                 AllClassifiers.Where(c => c.Code.StartsWith(ClassNumberString, StringComparison.OrdinalIgnoreCase))
                               .OrderBy(c => c.Code.Length)
@@ -196,6 +208,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private void OnClassNumberStringChanged()
         {
+            if (_isUpdatingFromSelection) return;
+
             FilterClassifiers();
             FilterAssemblies();
             OnESKDNumberPartChanged();
@@ -292,6 +306,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public async void OnDialogOpened(IDialogParameters parameters)
         {
+            await _classifierService.LoadClassifiersAsync();
             AllClassifiers = new ObservableCollection<ClassifierData>(_classifierService.GetAllClassifiers());
 
             if (parameters.ContainsKey("assembly"))

@@ -46,18 +46,20 @@ namespace DetailViewer.Core.Services
             {
                 using var dbContext = await _contextFactory.CreateDbContextAsync();
 
+                var product = await dbContext.Products.FindAsync(productId);
+                if (product == null) return;
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(Product),
                     EntityId = productId.ToString(),
                     OperationType = OperationType.Delete,
+                    Payload = JsonSerializer.Serialize(product), // Serialize before deleting
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);
 
-                await dbContext.Products
-                    .Where(p => p.Id == productId)
-                    .ExecuteDeleteAsync();
+                dbContext.Products.Remove(product);
 
                 await dbContext.SaveChangesAsync();
             }
@@ -203,6 +205,16 @@ namespace DetailViewer.Core.Services
                     }).ToList();
                     dbContext.ProductAssemblies.AddRange(newLinks);
                 }
+
+                var changeLog = new ChangeLog
+                {
+                    EntityName = nameof(Product),
+                    EntityId = productId.ToString(),
+                    OperationType = OperationType.Update,
+                    Payload = JsonSerializer.Serialize(await dbContext.Products.FindAsync(productId)),
+                    Timestamp = DateTime.UtcNow
+                };
+                dbContext.ChangeLogs.Add(changeLog);
 
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();

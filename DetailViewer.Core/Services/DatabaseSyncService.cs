@@ -101,6 +101,8 @@ namespace DetailViewer.Core.Services
             }
             finally
             {
+                _logger.Log("Synchronization process finished. Releasing lock and notifying UI.");
+                _eventAggregator.GetEvent<SyncCompletedEvent>().Publish();
                 ReleaseSyncLock();
             }
         }
@@ -258,7 +260,13 @@ namespace DetailViewer.Core.Services
                     var entity = JsonSerializer.Deserialize(change.Payload, entityType);
                     if (entity == null) continue;
 
-                    var existingEntity = await dbContext.FindAsync(entityType, change.EntityId);
+                    if (!int.TryParse(change.EntityId, out var entityId))
+                    {
+                        _logger.LogWarning($"Could not parse EntityId '{change.EntityId}' to an integer for entity type '{change.EntityName}'. Skipping change.");
+                        continue;
+                    }
+
+                    var existingEntity = await dbContext.FindAsync(entityType, entityId);
 
                     switch (change.OperationType)
                     {

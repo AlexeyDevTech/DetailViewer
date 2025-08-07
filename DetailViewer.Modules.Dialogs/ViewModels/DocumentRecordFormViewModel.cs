@@ -86,6 +86,22 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private ObservableCollection<DocumentDetailRecord>? _filteredRecords;
         public ObservableCollection<DocumentDetailRecord>? FilteredRecords { get => _filteredRecords; set => SetProperty(ref _filteredRecords, value); }
 
+        private ClassifierData? _selectedClassifier;
+        public ClassifierData? SelectedClassifier
+        {
+            get => _selectedClassifier;
+            set
+            {
+                SetProperty(ref _selectedClassifier, value);
+                if (value != null)
+                {
+                    _isUpdatingFromSelection = true;
+                    ClassNumberString = value.Code;
+                    _isUpdatingFromSelection = false;
+                }
+            }
+        }
+
         private ObservableCollection<Assembly> _linkedAssemblies;
         public ObservableCollection<Assembly> LinkedAssemblies
         {
@@ -100,6 +116,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set { SetProperty(ref _selectedLinkedAssembly, value); }
         }
 
+        private bool _isUpdatingFromSelection = false;
         private DocumentDetailRecord? _selectedRecordToCopy;
         public DocumentDetailRecord? SelectedRecordToCopy
         {
@@ -150,7 +167,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             AddAssemblyLinkCommand = new DelegateCommand(AddAssemblyLink);
             RemoveAssemblyLinkCommand = new DelegateCommand(RemoveAssemblyLink, () => SelectedLinkedAssembly != null).ObservesProperty(() => SelectedLinkedAssembly);
 
-            LoadClassifiers();
             LoadRecords();
         }
 
@@ -211,11 +227,18 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private void FilterClassifiers()
         {
-            if (AllClassifiers == null || string.IsNullOrWhiteSpace(ClassNumberString))
+            if (AllClassifiers == null)
             {
                 FilteredClassifiers = new ObservableCollection<ClassifierData>();
                 return;
             }
+
+            if (string.IsNullOrWhiteSpace(ClassNumberString))
+            {
+                FilteredClassifiers = new ObservableCollection<ClassifierData>(AllClassifiers);
+                return;
+            }
+
             FilteredClassifiers = new ObservableCollection<ClassifierData>(
                 AllClassifiers.Where(c => c.Code.StartsWith(ClassNumberString, StringComparison.OrdinalIgnoreCase))
                               .OrderBy(c => c.Code.Length)
@@ -228,6 +251,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private void OnESKDNumberPartChanged() => RaisePropertyChanged(nameof(ESKDNumberString));
         private void OnClassNumberStringChanged()
         {
+            if (_isUpdatingFromSelection) return;
+
             FilterClassifiers();
             FilterRecords();
             if (ClassNumberString?.Length == 6) FindNextDetailNumber();
@@ -350,8 +375,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public bool CanCloseDialog() => true;
         public void OnDialogClosed() { }
 
-        public void OnDialogOpened(IDialogParameters parameters)
+        public async void OnDialogOpened(IDialogParameters parameters)
         {
+            await _classifierService.LoadClassifiersAsync();
             AllClassifiers = new ObservableCollection<ClassifierData>(_classifierService.GetAllClassifiers());
 
             if (parameters.ContainsKey(DialogParameterKeys.Record))
@@ -363,7 +389,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 }
                 else
                 {
-                    HandleEditScenario(record);
+                    await HandleEditScenario(record);
                 }
             }
             else
