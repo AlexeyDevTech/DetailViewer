@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
@@ -63,12 +64,17 @@ namespace DetailViewer.Core.Services
                     await dbContext.SaveChangesAsync();
                 }
 
+                var options = new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve
+                };
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(DocumentDetailRecord),
                     EntityId = record.Id.ToString(),
                     OperationType = OperationType.Create,
-                    Payload = JsonSerializer.Serialize(record),
+                    Payload = JsonSerializer.Serialize(record, options),
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);
@@ -109,12 +115,17 @@ namespace DetailViewer.Core.Services
                     dbContext.AssemblyDetails.AddRange(newLinks);
                 }
 
+                var options = new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve
+                };
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(DocumentDetailRecord),
                     EntityId = record.Id.ToString(),
                     OperationType = OperationType.Update,
-                    Payload = JsonSerializer.Serialize(record),
+                    Payload = JsonSerializer.Serialize(record, options),
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);
@@ -139,12 +150,17 @@ namespace DetailViewer.Core.Services
                 var record = await dbContext.DocumentRecords.FindAsync(recordId);
                 if (record == null) return;
 
+                var options = new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve
+                };
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(DocumentDetailRecord),
                     EntityId = recordId.ToString(),
                     OperationType = OperationType.Delete,
-                    Payload = JsonSerializer.Serialize(record), // Serialize before deleting
+                    Payload = JsonSerializer.Serialize(record, options), // Serialize before deleting
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);

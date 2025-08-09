@@ -24,8 +24,8 @@ namespace DetailViewer
         private ILogger _logger;
         private NotifyIcon _notifyIcon;
         private System.Timers.Timer _dbCheckTimer;
+        private System.Timers.Timer _syncTimer;
         private ISettingsService _settingsService;
-        private SynchronizationService _synchronizationService;
 
         protected override Window CreateShell()
         {
@@ -58,11 +58,10 @@ namespace DetailViewer
             });
 
             _settingsService = Container.Resolve<ISettingsService>();
-            _synchronizationService = Container.Resolve<SynchronizationService>();
-            _synchronizationService.Start();
 
             InitializeNotifyIcon();
             InitializeDbCheckTimer();
+            InitializeSyncTimer();
 
             splashScreen.Close();
 
@@ -108,7 +107,6 @@ namespace DetailViewer
 
             containerRegistry.RegisterSingleton<DatabaseSyncService>();
             containerRegistry.Register<IDbContextFactory<ApplicationDbContext>>(() => new ApplicationDbContextFactory(Container.Resolve<ISettingsService>()));
-            containerRegistry.RegisterSingleton<SynchronizationService>();
         }
 
         protected override void ConfigureModuleCatalog(IModuleCatalog moduleCatalog)
@@ -141,6 +139,21 @@ namespace DetailViewer
             _dbCheckTimer.Elapsed += OnDbCheckTimerElapsed;
             _dbCheckTimer.Start();
             CheckDbConnection(); // Initial check
+        }
+
+        private void InitializeSyncTimer()
+        {
+            _logger.Log("Initializing sync timer");
+            _syncTimer = new System.Timers.Timer(60 * 1000); // 1 minute
+            _syncTimer.Elapsed += OnSyncTimerElapsed;
+            _syncTimer.Start();
+        }
+
+        private async void OnSyncTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            _logger.Log("Sync timer elapsed");
+            var syncService = Container.Resolve<DatabaseSyncService>();
+            await syncService.SyncDatabaseAsync();
         }
 
         private async void CheckDbConnection()
@@ -196,10 +209,14 @@ namespace DetailViewer
 
         protected override void OnExit(ExitEventArgs e)
         {
-            _logger.Log("Application exiting");
-            _synchronizationService?.Stop();
+            _logger.Log("Application exiting. Performing final synchronization.");
+            var syncService = Container.Resolve<DatabaseSyncService>();
+            syncService.SyncDatabaseAsync().GetAwaiter().GetResult();
+
+            _logger.Log("Final synchronization complete.");
             _notifyIcon?.Dispose();
             _dbCheckTimer?.Dispose();
+            _syncTimer?.Dispose();
             base.OnExit(e);
         }
     }

@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
@@ -249,16 +250,53 @@ namespace DetailViewer.Core.Services
         {
             if (!changes.Any()) return;
 
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
             await using var transaction = await dbContext.Database.BeginTransactionAsync();
             try
             {
-                foreach (var change in changes.OrderBy(c => c.Timestamp))
+                // Group changes by entity to process them in a more controlled manner
+                var changesByEntity = changes.GroupBy(c => new { c.EntityName, c.EntityId })
+                                             .Select(g => g.OrderByDescending(c => c.Timestamp).First())
+                                             .ToList();
+
+                // Define the order of operations based on entity dependencies
+                var entityOrder = new List<string>
+                {
+                    nameof(Classifier),
+                    nameof(ESKDNumber),
+                    nameof(Profile),
+                    nameof(Product),
+                    nameof(Models.Assembly),
+                    nameof(DocumentDetailRecord),
+                    nameof(ProductAssembly),
+                    nameof(AssemblyDetail),
+                    nameof(AssemblyParent)
+                };
+
+                var sortedChanges = changesByEntity
+                    .OrderBy(c => c.OperationType == OperationType.Delete ? 1 : 0) // Deletes first
+                    .ThenBy(c => entityOrder.IndexOf(c.EntityName))
+                    .ThenBy(c => c.Timestamp);
+
+                foreach (var change in sortedChanges)
                 {
                     var entityType = GetEntityType(change.EntityName);
-                    if (entityType == null) continue;
+                    if (entityType == null)
+                    {
+                        _logger.LogWarning($"Could not find entity type for '{change.EntityName}'. Skipping change.");
+                        continue;
+                    }
 
-                    var entity = JsonSerializer.Deserialize(change.Payload, entityType);
-                    if (entity == null) continue;
+                    var entity = JsonSerializer.Deserialize(change.Payload, entityType, options);
+                    if (entity == null)
+                    {
+                        _logger.LogWarning($"Could not deserialize payload for entity '{change.EntityName}' with id '{change.EntityId}'. Skipping change.");
+                        continue;
+                    }
 
                     if (!int.TryParse(change.EntityId, out var entityId))
                     {
@@ -271,17 +309,32 @@ namespace DetailViewer.Core.Services
                     switch (change.OperationType)
                     {
                         case OperationType.Create:
-                            if (existingEntity == null) dbContext.Entry(entity).State = EntityState.Added;
+                            if (existingEntity == null)
+                            {
+                                dbContext.Add(entity);
+                            }
                             break;
                         case OperationType.Update:
-                            if (existingEntity != null) dbContext.Entry(existingEntity).CurrentValues.SetValues(entity);
-                            else dbContext.Entry(entity).State = EntityState.Added;
+                            if (existingEntity != null)
+                            {
+                                dbContext.Entry(existingEntity).CurrentValues.SetValues(entity);
+                            }
+                            else
+                            {
+                                // If the entity doesn't exist, it might have been deleted and recreated.
+                                // Treat it as a creation.
+                                dbContext.Add(entity);
+                            }
                             break;
                         case OperationType.Delete:
-                            if (existingEntity != null) dbContext.Entry(existingEntity).State = EntityState.Deleted;
+                            if (existingEntity != null)
+                            {
+                                dbContext.Remove(existingEntity);
+                            }
                             break;
                     }
                 }
+
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
             }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System;
+using System.Text.Json.Serialization;
 
 namespace DetailViewer.Core.Services
 {
@@ -43,12 +44,17 @@ namespace DetailViewer.Core.Services
             dbContext.Profiles.Add(profile);
             await dbContext.SaveChangesAsync();
 
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
             var changeLog = new ChangeLog
             {
                 EntityName = nameof(Profile),
                 EntityId = profile.Id.ToString(),
                 OperationType = OperationType.Create,
-                Payload = JsonSerializer.Serialize(profile),
+                Payload = JsonSerializer.Serialize(profile, options),
                 Timestamp = DateTime.UtcNow
             };
             dbContext.ChangeLogs.Add(changeLog);
@@ -61,12 +67,17 @@ namespace DetailViewer.Core.Services
             using var dbContext = await _dbContextFactory.CreateDbContextAsync();
             dbContext.Profiles.Update(profile);
 
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
             var changeLog = new ChangeLog
             {
                 EntityName = nameof(Profile),
                 EntityId = profile.Id.ToString(),
                 OperationType = OperationType.Update,
-                Payload = JsonSerializer.Serialize(profile),
+                Payload = JsonSerializer.Serialize(profile, options),
                 Timestamp = DateTime.UtcNow
             };
             dbContext.ChangeLogs.Add(changeLog);
@@ -81,12 +92,17 @@ namespace DetailViewer.Core.Services
             var profile = await dbContext.Profiles.FindAsync(profileId);
             if (profile != null)
             {
+                var options = new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve
+                };
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(Profile),
                     EntityId = profileId.ToString(),
                     OperationType = OperationType.Delete,
-                    Payload = JsonSerializer.Serialize(profile),
+                    Payload = JsonSerializer.Serialize(profile, options),
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);

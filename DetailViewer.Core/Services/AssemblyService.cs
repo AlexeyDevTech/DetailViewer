@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
@@ -49,12 +50,17 @@ namespace DetailViewer.Core.Services
                 var assembly = await dbContext.Assemblies.FindAsync(assemblyId);
                 if (assembly == null) return;
 
+                var options = new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve
+                };
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(Assembly),
                     EntityId = assemblyId.ToString(),
                     OperationType = OperationType.Delete,
-                    Payload = JsonSerializer.Serialize(assembly), // Serialize before deleting
+                    Payload = JsonSerializer.Serialize(assembly, options), // Serialize before deleting
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);
@@ -80,12 +86,17 @@ namespace DetailViewer.Core.Services
                 using var dbContext = await _contextFactory.CreateDbContextAsync();
                 dbContext.Assemblies.Add(assembly);
 
+                var options = new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve
+                };
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(Assembly),
                     EntityId = assembly.Id.ToString(),
                     OperationType = OperationType.Create,
-                    Payload = JsonSerializer.Serialize(assembly),
+                    Payload = JsonSerializer.Serialize(assembly, options),
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);
@@ -109,12 +120,17 @@ namespace DetailViewer.Core.Services
                 using var dbContext = await _contextFactory.CreateDbContextAsync();
                 dbContext.Assemblies.Update(assembly);
 
+                var options = new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve
+                };
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(Assembly),
                     EntityId = assembly.Id.ToString(),
                     OperationType = OperationType.Update,
-                    Payload = JsonSerializer.Serialize(assembly),
+                    Payload = JsonSerializer.Serialize(assembly, options),
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);
@@ -173,12 +189,17 @@ namespace DetailViewer.Core.Services
                     dbContext.AssemblyParents.AddRange(newLinks);
                 }
 
+                var options = new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve
+                };
+
                 var changeLog = new ChangeLog
                 {
                     EntityName = nameof(Assembly),
                     EntityId = assemblyId.ToString(),
                     OperationType = OperationType.Update,
-                    Payload = JsonSerializer.Serialize(await dbContext.Assemblies.FindAsync(assemblyId)),
+                    Payload = JsonSerializer.Serialize(await dbContext.Assemblies.FindAsync(assemblyId), options),
                     Timestamp = DateTime.UtcNow
                 };
                 dbContext.ChangeLogs.Add(changeLog);
