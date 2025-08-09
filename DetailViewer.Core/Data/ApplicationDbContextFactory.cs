@@ -42,7 +42,7 @@ namespace DetailViewer.Core.Data
         {
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
             var settings = _settingsService.LoadSettings();
-            var connectionString = $"Data Source={settings.DatabasePath}";
+            var connectionString = $"Data Source={settings.DatabasePath};Cache=Shared;Journal Mode=WAL";
             optionsBuilder.UseSqlite(connectionString);
             return new ApplicationDbContext(optionsBuilder.Options);
         }
