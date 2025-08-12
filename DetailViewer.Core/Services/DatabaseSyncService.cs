@@ -115,39 +115,57 @@ namespace DetailViewer.Core.Services
             await using var transaction = await localContext.Database.BeginTransactionAsync();
             try
             {
-                await localContext.Classifiers.AddRangeAsync(await remoteContext.Classifiers.AsNoTracking().ToListAsync());
+                var classifiers = await remoteContext.Classifiers.AsNoTracking().ToListAsync();
+                _logger.LogInfo($"Read {classifiers.Count} classifiers from remote DB.");
+                await localContext.Classifiers.AddRangeAsync(classifiers);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка номеров ЕСКД...");
-                await localContext.ESKDNumbers.AddRangeAsync(await remoteContext.ESKDNumbers.AsNoTracking().ToListAsync());
+                var eskdNumbers = await remoteContext.ESKDNumbers.AsNoTracking().ToListAsync();
+                _logger.LogInfo($"Read {eskdNumbers.Count} ESKD numbers from remote DB.");
+                await localContext.ESKDNumbers.AddRangeAsync(eskdNumbers);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка продуктов...");
-                await localContext.Products.AddRangeAsync(await remoteContext.Products.AsNoTracking().ToListAsync());
+                var products = await remoteContext.Products.AsNoTracking().ToListAsync();
+                _logger.LogInfo($"Read {products.Count} products from remote DB.");
+                await localContext.Products.AddRangeAsync(products);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка сборок...");
-                await localContext.Assemblies.AddRangeAsync(await remoteContext.Assemblies.AsNoTracking().ToListAsync());
+                var assemblies = await remoteContext.Assemblies.AsNoTracking().ToListAsync();
+                _logger.LogInfo($"Read {assemblies.Count} assemblies from remote DB.");
+                await localContext.Assemblies.AddRangeAsync(assemblies);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка записей документов...");
-                await localContext.DocumentRecords.AddRangeAsync(await remoteContext.DocumentRecords.AsNoTracking().ToListAsync());
+                var documentRecords = await remoteContext.DocumentRecords.AsNoTracking().ToListAsync();
+                _logger.LogInfo($"Read {documentRecords.Count} document records from remote DB.");
+                await localContext.DocumentRecords.AddRangeAsync(documentRecords);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка профилей...");
-                await localContext.Profiles.AddRangeAsync(await remoteContext.Profiles.AsNoTracking().ToListAsync());
+                var profiles = await remoteContext.Profiles.AsNoTracking().ToListAsync();
+                _logger.LogInfo($"Read {profiles.Count} profiles from remote DB.");
+                await localContext.Profiles.AddRangeAsync(profiles);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка деталей сборок...");
-                await localContext.AssemblyDetails.AddRangeAsync(await remoteContext.AssemblyDetails.AsNoTracking().ToListAsync());
+                var assemblyDetails = await remoteContext.AssemblyDetails.AsNoTracking().ToListAsync();
+                _logger.LogInfo($"Read {assemblyDetails.Count} assembly details from remote DB.");
+                await localContext.AssemblyDetails.AddRangeAsync(assemblyDetails);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка сборок продуктов...");
-                await localContext.ProductAssemblies.AddRangeAsync(await remoteContext.ProductAssemblies.AsNoTracking().ToListAsync());
+                var productAssemblies = await remoteContext.ProductAssemblies.AsNoTracking().ToListAsync();
+                _logger.LogInfo($"Read {productAssemblies.Count} product assemblies from remote DB.");
+                await localContext.ProductAssemblies.AddRangeAsync(productAssemblies);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка родительских сборок...");
-                await localContext.AssemblyParents.AddRangeAsync(await remoteContext.AssemblyParents.AsNoTracking().ToListAsync());
+                var assemblyParents = await remoteContext.AssemblyParents.AsNoTracking().ToListAsync();
+                _logger.LogInfo($"Read {assemblyParents.Count} assembly parents from remote DB.");
+                await localContext.AssemblyParents.AddRangeAsync(assemblyParents);
 
                 await localContext.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -387,7 +405,9 @@ namespace DetailViewer.Core.Services
 
         private async Task<List<ChangeLog>> GetChangesSince(ApplicationDbContext dbContext, DateTime timestamp)
         {
-            return await dbContext.ChangeLogs.AsNoTracking().Where(cl => cl.Timestamp > timestamp).ToListAsync();
+            var changes = await dbContext.ChangeLogs.AsNoTracking().Where(cl => cl.Timestamp > timestamp).ToListAsync();
+            _logger.LogInfo($"Found {changes.Count} changes in {dbContext.Database.GetDbConnection().DataSource} since {timestamp}");
+            return changes;
         }
 
         private Type GetEntityType(string entityName)

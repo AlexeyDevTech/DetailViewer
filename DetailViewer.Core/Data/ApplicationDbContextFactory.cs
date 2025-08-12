@@ -42,8 +42,8 @@ namespace DetailViewer.Core.Data
         {
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
             var settings = _settingsService.LoadSettings();
-            var connectionString = $"Data Source={settings.DatabasePath};Cache=Shared;Journal Mode=WAL";
-            optionsBuilder.UseSqlite(connectionString);
+            var connectionString = $"Data Source={settings.DatabasePath}";
+            optionsBuilder.UseSqlite(connectionString).AddInterceptors(new SqliteWalInterceptor());
             return new ApplicationDbContext(optionsBuilder.Options);
         }
     }
