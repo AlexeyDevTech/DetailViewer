@@ -29,7 +29,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set { SetProperty(ref _defaultCompanyCode, value); }
         }
         private ObservableCollection<Profile> _profiles;
-        private Profile _selectedProfile;
+        private Profile? _selectedProfile;
         private string _newProfileLastName;
         private string _newProfileFirstName;
         private string _newProfileMiddleName;
@@ -57,7 +57,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set { SetProperty(ref _profiles, value); }
         }
 
-        public Profile SelectedProfile
+        public Profile? SelectedProfile
         {
             get { return _selectedProfile; }
             set

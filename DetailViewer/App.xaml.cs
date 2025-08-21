@@ -211,7 +211,7 @@ namespace DetailViewer
         {
             _logger.Log("Application exiting. Performing final synchronization.");
             var syncService = Container.Resolve<DatabaseSyncService>();
-            syncService.SyncDatabaseAsync().GetAwaiter().GetResult();
+            _ = syncService.SyncDatabaseAsync();
 
             _logger.Log("Final synchronization complete.");
             _notifyIcon?.Dispose();

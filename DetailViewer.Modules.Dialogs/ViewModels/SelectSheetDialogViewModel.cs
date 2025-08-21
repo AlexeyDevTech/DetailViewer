@@ -10,14 +10,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public DelegateCommand OkCommand { get; }
         public DelegateCommand CancelCommand { get; }
 
-        private List<string> _sheetNames;
+        private List<string> _sheetNames = new List<string>();
         public List<string> SheetNames
         {
             get { return _sheetNames; }
             set { SetProperty(ref _sheetNames, value); }
         }
 
-        private string _selectedSheet;
+        private string _selectedSheet = string.Empty;
         public string SelectedSheet
         {
             get { return _selectedSheet; }

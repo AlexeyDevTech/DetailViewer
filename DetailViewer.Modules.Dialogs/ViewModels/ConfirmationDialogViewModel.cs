@@ -9,14 +9,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
     {
         public string Title => "Подтверждение";
 
-        private string _message;
+        private string _message = string.Empty;
         public string Message
         {
             get { return _message; }
             set { SetProperty(ref _message, value); }
         }
 
-        public event Action<IDialogResult> RequestClose;
+        public event Action<IDialogResult>? RequestClose;
 
         public DelegateCommand OkCommand { get; private set; }
         public DelegateCommand CancelCommand { get; private set; }

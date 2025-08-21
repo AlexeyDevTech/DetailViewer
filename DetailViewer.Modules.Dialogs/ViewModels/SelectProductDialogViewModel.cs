@@ -53,6 +53,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private void OnSearchTextChanged()
         {
+            if (_allProducts == null)
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(SearchText))
             {
                 FilteredProducts = new ObservableCollection<SelectableItem<Product>>(_allProducts);
@@ -67,7 +72,10 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private void Ok()
         {
             var result = new DialogResult(ButtonResult.OK);
-            result.Parameters.Add(DialogParameterKeys.SelectedProducts, FilteredProducts.Where(p => p.IsSelected).Select(p => p.Item).ToList());
+            if (FilteredProducts != null)
+            {
+                result.Parameters.Add(DialogParameterKeys.SelectedProducts, FilteredProducts.Where(p => p.IsSelected).Select(p => p.Item).ToList());
+            }
             RequestClose?.Invoke(result);
         }
 

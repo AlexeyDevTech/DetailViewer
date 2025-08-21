@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using ILogger = DetailViewer.Core.Interfaces.ILogger;
 
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
@@ -214,7 +215,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (IsNewVersionEnabled && DetailNumber > 0 && SelectedRecordToCopy == null)
             {
                 //records = records.Where(r => r.ESKDNumber.DetailNumber == DetailNumber);
-                records.Where(r => r.ESKDNumber.ClassNumber.Number.ToString("D6").StartsWith(ClassNumberString));
+                records = records.Where(r => r.ESKDNumber?.ClassNumber?.Number.ToString("D6").StartsWith(ClassNumberString ?? string.Empty) == true);
             }
 
             if (FilterByFullName)
@@ -340,7 +341,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             var result = new DialogResult(ButtonResult.OK);
             result.Parameters.Add("record", DocumentRecord);
-            result.Parameters.Add("linkedAssemblies", LinkedAssemblies.ToList());
+            result.Parameters.Add("linkedAssemblies", LinkedAssemblies?.ToList() ?? new List<Assembly>());
             return result;
         }
 

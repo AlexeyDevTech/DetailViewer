@@ -5,6 +5,7 @@ using Prism.Ioc;
 using System;
 using System.ComponentModel;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
@@ -42,24 +43,27 @@ namespace DetailViewer.Views
             _logger.Log("Checking for updates");
             try
             {
-                string versionFilePath = "file://192.168.157.29/cod2/soft/version.json";
-                string content = new WebClient().DownloadString(versionFilePath);
-                var remoteVersionInfo = JsonConvert.DeserializeObject<VersionInfo>(content);
-
-                var assembly = Assembly.GetExecutingAssembly();
-                var localVersion = new Version(assembly.GetName().Version.ToString());
-                var remoteVersion = new Version(remoteVersionInfo.Version);
-
-                var localVersionThreeComponents = new Version(localVersion.Major, localVersion.Minor, localVersion.Build);
-                var remoteVersionThreeComponents = new Version(remoteVersion.Major, remoteVersion.Minor, remoteVersion.Build);
-
-                if (remoteVersionThreeComponents > localVersionThreeComponents)
+                string versionFilePath = "http://192.168.157.29/cod2/soft/version.json";
+                using (var httpClient = new HttpClient())
                 {
-                    var result = MessageBox.Show($"Доступна новая версия {remoteVersionInfo.Version}. Хотите установить ее?", "Обновление", MessageBoxButton.YesNo, MessageBoxImage.Information);
-                    if (result == MessageBoxResult.Yes)
+                    string content = await httpClient.GetStringAsync(versionFilePath);
+                    var remoteVersionInfo = JsonConvert.DeserializeObject<VersionInfo>(content);
+
+                    var assembly = Assembly.GetExecutingAssembly();
+                    var localVersion = new Version(assembly.GetName().Version.ToString());
+                    var remoteVersion = new Version(remoteVersionInfo.Version);
+
+                    var localVersionThreeComponents = new Version(localVersion.Major, localVersion.Minor, localVersion.Build);
+                    var remoteVersionThreeComponents = new Version(remoteVersion.Major, remoteVersion.Minor, remoteVersion.Build);
+
+                    if (remoteVersionThreeComponents > localVersionThreeComponents)
                     {
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(remoteVersionInfo.DownloadUrl) { UseShellExecute = true });
-                        Application.Current.Shutdown();
+                        var result = MessageBox.Show($"Доступна новая версия {remoteVersionInfo.Version}. Хотите установить ее?", "Обновление", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(remoteVersionInfo.DownloadUrl) { UseShellExecute = true });
+                            Application.Current.Shutdown();
+                        }
                     }
                 }
             }

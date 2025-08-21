@@ -22,15 +22,17 @@ namespace DetailViewer.Core.Services
         private readonly ISettingsService _settingsService;
         private readonly IDialogService _dialogService;
         private readonly IEventAggregator _eventAggregator;
+        private readonly IApiClient _apiClient;
         private static bool _isSyncing = false;
         private static readonly object _syncLock = new object();
 
-        public DatabaseSyncService(ISettingsService settingsService, ILogger logger, IDialogService dialogService, IEventAggregator eventAggregator)
+        public DatabaseSyncService(ISettingsService settingsService, ILogger logger, IDialogService dialogService, IEventAggregator eventAggregator, IApiClient apiClient)
         {
             _settingsService = settingsService;
             _logger = logger;
             _dialogService = dialogService;
             _eventAggregator = eventAggregator;
+            _apiClient = apiClient;
         }
 
         public async Task SyncDatabaseAsync()
@@ -41,10 +43,13 @@ namespace DetailViewer.Core.Services
             {
                 _logger.Log("Starting database synchronization process.");
                 var settings = _settingsService.LoadSettings();
-                var remoteDbPath = settings.DatabasePath;
                 var localDbPath = settings.LocalDatabasePath;
 
-                if (!ArePathsConfigured(localDbPath, remoteDbPath)) return;
+                if (string.IsNullOrEmpty(localDbPath))
+                {
+                    _logger.LogError("Local database path is not configured.");
+                    return;
+                }
 
                 var isFirstSync = !File.Exists(localDbPath);
 
@@ -55,24 +60,21 @@ namespace DetailViewer.Core.Services
                 if (isFirstSync)
                 {
                     _logger.LogInfo("First sync detected. Performing initial data population from remote database.");
-                    using var remoteDbContextForCopy = dbContextFactory.CreateRemoteDbContext();
-                    await PerformInitialBulkCopy(localDbContext, remoteDbContextForCopy);
+                    await PerformInitialBulkCopy(localDbContext, _apiClient);
 
                     settings.LastSyncTimestamp = DateTime.UtcNow;
                     await _settingsService.SaveSettingsAsync(settings);
                     _logger.LogInfo("Initial sync complete.");
                     _eventAggregator.GetEvent<SyncCompletedEvent>().Publish();
-                    return; 
+                    return;
                 }
 
-                using var remoteDbContext = dbContextFactory.CreateRemoteDbContext();
-
-                await EnsureSchemaCompatibilityAsync(localDbContext, remoteDbContext);
+                await EnsureSchemaCompatibilityAsync(localDbContext);
 
                 var lastSyncTimestamp = settings.LastSyncTimestamp;
-                
+
                 var localChanges = await GetChangesSince(localDbContext, lastSyncTimestamp);
-                var remoteChanges = await GetChangesSince(remoteDbContext, lastSyncTimestamp);
+                var remoteChanges = await _apiClient.GetChangesSinceAsync(lastSyncTimestamp);
 
                 if (!localChanges.Any() && !remoteChanges.Any())
                 {
@@ -84,10 +86,10 @@ namespace DetailViewer.Core.Services
 
                 if (conflicts.Any())
                 {
-                    await HandleConflicts(conflicts, localDbContext, remoteDbContext);
+                    await HandleConflicts(conflicts, localDbContext, _apiClient);
                 }
 
-                await ApplyChangesInTransaction(remoteDbContext, toRemote, "remote");
+                await ApplyChangesToApiAsync(toRemote);
                 await ApplyChangesInTransaction(localDbContext, toLocal, "local");
 
                 settings.LastSyncTimestamp = DateTime.UtcNow;
@@ -108,63 +110,63 @@ namespace DetailViewer.Core.Services
             }
         }
 
-        private async Task PerformInitialBulkCopy(ApplicationDbContext localContext, ApplicationDbContext remoteContext)
+        private async Task PerformInitialBulkCopy(ApplicationDbContext localContext, IApiClient apiClient)
         {
             _logger.LogInfo("Performing initial bulk data copy from remote to local.");
             _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка классификаторов...");
             await using var transaction = await localContext.Database.BeginTransactionAsync();
             try
             {
-                var classifiers = await remoteContext.Classifiers.AsNoTracking().ToListAsync();
-                _logger.LogInfo($"Read {classifiers.Count} classifiers from remote DB.");
+                var classifiers = await apiClient.GetAsync<Classifier>(ApiEndpoints.Classifiers);
+                _logger.LogInfo($"Read {classifiers.Count} classifiers from remote API.");
                 await localContext.Classifiers.AddRangeAsync(classifiers);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка номеров ЕСКД...");
-                var eskdNumbers = await remoteContext.ESKDNumbers.AsNoTracking().ToListAsync();
-                _logger.LogInfo($"Read {eskdNumbers.Count} ESKD numbers from remote DB.");
+                var eskdNumbers = await apiClient.GetAsync<ESKDNumber>(ApiEndpoints.ESKDNumbers);
+                _logger.LogInfo($"Read {eskdNumbers.Count} ESKD numbers from remote API.");
                 await localContext.ESKDNumbers.AddRangeAsync(eskdNumbers);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка продуктов...");
-                var products = await remoteContext.Products.AsNoTracking().ToListAsync();
-                _logger.LogInfo($"Read {products.Count} products from remote DB.");
+                var products = await apiClient.GetAsync<Product>(ApiEndpoints.Products);
+                _logger.LogInfo($"Read {products.Count} products from remote API.");
                 await localContext.Products.AddRangeAsync(products);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка сборок...");
-                var assemblies = await remoteContext.Assemblies.AsNoTracking().ToListAsync();
-                _logger.LogInfo($"Read {assemblies.Count} assemblies from remote DB.");
+                var assemblies = await apiClient.GetAsync<Models.Assembly>(ApiEndpoints.Assemblies);
+                _logger.LogInfo($"Read {assemblies.Count} assemblies from remote API.");
                 await localContext.Assemblies.AddRangeAsync(assemblies);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка записей документов...");
-                var documentRecords = await remoteContext.DocumentRecords.AsNoTracking().ToListAsync();
-                _logger.LogInfo($"Read {documentRecords.Count} document records from remote DB.");
+                var documentRecords = await apiClient.GetAsync<DocumentDetailRecord>(ApiEndpoints.DocumentDetailRecords);
+                _logger.LogInfo($"Read {documentRecords.Count} document records from remote API.");
                 await localContext.DocumentRecords.AddRangeAsync(documentRecords);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка профилей...");
-                var profiles = await remoteContext.Profiles.AsNoTracking().ToListAsync();
-                _logger.LogInfo($"Read {profiles.Count} profiles from remote DB.");
+                var profiles = await apiClient.GetAsync<Profile>(ApiEndpoints.Profiles);
+                _logger.LogInfo($"Read {profiles.Count} profiles from remote API.");
                 await localContext.Profiles.AddRangeAsync(profiles);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка деталей сборок...");
-                var assemblyDetails = await remoteContext.AssemblyDetails.AsNoTracking().ToListAsync();
-                _logger.LogInfo($"Read {assemblyDetails.Count} assembly details from remote DB.");
+                var assemblyDetails = await apiClient.GetAsync<AssemblyDetail>(ApiEndpoints.AssemblyDetails);
+                _logger.LogInfo($"Read {assemblyDetails.Count} assembly details from remote API.");
                 await localContext.AssemblyDetails.AddRangeAsync(assemblyDetails);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка сборок продуктов...");
-                var productAssemblies = await remoteContext.ProductAssemblies.AsNoTracking().ToListAsync();
-                _logger.LogInfo($"Read {productAssemblies.Count} product assemblies from remote DB.");
+                var productAssemblies = await apiClient.GetAsync<ProductAssembly>(ApiEndpoints.ProductAssemblies);
+                _logger.LogInfo($"Read {productAssemblies.Count} product assemblies from remote API.");
                 await localContext.ProductAssemblies.AddRangeAsync(productAssemblies);
                 await localContext.SaveChangesAsync();
 
                 _eventAggregator.GetEvent<StatusUpdateEvent>().Publish("Загрузка родительских сборок...");
-                var assemblyParents = await remoteContext.AssemblyParents.AsNoTracking().ToListAsync();
-                _logger.LogInfo($"Read {assemblyParents.Count} assembly parents from remote DB.");
+                var assemblyParents = await apiClient.GetAsync<AssemblyParent>(ApiEndpoints.AssemblyParents);
+                _logger.LogInfo($"Read {assemblyParents.Count} assembly parents from remote API.");
                 await localContext.AssemblyParents.AddRangeAsync(assemblyParents);
 
                 await localContext.SaveChangesAsync();
@@ -179,7 +181,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
-        private async Task HandleConflicts(List<ConflictLog> conflicts, ApplicationDbContext localDbContext, ApplicationDbContext remoteDbContext)
+        private async Task HandleConflicts(List<ConflictLog> conflicts, ApplicationDbContext localDbContext, IApiClient apiClient)
         {
             foreach (var conflict in conflicts)
             {
@@ -209,7 +211,7 @@ namespace DetailViewer.Core.Services
                         Payload = conflict.LocalPayload,
                         Timestamp = DateTime.UtcNow
                     };
-                    await ApplyChangesInTransaction(remoteDbContext, new List<ChangeLog> { changeLog }, "remote");
+                    await ApplyChangesToApiAsync(new List<ChangeLog> { changeLog });
                 }
                 else if (result.Result == ButtonResult.No) // Keep remote
                 {
@@ -276,12 +278,10 @@ namespace DetailViewer.Core.Services
             await using var transaction = await dbContext.Database.BeginTransactionAsync();
             try
             {
-                // Group changes by entity to process them in a more controlled manner
                 var changesByEntity = changes.GroupBy(c => new { c.EntityName, c.EntityId })
                                              .Select(g => g.OrderByDescending(c => c.Timestamp).First())
                                              .ToList();
 
-                // Define the order of operations based on entity dependencies
                 var entityOrder = new List<string>
                 {
                     nameof(Classifier),
@@ -339,8 +339,6 @@ namespace DetailViewer.Core.Services
                             }
                             else
                             {
-                                // If the entity doesn't exist, it might have been deleted and recreated.
-                                // Treat it as a creation.
                                 dbContext.Add(entity);
                             }
                             break;
@@ -364,7 +362,95 @@ namespace DetailViewer.Core.Services
             }
         }
 
+        private async Task ApplyChangesToApiAsync(List<ChangeLog> changes)
+        {
+            if (!changes.Any()) return;
+
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
+            var changesByEntity = changes.GroupBy(c => new { c.EntityName, c.EntityId })
+                                         .Select(g => g.OrderByDescending(c => c.Timestamp).First())
+                                         .ToList();
+
+            var entityOrder = new List<string>
+            {
+                nameof(Classifier),
+                nameof(ESKDNumber),
+                nameof(Profile),
+                nameof(Product),
+                nameof(Models.Assembly),
+                nameof(DocumentDetailRecord),
+                nameof(ProductAssembly),
+                nameof(AssemblyDetail),
+                nameof(AssemblyParent)
+            };
+
+            var sortedChanges = changesByEntity
+                .OrderBy(c => c.OperationType == OperationType.Delete ? 1 : 0) // Deletes first
+                .ThenBy(c => entityOrder.IndexOf(c.EntityName))
+                .ThenBy(c => c.Timestamp);
+
+            foreach (var change in sortedChanges)
+            {
+                var entityType = GetEntityType(change.EntityName);
+                if (entityType == null)
+                {
+                    _logger.LogWarning($"Could not find entity type for '{change.EntityName}'. Skipping change.");
+                    continue;
+                }
+
+                var entity = JsonSerializer.Deserialize(change.Payload, entityType, options);
+                if (entity == null)
+                {
+                    _logger.LogWarning($"Could not deserialize payload for entity '{change.EntityName}' with id '{change.EntityId}'. Skipping change.");
+                    continue;
+                }
+
+                if (!int.TryParse(change.EntityId, out var entityId))
+                {
+                    _logger.LogWarning($"Could not parse EntityId '{change.EntityId}' to an integer for entity type '{change.EntityName}'. Skipping change.");
+                    continue;
+                }
+
+                var endpoint = GetEndpointForEntity(change.EntityName);
+
+                switch (change.OperationType)
+                {
+                    case OperationType.Create:
+                        await _apiClient.PostAsync(endpoint, entity);
+                        break;
+                    case OperationType.Update:
+                        await _apiClient.PutAsync(endpoint, entityId, entity);
+                        break;
+                    case OperationType.Delete:
+                        await _apiClient.DeleteAsync(endpoint, entityId);
+                        break;
+                }
+            }
+        }
+
         #region Helper Methods
+
+        private string GetEndpointForEntity(string entityName)
+        {
+            return entityName switch
+            {
+                "DetailViewer.Core.Models.Assembly" => ApiEndpoints.Assemblies,
+                "DetailViewer.Core.Models.AssemblyDetail" => ApiEndpoints.AssemblyDetails,
+                "DetailViewer.Core.Models.AssemblyParent" => ApiEndpoints.AssemblyParents,
+                "DetailViewer.Core.Models.Classifier" => ApiEndpoints.Classifiers,
+                "DetailViewer.Core.Models.ConflictLog" => ApiEndpoints.ConflictLogs,
+                "DetailViewer.Core.Models.DocumentDetailRecord" => ApiEndpoints.DocumentDetailRecords,
+                "DetailViewer.Core.Models.ESKDNumber" => ApiEndpoints.ESKDNumbers,
+                "DetailViewer.Core.Models.ProductAssembly" => ApiEndpoints.ProductAssemblies,
+                "DetailViewer.Core.Models.Product" => ApiEndpoints.Products,
+                "DetailViewer.Core.Models.Profile" => ApiEndpoints.Profiles,
+                _ => throw new ArgumentException($"Unknown entity type: {entityName}", nameof(entityName)),
+            };
+        }
 
         private bool TryAcquireSyncLock()
         {
@@ -415,10 +501,10 @@ namespace DetailViewer.Core.Services
             var assembly = typeof(ChangeLog).Assembly;
             var type = assembly.GetType(entityName);
             if (type != null) return type;
-            return assembly.GetTypes().FirstOrDefault(t => t.Name == entityName);
+            return assembly.GetTypes().FirstOrDefault(t => t.FullName == entityName);
         }
 
-        private async Task EnsureSchemaCompatibilityAsync(ApplicationDbContext localContext, ApplicationDbContext remoteContext)
+        private async Task EnsureSchemaCompatibilityAsync(ApplicationDbContext localContext)
         {
             _logger.LogInfo("Checking for schema compatibility...");
 
@@ -428,13 +514,6 @@ namespace DetailViewer.Core.Services
                 _logger.LogWarning($"Local database schema is outdated. Applying {localMigrations.Count()} migrations...");
                 await localContext.Database.MigrateAsync();
                 _logger.LogInfo("Local database schema updated successfully.");
-            }
-
-            var remoteMigrations = await remoteContext.Database.GetPendingMigrationsAsync();
-            if (remoteMigrations.Any())
-            {
-                _logger.LogError($"CRITICAL: Remote (shared) database schema is outdated and requires manual migration. Halting synchronization.");
-                throw new Exception("Remote database schema is outdated. Please contact administrator.");
             }
 
             _logger.LogInfo("Database schemas are compatible.");

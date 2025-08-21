@@ -87,6 +87,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private void OnSearchTextChanged()
         {
+            if (_allAssemblies == null)
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(SearchText))
             {
                 FilteredAssemblies = new ObservableCollection<SelectableItem<Assembly>>(_allAssemblies);
@@ -114,7 +119,10 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private void Ok()
         {
             var result = new DialogResult(ButtonResult.OK);
-            result.Parameters.Add(DialogParameterKeys.SelectedAssemblies, FilteredAssemblies.Where(a => a.IsSelected).Select(a => a.Item).ToList());
+            if (FilteredAssemblies != null)
+            {
+                result.Parameters.Add(DialogParameterKeys.SelectedAssemblies, FilteredAssemblies.Where(a => a.IsSelected).Select(a => a.Item).ToList());
+            }
             RequestClose?.Invoke(result);
         }
 

@@ -8,23 +8,27 @@ namespace DetailViewer.Modules.Explorer.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null || parameter == null)
+            if (value?.ToString() is not string enumValue || parameter?.ToString() is not string targetValue)
+            {
                 return false;
+            }
 
-            string enumValue = value.ToString();
-            string targetValue = parameter.ToString();
             return enumValue.Equals(targetValue, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null || parameter == null)
+            if (value is not bool boolValue || !boolValue)
+            {
                 return null;
+            }
 
-            if ((bool)value)
-                return Enum.Parse(targetType, parameter.ToString());
+            if (parameter?.ToString() is not string parameterString)
+            {
+                return null;
+            }
 
-            return null;
+            return Enum.Parse(targetType, parameterString);
         }
     }
 }

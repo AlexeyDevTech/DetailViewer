@@ -16,7 +16,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public string Title => "Вход и Регистрация";
 
-        public event Action<IDialogResult> RequestClose;
+        public event Action<IDialogResult>? RequestClose;
 
         private int _selectedTabIndex;
         public int SelectedTabIndex
@@ -25,8 +25,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set { SetProperty(ref _selectedTabIndex, value); }
         }
 
-        private string _statusMessage;
-        public string StatusMessage
+        private string? _statusMessage;
+        public string? StatusMessage
         {
             get { return _statusMessage; }
             set { SetProperty(ref _statusMessage, value); }
@@ -40,15 +40,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         // Login properties
-        private List<Profile> _profiles;
+        private List<Profile> _profiles = new List<Profile>();
         public List<Profile> Profiles
         {
             get { return _profiles; }
             set { SetProperty(ref _profiles, value); }
         }
 
-        private Profile _selectedProfile;
-        public Profile SelectedProfile
+        private Profile? _selectedProfile;
+        public Profile? SelectedProfile
         {
             get { return _selectedProfile; }
             set
@@ -58,7 +58,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
-        private string _password;
+        private string _password = string.Empty;
         public string Password
         {
             get { return _password; }
@@ -70,28 +70,28 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         // Registration properties
-        private string _newLastName;
+        private string _newLastName = string.Empty;
         public string NewLastName
         {
             get { return _newLastName; }
             set { SetProperty(ref _newLastName, value); }
         }
 
-        private string _newFirstName;
+        private string _newFirstName = string.Empty;
         public string NewFirstName
         {
             get { return _newFirstName; }
             set { SetProperty(ref _newFirstName, value); }
         }
 
-        private string _newMiddleName;
+        private string _newMiddleName = string.Empty;
         public string NewMiddleName
         {
             get { return _newMiddleName; }
             set { SetProperty(ref _newMiddleName, value); }
         }
 
-        private string _newPassword;
+        private string _newPassword = string.Empty;
         public string NewPassword
         {
             get { return _newPassword; }

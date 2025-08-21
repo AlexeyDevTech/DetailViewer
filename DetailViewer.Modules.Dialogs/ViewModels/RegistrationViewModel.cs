@@ -14,30 +14,30 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         public string Title => "Регистрация";
 
-        public event Action<IDialogResult> RequestClose;
+        public event Action<IDialogResult>? RequestClose;
 
-        private string _lastName;
+        private string _lastName = string.Empty;
         public string LastName
         {
             get { return _lastName; }
             set { SetProperty(ref _lastName, value); }
         }
 
-        private string _firstName;
+        private string _firstName = string.Empty;
         public string FirstName
         {
             get { return _firstName; }
             set { SetProperty(ref _firstName, value); }
         }
 
-        private string _middleName;
+        private string _middleName = string.Empty;
         public string MiddleName
         {
             get { return _middleName; }
             set { SetProperty(ref _middleName, value); }
         }
 
-        private string _password;
+        private string _password = string.Empty;
         public string Password
         {
             get { return _password; }

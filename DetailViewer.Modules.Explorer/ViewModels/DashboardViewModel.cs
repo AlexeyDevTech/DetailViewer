@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using OfficeOpenXml;
+using ILogger = DetailViewer.Core.Interfaces.ILogger;
 
 namespace DetailViewer.Modules.Explorer.ViewModels
 {
@@ -26,7 +27,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private readonly ISettingsService _settingsService;
         private readonly IEventAggregator _eventAggregator;
 
-        private string _activeUserFullName;
+        private string? _activeUserFullName;
         private string _statusText;
         private bool _isBusy;
         private ObservableCollection<DocumentDetailRecord> _documentRecords;
@@ -49,7 +50,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         public string StatusText { get => _statusText; set => SetProperty(ref _statusText, value); }
         public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
         public ObservableCollection<DocumentDetailRecord> DocumentRecords { get => _documentRecords; set => SetProperty(ref _documentRecords, value); }
-        public DocumentDetailRecord SelectedRecord { get => _selectedRecord; set { if (SetProperty(ref _selectedRecord, value)) LoadParentAssembliesAndProducts(); } }
+        public DocumentDetailRecord? SelectedRecord { get => _selectedRecord; set { if (SetProperty(ref _selectedRecord, value)) LoadParentAssembliesAndProducts(); } }
         public ObservableCollection<Assembly> ParentAssemblies { get => _parentAssemblies; set => SetProperty(ref _parentAssemblies, value); }
         public ObservableCollection<DocumentDetailRecord> ParentProducts { get => _parentProducts; set => SetProperty(ref _parentProducts, value); }
         public string EskdNumberFilter { get => _eskdNumberFilter; set => SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
@@ -246,13 +247,21 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void DeleteRecord()
         {
+            if (SelectedRecord == null)
+            {
+                return;
+            }
+
             _logger.Log("DeleteRecord command executed.");
             _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedRecord.ESKDNumber.FullCode}?" } }, async r =>
             {
                 if (r.Result == ButtonResult.OK)
                 {
-                    await _documentRecordService.DeleteRecordAsync(SelectedRecord.Id);
-                    await LoadData();
+                    if (SelectedRecord != null)
+                    {
+                        await _documentRecordService.DeleteRecordAsync(SelectedRecord.Id);
+                        await LoadData();
+                    }
                 }
             });
         }

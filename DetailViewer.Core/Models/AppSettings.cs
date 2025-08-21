@@ -7,5 +7,7 @@ namespace DetailViewer.Core.Models
         public string DefaultCompanyCode { get; set; } = "ДТМЛ";
         public bool RunInTray { get; set; } = true;
         public System.DateTime LastSyncTimestamp { get; set; }
+        public string ApiUrl { get; set; } = "http://localhost:5013";
     }
 }
+ 

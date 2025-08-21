@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using ILogger = DetailViewer.Core.Interfaces.ILogger;
 
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
@@ -187,7 +188,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
             if (!string.IsNullOrWhiteSpace(ClassNumberString))
             {
-                records = records.Where(r => r.EskdNumber.ClassNumber.Number.ToString("D6").StartsWith(ClassNumberString));
+                records = records.Where(r => r.EskdNumber?.ClassNumber?.Number.ToString("D6").StartsWith(ClassNumberString) == true);
             }
 
             FilteredProducts = new ObservableCollection<Product>(records.OrderBy(r => r.EskdNumber.FullCode).ToList());
@@ -269,8 +270,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (!string.IsNullOrWhiteSpace(ClassNumberString))
             {
                 var classifier = _classifierService.GetClassifierByCode(ClassNumberString);
-                eskdNumber.ClassNumber = new Classifier { Number = int.Parse(classifier.Code), Description = classifier.Description };
-                Product.EskdNumber = eskdNumber;
+                if (classifier != null)
+                {
+                    eskdNumber.ClassNumber = new Classifier { Number = int.Parse(classifier.Code), Description = classifier.Description ?? string.Empty };
+                    Product.EskdNumber = eskdNumber;
+                }
             }
 
             // 2. Основная логика: конвертация или обновление

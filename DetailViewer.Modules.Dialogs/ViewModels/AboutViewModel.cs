@@ -9,7 +9,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
     {
         public string Title => "О программе";
 
-        public event Action<IDialogResult> RequestClose;
+        public event Action<IDialogResult>? RequestClose;
 
         public bool CanCloseDialog() => true;
 

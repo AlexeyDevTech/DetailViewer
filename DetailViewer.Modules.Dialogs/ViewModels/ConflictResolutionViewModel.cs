@@ -10,15 +10,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
     public class ConflictResolutionViewModel : BindableBase, IDialogAware
     {
         private readonly ILogger _logger;
-        private object _localEntity;
-        public object LocalEntity
+        private object? _localEntity;
+        public object? LocalEntity
         {
             get { return _localEntity; }
             set { SetProperty(ref _localEntity, value); }
         }
 
-        private object _remoteEntity;
-        public object RemoteEntity
+        private object? _remoteEntity;
+        public object? RemoteEntity
         {
             get { return _remoteEntity; }
             set { SetProperty(ref _remoteEntity, value); }

@@ -8,7 +8,7 @@ namespace DetailViewer.Modules.Dialogs.Converters
 {
     public class ImagePathConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is System.Collections.Generic.List<string> imagePaths && imagePaths.Count > 0)
             {

@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using ILogger = DetailViewer.Core.Interfaces.ILogger;
 
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
@@ -276,7 +277,10 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (!string.IsNullOrWhiteSpace(ClassNumberString))
             {
                 var classifier = _classifierService.GetClassifierByCode(ClassNumberString);
-                Assembly.EskdNumber.ClassNumber = new Classifier { Number = int.Parse(classifier.Code), Description = classifier.Description };
+                if (classifier != null)
+                {
+                    Assembly.EskdNumber.ClassNumber = new Classifier { Number = int.Parse(classifier.Code), Description = classifier.Description ?? string.Empty };
+                }
             }
             else
             {

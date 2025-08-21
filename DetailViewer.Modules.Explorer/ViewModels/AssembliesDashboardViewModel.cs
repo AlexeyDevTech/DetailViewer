@@ -4,6 +4,7 @@ using DetailViewer.Core.Models;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Mvvm;
+using ILogger = DetailViewer.Core.Interfaces.ILogger;
 using Prism.Services.Dialogs;
 using System;
 using System.Collections.Generic;
@@ -107,13 +108,21 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         private void DeleteAssembly()
         {
+            if (SelectedAssembly == null)
+            {
+                return;
+            }
+
             _logger.Log("Deleting assembly");
             _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedAssembly.EskdNumber?.FullCode ?? "<unf>"}?" } }, async r =>
             {
                 if (r.Result == ButtonResult.OK)
                 {
-                    await _assemblyService.DeleteAssemblyAsync(SelectedAssembly.Id);
-                    await LoadData();
+                    if (SelectedAssembly != null)
+                    {
+                        await _assemblyService.DeleteAssemblyAsync(SelectedAssembly.Id);
+                        await LoadData();
+                    }
                 }
             });
         }
