@@ -1,3 +1,5 @@
+#nullable enable
+
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Microsoft.Win32;
@@ -21,7 +23,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly IActiveUserService _activeUserService;
         private readonly IPasswordService _passwordService;
         private readonly IExcelExportService _exportService;
-        private string _databasePath;
         private string _defaultCompanyCode;
         public string DefaultCompanyCode
         {
@@ -43,12 +44,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             get { return _runInTray; }
             set { SetProperty(ref _runInTray, value); }
-        }
-
-        public string DatabasePath
-        {
-            get { return _databasePath; }
-            set { SetProperty(ref _databasePath, value); }
         }
 
         public ObservableCollection<Profile> Profiles
@@ -127,7 +122,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public DelegateCommand AddProfileCommand { get; private set; }
         public DelegateCommand SaveProfileCommand { get; private set; }
         public DelegateCommand DeleteProfileCommand { get; private set; }
-        public DelegateCommand ChangeDatabasePathCommand { get; private set; }
         public DelegateCommand<string> CloseDialogCommand { get; private set; }
 
         public string Title => "Настройки";
@@ -153,9 +147,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _importService = importService;
             _dialogService = dialogService;
 
-            //DatabasePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "detailviewer.db");
             var settings = _settingsService.LoadSettings();
-            DatabasePath = settings.DatabasePath;
             DefaultCompanyCode = settings.DefaultCompanyCode;
             RunInTray = settings.RunInTray;
 
@@ -164,7 +156,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             AddProfileCommand = new DelegateCommand(AddProfile);
             SaveProfileCommand = new DelegateCommand(SaveProfile, () => SelectedProfile != null).ObservesProperty(() => SelectedProfile);
             DeleteProfileCommand = new DelegateCommand(DeleteProfile, () => SelectedProfile != null).ObservesProperty(() => SelectedProfile);
-            ChangeDatabasePathCommand = new DelegateCommand(ChangeDatabasePath);
             CloseDialogCommand = new DelegateCommand<string>(CloseDialog);
 
             IsAdminOrModerator = _activeUserService.CurrentUser?.Role == Role.Admin || _activeUserService.CurrentUser?.Role == Role.Moderator;
@@ -244,7 +235,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                             ImportProgress = p.Item1;
                             ImportStatus = p.Item2;
                         });
-                        await _importService.ImportFromExcelAsync(filePath, selectedSheet, progress, createRelationships);
+                        //await _importService.ImportFromExcelAsync(filePath, selectedSheet, progress, createRelationships);
                         IsImporting = false;
                         ImportStatus = "Импорт завершен.";
                     }
@@ -270,26 +261,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             var saveFileDialog = new SaveFileDialog { Filter = "Excel Files|*.xlsx" };
             if (saveFileDialog.ShowDialog() == true)
             {
-                await _exportService.ExportToExcelAsync(saveFileDialog.FileName, null);
-            }
-        }
-
-        private void ChangeDatabasePath()
-        {
-            var saveFileDialog = new SaveFileDialog
-            {
-                Filter = "SQLite Database (*.db)|*.db",
-                FileName = System.IO.Path.GetFileName(DatabasePath)
-            };
-
-            if (saveFileDialog.ShowDialog() == true)
-            {
-                DatabasePath = saveFileDialog.FileName;
-                var settings = _settingsService.LoadSettings();
-                settings.DatabasePath = DatabasePath;
-                settings.DefaultCompanyCode = DefaultCompanyCode;
-                settings.RunInTray = RunInTray;
-                _settingsService.SaveSettingsAsync(settings);
+                //await _exportService.ExportToExcelAsync(saveFileDialog.FileName, null);
             }
         }
 
@@ -298,7 +270,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public void OnDialogClosed()
         {
             var settings = _settingsService.LoadSettings();
-            settings.DatabasePath = DatabasePath;
             settings.DefaultCompanyCode = DefaultCompanyCode;
             settings.RunInTray = RunInTray;
             _settingsService.SaveSettingsAsync(settings);
@@ -313,7 +284,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (parameter?.ToLower() == "ok")
             {
                 var settings = _settingsService.LoadSettings();
-                settings.DatabasePath = DatabasePath;
                 settings.DefaultCompanyCode = DefaultCompanyCode;
                 settings.RunInTray = RunInTray;
                 _settingsService.SaveSettingsAsync(settings);

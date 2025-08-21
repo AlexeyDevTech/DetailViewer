@@ -123,21 +123,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
-        public async Task<List<ChangeLog>> GetChangesSinceAsync(DateTime timestamp)
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync(ApiEndpoints.GetChangesSince(timestamp));
-                response.EnsureSuccessStatusCode();
-                var content = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<List<ChangeLog>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error getting changes since {timestamp}", ex);
-                throw;
-            }
-        }
+        
 
         public async Task<List<Assembly>> GetParentAssembliesAsync(string entity, int id)
         {

@@ -1,6 +1,5 @@
-#pragma warning disable CS8602, CS8605
-
 using DetailViewer.Api.Data;
+using DetailViewer.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

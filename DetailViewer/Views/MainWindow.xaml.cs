@@ -1,10 +1,7 @@
 using DetailViewer.Core.Interfaces;
-using DetailViewer.Core.Services;
 using Newtonsoft.Json;
 using Prism.Ioc;
 using System;
-using System.ComponentModel;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -27,14 +24,6 @@ namespace DetailViewer.Views
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            var splashScreen = new SplashScreenView();
-            splashScreen.Show();
-
-            var syncService = _containerProvider.Resolve<DatabaseSyncService>();
-            await syncService.SyncDatabaseAsync();
-
-            splashScreen.Close();
-
             await CheckForUpdatesAsync();
         }
 

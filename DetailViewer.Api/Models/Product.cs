@@ -1,4 +1,3 @@
-
 #pragma warning disable CS8618
 
 using System.Collections.Generic;
@@ -38,11 +37,6 @@ namespace DetailViewer.Api.Models
         /// Автор изделия.
         /// </summary>
         public string Author { get; set; }
-
-        /// <summary>
-        /// Коллекция связей со сборками, входящими в состав изделия.
-        /// </summary>
-        public virtual ICollection<ProductAssembly> ProductAssemblies { get; set; } = new List<ProductAssembly>();
 
         [Timestamp]
         public byte[] Version { get; set; }

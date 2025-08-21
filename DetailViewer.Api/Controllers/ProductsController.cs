@@ -13,35 +13,13 @@ namespace DetailViewer.Api.Controllers
     [ApiController]
     public class ProductsController : BaseController<Product>
     {
-        public ProductsController(ApplicationDbContext context, ILogger<ProductsController> logger) : base(context, logger)
+        public ProductsController(ApplicationDbContext context, ILogger<ProductsController> logger) 
+            : base(context, logger)
         {
         }
 
-        public override async Task<ActionResult<IEnumerable<Product>>> Get()
-        {
-            _logger.LogInformation("Getting all products");
-            return await _context.Products
-                .Include(p => p.EskdNumber)
-                .ThenInclude(e => e.ClassNumber)
-                .ToListAsync();
-        }
-
-        public override async Task<ActionResult<Product>> Get(int id)
-        {
-            _logger.LogInformation($"Getting product with id {id}");
-            var entity = await _context.Products
-                .Include(p => p.EskdNumber)
-                .ThenInclude(e => e.ClassNumber)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (entity == null)
-            {
-                _logger.LogWarning($"Product with id {id} not found");
-                return NotFound();
-            }
-
-            return entity;
-        }
+        // The base controller's Get, Post, Put, Delete methods will be used.
+        // We only need to keep the custom methods.
 
         [HttpGet("{id}/parents")]
         public async Task<ActionResult<IEnumerable<Assembly>>> GetParentAssemblies(int id)

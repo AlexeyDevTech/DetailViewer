@@ -1,18 +1,14 @@
-using DetailViewer.Core.Data;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Services;
 using DetailViewer.ViewModels;
 using DetailViewer.Views;
-using Microsoft.EntityFrameworkCore;
 using Prism.Events;
 using Prism.Ioc;
 using Prism.Modularity;
 using Prism.Services.Dialogs;
 using System;
-using System.ComponentModel;
 using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using Application = System.Windows.Application;
@@ -23,8 +19,6 @@ namespace DetailViewer
     {
         private ILogger _logger;
         private NotifyIcon _notifyIcon;
-        private System.Timers.Timer _dbCheckTimer;
-        private System.Timers.Timer _syncTimer;
         private ISettingsService _settingsService;
 
         protected override Window CreateShell()
@@ -32,7 +26,7 @@ namespace DetailViewer
             return Container.Resolve<MainWindow>();
         }
 
-        protected override async void OnInitialized()
+        protected override void OnInitialized()
         {
             var splashScreen = new SplashScreenView();
             splashScreen.Show();
@@ -45,23 +39,9 @@ namespace DetailViewer
 
             _logger.Log("Application initialization started.");
 
-            await Task.Run(async () =>
-            {
-                var dbContextFactory = Container.Resolve<IDbContextFactory<ApplicationDbContext>>();
-                using (var dbContext = dbContextFactory.CreateDbContext())
-                {
-                    await dbContext.Database.EnsureCreatedAsync();
-                }
-
-                var syncService = Container.Resolve<DatabaseSyncService>();
-                await syncService.SyncDatabaseAsync();
-            });
-
             _settingsService = Container.Resolve<ISettingsService>();
 
             InitializeNotifyIcon();
-            InitializeDbCheckTimer();
-            InitializeSyncTimer();
 
             splashScreen.Close();
 
@@ -88,14 +68,16 @@ namespace DetailViewer
             containerRegistry.RegisterSingleton<ISettingsService, JsonSettingsService>();
             containerRegistry.RegisterSingleton<IDocumentFilterService, DocumentFilterService>();
             containerRegistry.RegisterSingleton<ICsvExportService, CsvExportService>();
-            containerRegistry.RegisterSingleton<IExcelImportService, ExcelImportService>();
-            containerRegistry.RegisterSingleton<IExcelExportService, ExcelExportService>();
+            //containerRegistry.RegisterSingleton<IExcelImportService, ExcelImportService>();
+            //containerRegistry.RegisterSingleton<IExcelExportService, ExcelExportService>();
 
             containerRegistry.RegisterForNavigation<MainWindow, MainWindowViewModel>();
 
             var settingsService = Container.Resolve<ISettingsService>();
             var appSettings = settingsService.LoadSettings();
             containerRegistry.RegisterInstance(appSettings);
+
+            // Register all services from CoreModule implicitly via the module catalog
 
             containerRegistry.RegisterSingleton<IClassifierService, ClassifierService>();
             containerRegistry.RegisterSingleton<IDocumentRecordService, DocumentRecordService>();
@@ -104,9 +86,7 @@ namespace DetailViewer
             containerRegistry.RegisterSingleton<IProfileService, ProfileService>();
             containerRegistry.RegisterSingleton<IPasswordService, PasswordService>();
             containerRegistry.RegisterSingleton<IActiveUserService, ActiveUserService>();
-
-            containerRegistry.RegisterSingleton<DatabaseSyncService>();
-            containerRegistry.Register<IDbContextFactory<ApplicationDbContext>>(() => new ApplicationDbContextFactory(Container.Resolve<ISettingsService>()));
+            containerRegistry.RegisterSingleton<IApiClient, ApiClient>();
         }
 
         protected override void ConfigureModuleCatalog(IModuleCatalog moduleCatalog)
@@ -122,7 +102,7 @@ namespace DetailViewer
             _notifyIcon = new NotifyIcon();
             _notifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
             _notifyIcon.Visible = true;
-            _notifyIcon.Text = "Detail Viewer - Загрузка...";
+            _notifyIcon.Text = "Detail Viewer";
 
             _notifyIcon.ContextMenuStrip = new ContextMenuStrip();
             _notifyIcon.ContextMenuStrip.Items.Add("Заполнить форму", null, OnFillFormClick);
@@ -130,52 +110,6 @@ namespace DetailViewer
             _notifyIcon.ContextMenuStrip.Items.Add("Выход", null, OnExitClick);
 
             _notifyIcon.DoubleClick += OnOpenProgramClick;
-        }
-
-        private void InitializeDbCheckTimer()
-        {
-            _logger.Log("Initializing DB check timer");
-            _dbCheckTimer = new System.Timers.Timer(60 * 60 * 1000); // 60 minutes
-            _dbCheckTimer.Elapsed += OnDbCheckTimerElapsed;
-            _dbCheckTimer.Start();
-            CheckDbConnection(); // Initial check
-        }
-
-        private void InitializeSyncTimer()
-        {
-            _logger.Log("Initializing sync timer");
-            _syncTimer = new System.Timers.Timer(60 * 1000); // 1 minute
-            _syncTimer.Elapsed += OnSyncTimerElapsed;
-            _syncTimer.Start();
-        }
-
-        private async void OnSyncTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            _logger.Log("Sync timer elapsed");
-            var syncService = Container.Resolve<DatabaseSyncService>();
-            await syncService.SyncDatabaseAsync();
-        }
-
-        private async void CheckDbConnection()
-        {
-            _logger.Log("Checking DB connection");
-            try
-            {
-                using var dbContext = Container.Resolve<IDbContextFactory<ApplicationDbContext>>().CreateDbContext();
-                bool canConnect = await dbContext.Database.CanConnectAsync();
-                _notifyIcon.Text = canConnect ? "Detail Viewer - Подключено к БД" : "Detail Viewer - Ошибка подключения к БД";
-            }
-            catch (Exception ex)
-            {
-                _notifyIcon.Text = $"Detail Viewer - Ошибка: {ex.Message}";
-                _logger.LogError($"Ошибка при проверке подключения к БД: {ex.Message}", ex);
-            }
-        }
-
-        private void OnDbCheckTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            _logger.Log("DB check timer elapsed");
-            CheckDbConnection();
         }
 
         private void OnFillFormClick(object sender, EventArgs e)
@@ -209,14 +143,8 @@ namespace DetailViewer
 
         protected override void OnExit(ExitEventArgs e)
         {
-            _logger.Log("Application exiting. Performing final synchronization.");
-            var syncService = Container.Resolve<DatabaseSyncService>();
-            _ = syncService.SyncDatabaseAsync();
-
-            _logger.Log("Final synchronization complete.");
+            _logger.Log("Application exiting.");
             _notifyIcon?.Dispose();
-            _dbCheckTimer?.Dispose();
-            _syncTimer?.Dispose();
             base.OnExit(e);
         }
     }

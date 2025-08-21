@@ -13,34 +13,9 @@ namespace DetailViewer.Api.Controllers
     [ApiController]
     public class AssembliesController : BaseController<Assembly>
     {
-        public AssembliesController(ApplicationDbContext context, ILogger<AssembliesController> logger) : base(context, logger)
+        public AssembliesController(ApplicationDbContext context, ILogger<AssembliesController> logger) 
+            : base(context, logger)
         {
-        }
-
-        public override async Task<ActionResult<IEnumerable<Assembly>>> Get()
-        {
-            _logger.LogInformation("Getting all assemblies");
-            return await _context.Assemblies
-                .Include(a => a.EskdNumber)
-                .ThenInclude(e => e.ClassNumber)
-                .ToListAsync();
-        }
-
-        public override async Task<ActionResult<Assembly>> Get(int id)
-        {
-            _logger.LogInformation($"Getting assembly with id {id}");
-            var entity = await _context.Assemblies
-                .Include(a => a.EskdNumber)
-                .ThenInclude(e => e.ClassNumber)
-                .FirstOrDefaultAsync(a => a.Id == id);
-
-            if (entity == null)
-            {
-                _logger.LogWarning($"Assembly with id {id} not found");
-                return NotFound();
-            }
-
-            return entity;
         }
 
         [HttpGet("{id}/parents")]

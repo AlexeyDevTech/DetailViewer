@@ -1,8 +1,5 @@
-﻿
-using DetailViewer.Core.Data;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Services;
-using Microsoft.EntityFrameworkCore;
 using Prism.Ioc;
 using Prism.Modularity;
 
@@ -18,8 +15,6 @@ namespace DetailViewer.Core
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
             containerRegistry.RegisterSingleton<ISettingsService, JsonSettingsService>();
-            containerRegistry.RegisterSingleton<DatabaseSyncService>();
-            containerRegistry.RegisterSingleton<IDbContextFactory<ApplicationDbContext>, ApplicationDbContextFactory>();
             containerRegistry.RegisterSingleton<IApiClient, ApiClient>();
 
             containerRegistry.RegisterSingleton<IClassifierService, ClassifierService>();
@@ -27,8 +22,12 @@ namespace DetailViewer.Core
             containerRegistry.Register<IAssemblyService, AssemblyService>();
             containerRegistry.Register<IProductService, ProductService>();
             containerRegistry.Register<IExcelImportService, ExcelImportService>();
-            containerRegistry.Register<IExcelExportService, ExcelExportService>();
+                        containerRegistry.Register<IExcelExportService, ExcelExportService>();
             containerRegistry.Register<IProfileService, ProfileService>();
+            containerRegistry.Register<IPasswordService, PasswordService>();
+            containerRegistry.Register<IActiveUserService, ActiveUserService>();
+            containerRegistry.Register<IDocumentFilterService, DocumentFilterService>();
+            containerRegistry.Register<ICsvExportService, CsvExportService>();
         }
     }
 }

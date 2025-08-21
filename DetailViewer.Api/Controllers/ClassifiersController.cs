@@ -9,9 +9,9 @@ namespace DetailViewer.Api.Controllers
     [ApiController]
     public class ClassifiersController : BaseController<Classifier>
     {
-        public ClassifiersController(ApplicationDbContext context, ILogger<ClassifiersController> logger) : base(context, logger)
+        public ClassifiersController(ApplicationDbContext context, ILogger<ClassifiersController> logger) 
+            : base(context, logger)
         {
-            _logger.LogInformation("ClassifiersController created");
         }
     }
 }

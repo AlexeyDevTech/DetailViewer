@@ -1,9 +1,7 @@
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
@@ -11,14 +9,16 @@ namespace DetailViewer.Core.Services
     public class ClassifierService : IClassifierService
     {
         private readonly ILogger _logger;
+        private readonly IApiClient _apiClient;
         private List<ClassifierData> _allClassifiers;
 
-        public ClassifierService(ILogger logger)
+        public ClassifierService(ILogger logger, IApiClient apiClient)
         {
             _logger = logger;
+            _apiClient = apiClient;
         }
 
-        public async Task LoadClassifiersAsync(string filePath = "eskd_classifiers.json")
+        public async Task LoadClassifiersAsync(string filePath = null)
         {
             if (_allClassifiers != null)
             {
@@ -27,21 +27,13 @@ namespace DetailViewer.Core.Services
 
             try
             {
-                if (File.Exists(filePath))
-                {
-                    string jsonContent = await File.ReadAllTextAsync(filePath);
-                    var rootClassifiers = JsonSerializer.Deserialize<List<ClassifierData>>(jsonContent);
-                    _allClassifiers = FlattenClassifiers(rootClassifiers);
-                }
-                else
-                {
-                    _logger.LogWarning($"{filePath} not found.");
-                    _allClassifiers = new List<ClassifierData>();
-                }
+                _logger.Log("Loading classifiers from API");
+                var rootClassifiers = await _apiClient.GetAsync<ClassifierData>(ApiEndpoints.Classifiers);
+                _allClassifiers = FlattenClassifiers(rootClassifiers);
             }
             catch (System.Exception ex)
             {
-                _logger.LogError($"Error loading classifiers: {ex.Message}", ex);
+                _logger.LogError($"Error loading classifiers from API: {ex.Message}", ex);
                 _allClassifiers = new List<ClassifierData>();
             }
         }
@@ -59,6 +51,8 @@ namespace DetailViewer.Core.Services
         private List<ClassifierData> FlattenClassifiers(List<ClassifierData> classifiers)
         {
             var flattenedList = new List<ClassifierData>();
+            if (classifiers == null) return flattenedList;
+
             foreach (var classifier in classifiers)
             {
                 flattenedList.Add(classifier);

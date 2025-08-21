@@ -3,9 +3,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DetailViewer.Api.Data
 {
-    /// <summary>
-    /// удаленная база данных
-    /// </summary>
     public class ApplicationDbContext : DbContext
     {
         public DbSet<DocumentDetailRecord> DocumentRecords { get; set; }
@@ -17,8 +14,6 @@ namespace DetailViewer.Api.Data
         public DbSet<AssemblyDetail> AssemblyDetails { get; set; }
         public DbSet<ProductAssembly> ProductAssemblies { get; set; }
         public DbSet<AssemblyParent> AssemblyParents { get; set; }
-        public DbSet<ChangeLog> ChangeLogs { get; set; }
-        public DbSet<ConflictLog> ConflictLogs { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -29,14 +24,14 @@ namespace DetailViewer.Api.Data
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<DocumentDetailRecord>()
-                .HasOne(d => d.ESKDNumber)
+                .HasOne(d => d.EskdNumber)
                 .WithMany()
-                .HasForeignKey(d => d.ESKDNumberId)
+                .HasForeignKey(d => d.EskdNumberId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ESKDNumber>()
                 .HasOne(e => e.ClassNumber)
-                .WithMany(c => c.ESKDNumbers)
+                .WithMany()
                 .HasForeignKey(e => e.ClassifierId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -52,40 +47,31 @@ namespace DetailViewer.Api.Data
                 .HasForeignKey(a => a.EskdNumberId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Assembly>()
-                .HasMany(a => a.SubAssemblies)
-                .WithOne(a => a.ParentAssembly)
-                .HasForeignKey(a => a.ParentAssemblyId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<ProductAssembly>()
-                .HasKey(pa => new { pa.ProductId, pa.AssemblyId });
+            modelBuilder.Entity<ProductAssembly>().HasKey(pa => new { pa.ProductId, pa.AssemblyId });
 
             modelBuilder.Entity<ProductAssembly>()
                 .HasOne(pa => pa.Product)
-                .WithMany(p => p.ProductAssemblies)
+                .WithMany()
                 .HasForeignKey(pa => pa.ProductId);
 
             modelBuilder.Entity<ProductAssembly>()
                 .HasOne(pa => pa.Assembly)
-                .WithMany(a => a.ProductAssemblies)
+                .WithMany()
                 .HasForeignKey(pa => pa.AssemblyId);
 
-            modelBuilder.Entity<AssemblyDetail>()
-                .HasKey(ad => new { ad.AssemblyId, ad.DetailId });
+            modelBuilder.Entity<AssemblyDetail>().HasKey(ad => new { ad.AssemblyId, ad.DetailId });
 
             modelBuilder.Entity<AssemblyDetail>()
                 .HasOne(ad => ad.Assembly)
-                .WithMany(a => a.AssemblyDetails)
+                .WithMany()
                 .HasForeignKey(ad => ad.AssemblyId);
 
             modelBuilder.Entity<AssemblyDetail>()
                 .HasOne(ad => ad.Detail)
-                .WithMany(d => d.AssemblyDetails)
+                .WithMany()
                 .HasForeignKey(ad => ad.DetailId);
 
-            modelBuilder.Entity<AssemblyParent>()
-                .HasKey(ap => new { ap.ParentAssemblyId, ap.ChildAssemblyId });
+            modelBuilder.Entity<AssemblyParent>().HasKey(ap => new { ap.ParentAssemblyId, ap.ChildAssemblyId });
 
             modelBuilder.Entity<AssemblyParent>()
                 .HasOne(ap => ap.ParentAssembly)

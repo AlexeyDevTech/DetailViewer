@@ -6,54 +6,41 @@ namespace DetailViewer.Core.Services
 {
     public static class EskdNumberHelper
     {
-        public static int FindNextDetailNumber(IEnumerable<DocumentDetailRecord> records, string classNumberString)
+        public static int FindNextDetailNumber(IEnumerable<DocumentDetailRecord> records, string classCode)
         {
-            if (records == null || string.IsNullOrEmpty(classNumberString) || classNumberString.Length != 6)
+            if (records == null || !records.Any() || string.IsNullOrEmpty(classCode) || classCode.Length != 6)
             {
                 return 1;
             }
 
-            var existingDetailNumbers = records
-                .Where(r => r.ESKDNumber?.ClassNumber?.Number.ToString("D6") == classNumberString)
-                .Select(r => r.ESKDNumber.DetailNumber)
-                .ToHashSet();
-
-            for (int i = 1; i <= 999; i++)
-            {
-                if (!existingDetailNumbers.Contains(i))
-                {
-                    return i;
-                }
-            }
-
-            return 1000; // Or throw an exception, depending on requirements
-        }
-
-        public static int? FindNextVersionNumber(IEnumerable<DocumentDetailRecord> records, DocumentDetailRecord sourceRecord)
-        {
-            if (records == null || sourceRecord?.ESKDNumber?.ClassNumber == null)
-            {
-                return null;
-            }
-
-            var existingVersions = records
-                .Where(r => r.ESKDNumber != null &&
-                            r.ESKDNumber.ClassNumber != null &&
-                            r.ESKDNumber.CompanyCode == sourceRecord.ESKDNumber.CompanyCode &&
-                            r.ESKDNumber.ClassNumber.Number == sourceRecord.ESKDNumber.ClassNumber.Number &&
-                            r.ESKDNumber.DetailNumber == sourceRecord.ESKDNumber.DetailNumber &&
-                            r.ESKDNumber.Version.HasValue)
-                .Select(r => r.ESKDNumber.Version.Value)
+            var relevantRecords = records
+                .Where(r => r.ESKDNumber?.ClassNumber?.Number.ToString("D6") == classCode)
                 .ToList();
 
-            if (existingVersions.Any())
+            if (!relevantRecords.Any())
             {
-                return existingVersions.Max() + 1;
+                return 1;
             }
-            else
+
+            return relevantRecords.Max(r => r.ESKDNumber.DetailNumber) + 1;
+        }
+
+        public static int FindNextVersionNumber(IEnumerable<DocumentDetailRecord> allRecords, DocumentDetailRecord? selectedRecord)
+        {
+            if (selectedRecord == null || allRecords == null)
             {
-                return 1; // First version for this ESKD number
+                return 1;
             }
+
+            var versions = allRecords
+                .Where(r => r.ESKDNumber.CompanyCode == selectedRecord.ESKDNumber.CompanyCode &&
+                            r.ESKDNumber.ClassNumber?.Number == selectedRecord.ESKDNumber.ClassNumber?.Number &&
+                            r.ESKDNumber.DetailNumber == selectedRecord.ESKDNumber.DetailNumber)
+                .Select(r => r.ESKDNumber.Version)
+                .OfType<int>()
+                .ToList();
+
+            return versions.Any() ? versions.Max() + 1 : 1;
         }
     }
 }

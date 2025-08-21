@@ -1,4 +1,3 @@
-
 #pragma warning disable CS8618
 
 using System.Collections.Generic;
@@ -39,32 +38,6 @@ namespace DetailViewer.Api.Models
         /// Автор сборки.
         /// </summary>
         public string Author { get; set; }
-
-        /// <summary>
-        /// Идентификатор родительской сборки (для вложенности).
-        /// </summary>
-        public int? ParentAssemblyId { get; set; }
-
-        /// <summary>
-        /// Родительская сборка.
-        /// </summary>
-        [ForeignKey("ParentAssemblyId")]
-        public virtual Assembly ParentAssembly { get; set; }
-
-        /// <summary>
-        /// Коллекция дочерних сборок.
-        /// </summary>
-        public virtual ICollection<Assembly> SubAssemblies { get; set; } = new List<Assembly>();
-
-        /// <summary>
-        /// Коллекция связей с деталями, входящими в состав сборки.
-        /// </summary>
-        public virtual ICollection<AssemblyDetail> AssemblyDetails { get; set; } = new List<AssemblyDetail>();
-
-        /// <summary>
-        /// Коллекция связей с изделиями, к которым относится сборка.
-        /// </summary>
-        public virtual ICollection<ProductAssembly> ProductAssemblies { get; set; } = new List<ProductAssembly>();
 
         [Timestamp]
         public byte[] Version { get; set; }

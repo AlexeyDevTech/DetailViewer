@@ -16,7 +16,7 @@ namespace DetailViewer.Modules.Explorer
 
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            containerRegistry.Register<IExcelImportService, ExcelImportService>();
+            
             containerRegistry.RegisterForNavigation<DashboardView, ViewModels.DashboardViewModel>();
             containerRegistry.RegisterForNavigation<AssembliesDashboardView, ViewModels.AssembliesDashboardViewModel>();
             containerRegistry.RegisterForNavigation<ProductsDashboardView, ViewModels.ProductsDashboardViewModel>();

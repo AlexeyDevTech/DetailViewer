@@ -14,7 +14,7 @@ namespace DetailViewer.Core.Interfaces
         Task PutAsync<T>(string endpoint, int id, T data);
         Task PutAsync<T>(string endpoint, T data);
         Task DeleteAsync(string endpoint, int id);
-        Task<List<ChangeLog>> GetChangesSinceAsync(DateTime timestamp);
+        
 
         Task<List<Assembly>> GetParentAssembliesAsync(string entity, int id);
         Task<List<Product>> GetRelatedProductsAsync(int assemblyId);
