@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Api.Controllers
@@ -26,7 +27,22 @@ namespace DetailViewer.Api.Controllers
         public virtual async Task<ActionResult<IEnumerable<TEntity>>> Get()
         {
             _logger.LogInformation($"Getting all entities of type {typeof(TEntity).Name}");
-            return await _context.Set<TEntity>().ToListAsync();
+            IQueryable<TEntity> query = _context.Set<TEntity>();
+
+            if (typeof(TEntity) == typeof(DocumentDetailRecord))
+            {
+                query = (IQueryable<TEntity>)_context.Set<DocumentDetailRecord>().Include(d => d.EskdNumber).ThenInclude(e => e.ClassNumber);
+            }
+            else if (typeof(TEntity) == typeof(Assembly))
+            {
+                query = (IQueryable<TEntity>)_context.Set<Assembly>().Include(a => a.EskdNumber).ThenInclude(e => e.ClassNumber);
+            }
+            else if (typeof(TEntity) == typeof(Product))
+            {
+                query = (IQueryable<TEntity>)_context.Set<Product>().Include(p => p.EskdNumber).ThenInclude(e => e.ClassNumber);
+            }
+
+            return await query.ToListAsync();
         }
 
         // GET: api/[controller]/5
@@ -34,7 +50,23 @@ namespace DetailViewer.Api.Controllers
         public virtual async Task<ActionResult<TEntity>> Get(int id)
         {
             _logger.LogInformation($"Getting entity of type {typeof(TEntity).Name} with id {id}");
-            var entity = await _context.Set<TEntity>().FindAsync(id);
+            
+            IQueryable<TEntity> query = _context.Set<TEntity>();
+
+            if (typeof(TEntity) == typeof(DocumentDetailRecord))
+            {
+                query = (IQueryable<TEntity>)_context.Set<DocumentDetailRecord>().Include(d => d.EskdNumber).ThenInclude(e => e.ClassNumber);
+            }
+            else if (typeof(TEntity) == typeof(Assembly))
+            {
+                query = (IQueryable<TEntity>)_context.Set<Assembly>().Include(a => a.EskdNumber).ThenInclude(e => e.ClassNumber);
+            }
+            else if (typeof(TEntity) == typeof(Product))
+            {
+                query = (IQueryable<TEntity>)_context.Set<Product>().Include(p => p.EskdNumber).ThenInclude(e => e.ClassNumber);
+            }
+
+            var entity = await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
 
             if (entity == null)
             {
@@ -112,7 +144,7 @@ namespace DetailViewer.Api.Controllers
 
         protected async Task<bool> EntityExists(int id)
         {
-            return await _context.Set<TEntity>().AnyAsync(e => (int)e.GetType().GetProperty("Id").GetValue(e, null) == id);
+            return await _context.Set<TEntity>().AnyAsync(e => EF.Property<int>(e, "Id") == id);
         }
     }
 }

@@ -1,4 +1,3 @@
-
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using System;
@@ -6,6 +5,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
@@ -15,6 +15,7 @@ namespace DetailViewer.Core.Services
         private readonly HttpClient _httpClient;
         private readonly ISettingsService _settingsService;
         private readonly ILogger _logger;
+        private readonly JsonSerializerOptions _jsonSerializerOptions;
 
         public ApiClient(ISettingsService settingsService, ILogger logger)
         {
@@ -25,6 +26,12 @@ namespace DetailViewer.Core.Services
             {
                 BaseAddress = new Uri(settings.ApiUrl) // Assuming ApiUrl is in settings
             };
+
+            _jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
         }
 
         public async Task<List<T>> GetAsync<T>(string endpoint)
@@ -34,7 +41,7 @@ namespace DetailViewer.Core.Services
                 var response = await _httpClient.GetAsync(endpoint);
                 response.EnsureSuccessStatusCode();
                 var content = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<List<T>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                return JsonSerializer.Deserialize<List<T>>(content, _jsonSerializerOptions);
             }
             catch (Exception ex)
             {
@@ -50,7 +57,7 @@ namespace DetailViewer.Core.Services
                 var response = await _httpClient.GetAsync($"{endpoint}/{id}");
                 response.EnsureSuccessStatusCode();
                 var content = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                return JsonSerializer.Deserialize<T>(content, _jsonSerializerOptions);
             }
             catch (Exception ex)
             {
@@ -63,12 +70,12 @@ namespace DetailViewer.Core.Services
         {
             try
             {
-                var jsonData = JsonSerializer.Serialize(data);
+                var jsonData = JsonSerializer.Serialize(data, _jsonSerializerOptions);
                 var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
                 var response = await _httpClient.PostAsync(endpoint, content);
                 response.EnsureSuccessStatusCode();
                 var responseContent = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<T>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                return JsonSerializer.Deserialize<T>(responseContent, _jsonSerializerOptions);
             }
             catch (Exception ex)
             {
@@ -81,7 +88,7 @@ namespace DetailViewer.Core.Services
         {
             try
             {
-                var jsonData = JsonSerializer.Serialize(data);
+                var jsonData = JsonSerializer.Serialize(data, _jsonSerializerOptions);
                 var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
                 var response = await _httpClient.PutAsync($"{endpoint}/{id}", content);
                 response.EnsureSuccessStatusCode();
@@ -97,7 +104,7 @@ namespace DetailViewer.Core.Services
         {
             try
             {
-                var jsonData = JsonSerializer.Serialize(data);
+                var jsonData = JsonSerializer.Serialize(data, _jsonSerializerOptions);
                 var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
                 var response = await _httpClient.PutAsync(endpoint, content);
                 response.EnsureSuccessStatusCode();
@@ -154,12 +161,12 @@ namespace DetailViewer.Core.Services
             var endpoint = ApiEndpoints.ConvertProductToAssembly(productId);
             try
             {
-                var jsonData = JsonSerializer.Serialize(childProductIds);
+                var jsonData = JsonSerializer.Serialize(childProductIds, _jsonSerializerOptions);
                 var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
                 var response = await _httpClient.PostAsync(endpoint, content);
                 response.EnsureSuccessStatusCode();
                 var responseContent = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<Assembly>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                return JsonSerializer.Deserialize<Assembly>(responseContent, _jsonSerializerOptions);
             }
             catch (Exception ex)
             {

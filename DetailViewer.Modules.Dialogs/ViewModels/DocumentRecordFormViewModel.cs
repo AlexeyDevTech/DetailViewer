@@ -66,7 +66,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                     return string.Empty;
                 }
 
-                string baseCode = $"{CompanyCode}.{int.Parse(ClassNumberString):D6}.{DetailNumber:D3}";
+                string baseCode = $"{CompanyCode}.{ClassNumberString}.{DetailNumber:D3}";
                 return Version.HasValue ? $"{baseCode}-{Version.Value:D2}" : baseCode;
             }
         }
@@ -157,21 +157,25 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 ESKDNumber = new ESKDNumber()
                 {
                     ClassNumber = new Classifier(),
-                    CompanyCode = _settingsService.LoadSettings().DefaultCompanyCode // Set default company code here
+                    CompanyCode = _settingsService.LoadSettings().DefaultCompanyCode
                 }
             };
 
             _linkedAssemblies = new ObservableCollection<Assembly>();
 
-            SaveCommand = new DelegateCommand(Save);
+            SaveCommand = new DelegateCommand(Save, CanSave).ObservesProperty(() => ClassNumberString).ObservesProperty(() => DetailNumber);
             CancelCommand = new DelegateCommand(Cancel);
             AddAssemblyLinkCommand = new DelegateCommand(AddAssemblyLink);
             RemoveAssemblyLinkCommand = new DelegateCommand(RemoveAssemblyLink, () => SelectedLinkedAssembly != null).ObservesProperty(() => SelectedLinkedAssembly);
 
             LoadRecords();
+            LoadClassifiers();
         }
 
-        // --- Methods for Assembling/Disassembling Composite Numbers ---
+        private bool CanSave()
+        {
+            return !string.IsNullOrWhiteSpace(ClassNumberString) && ClassNumberString.Length == 6 && DetailNumber > 0;
+        }
 
         // --- Data Loading ---
         private async void LoadRecords()
@@ -186,14 +190,10 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             FilterClassifiers();
         }
 
-        
-
-        
-
         // --- Filtering Logic ---
         private void FilterRecords()
         {
-            if (_allRecords == null || ClassNumberString?.Length != 6)
+            if (_allRecords == null)
             {
                 FilteredRecords = new ObservableCollection<DocumentDetailRecord>();
                 return;
@@ -203,27 +203,20 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
             if (!string.IsNullOrWhiteSpace(ClassNumberString))
             {
-                records = records.Where(r => 
-                {
-                    if (r.ESKDNumber.ClassNumber != null)
-                        return r.ESKDNumber.ClassNumber.Number.ToString("D6").StartsWith(ClassNumberString);
-                    else return false;
-                        
-                });
+                records = records.Where(r => r.ESKDNumber?.ClassNumber?.Number.ToString("D6").StartsWith(ClassNumberString) ?? false);
             }
 
             if (IsNewVersionEnabled && DetailNumber > 0 && SelectedRecordToCopy == null)
             {
-                //records = records.Where(r => r.ESKDNumber.DetailNumber == DetailNumber);
                 records = records.Where(r => r.ESKDNumber?.ClassNumber?.Number.ToString("D6").StartsWith(ClassNumberString ?? string.Empty) == true);
             }
 
-            if (FilterByFullName)
+            if (FilterByFullName && !string.IsNullOrEmpty(_activeUserFullName))
             {
                 records = records.Where(r => r.FullName == _activeUserFullName);
             }
 
-            FilteredRecords = new ObservableCollection<DocumentDetailRecord>(records.OrderBy(r => r.ESKDNumber.FullCode).ToList());
+            FilteredRecords = new ObservableCollection<DocumentDetailRecord>(records.OrderBy(r => r.ESKDNumber?.FullCode).ToList());
         }
 
         private void FilterClassifiers()
@@ -258,11 +251,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             FilterRecords();
             if (ClassNumberString?.Length == 6) FindNextDetailNumber();
             OnESKDNumberPartChanged();
+            SaveCommand.RaiseCanExecuteChanged();
         }
         private void OnDetailNumberChanged()
         {
             FilterRecords();
             OnESKDNumberPartChanged();
+            SaveCommand.RaiseCanExecuteChanged();
         }
         private void OnIsNewVersionEnabledChanged()
         {
@@ -270,56 +265,62 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             {
                 IsManualDetailNumberEnabled = true;
                 UserMessage = "Выберите запись для исполнения";
-                // Clear relevant fields when 'New Version' is checked
                 DocumentRecord.YASTCode = null;
                 DocumentRecord.Name = null;
-                // ESKD number parts will be copied from selected record, not cleared here.
-                SelectedRecordToCopy = null; // Clear selected record
+                SelectedRecordToCopy = null;
             }
             else
             {
                 UserMessage = null;
             }
-            //FilterRecords();
         }
 
         // --- Business Logic ---
         private void FindNextDetailNumber()
         {
+            if (_allRecords == null || string.IsNullOrWhiteSpace(ClassNumberString))
+            {
+                DetailNumber = 0;
+                return;
+            }
             DetailNumber = EskdNumberHelper.FindNextDetailNumber(_allRecords, ClassNumberString);
         }
 
         private void FindNextVersionNumber()
         {
+            if (_allRecords == null || SelectedRecordToCopy == null)
+            {
+                Version = null;
+                return;
+            }
             Version = EskdNumberHelper.FindNextVersionNumber(_allRecords, SelectedRecordToCopy);
         }
 
         private void CopyDataFromSelectedRecord(DocumentDetailRecord sourceRecord)
         {
-            // Copy all fields except Date and FullName
+            if (sourceRecord.ESKDNumber == null) return;
+
             DocumentRecord.YASTCode = sourceRecord.YASTCode;
             DocumentRecord.Name = sourceRecord.Name;
 
-            // ESKD Number parts
             CompanyCode = sourceRecord.ESKDNumber.CompanyCode;
             ClassNumberString = sourceRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
             DetailNumber = sourceRecord.ESKDNumber.DetailNumber;
-            FindNextVersionNumber(); // Find next version based on copied ESKD number
+            FindNextVersionNumber();
 
-            RaisePropertyChanged(nameof(DocumentRecord));
-            UserMessage = null; // Clear message after selection
+            RaisePropertyChanged(string.Empty); // Refresh all properties
+            UserMessage = null;
         }
 
         // --- Dialog-related Methods ---
         private async void Save()
         {
+            if (DocumentRecord.ESKDNumber == null) DocumentRecord.ESKDNumber = new ESKDNumber();
+            
             DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
             if (int.TryParse(ClassNumberString, out int classNumber))
             {
-                if (DocumentRecord.ESKDNumber.ClassNumber == null)
-                {
-                    DocumentRecord.ESKDNumber.ClassNumber = new Classifier();
-                }
+                if (DocumentRecord.ESKDNumber.ClassNumber == null) DocumentRecord.ESKDNumber.ClassNumber = new Classifier();
                 DocumentRecord.ESKDNumber.ClassNumber.Number = classNumber;
             }
             DocumentRecord.ESKDNumber.DetailNumber = DetailNumber;
@@ -351,14 +352,17 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             _dialogService.ShowDialog("SelectAssemblyDialog", new DialogParameters(), r =>
             {
-                if (r.Result == ButtonResult.OK)
+                if (r.Result == ButtonResult.OK && r.Parameters.ContainsKey("selectedAssemblies"))
                 {
                     var selectedAssemblies = r.Parameters.GetValue<List<Assembly>>("selectedAssemblies");
-                    foreach (var assembly in selectedAssemblies)
+                    if (selectedAssemblies != null)
                     {
-                        if (!LinkedAssemblies.Any(a => a.Id == assembly.Id))
+                        foreach (var assembly in selectedAssemblies)
                         {
-                            LinkedAssemblies.Add(assembly);
+                            if (!LinkedAssemblies.Any(a => a.Id == assembly.Id))
+                            {
+                                LinkedAssemblies.Add(assembly);
+                            }
                         }
                     }
                 }
@@ -379,18 +383,21 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public async void OnDialogOpened(IDialogParameters parameters)
         {
             await _classifierService.LoadClassifiersAsync();
-            AllClassifiers = new ObservableCollection<ClassifierData>(_classifierService.GetAllClassifiers());
+            LoadClassifiers();
 
             if (parameters.ContainsKey(DialogParameterKeys.Record))
             {
                 var record = parameters.GetValue<DocumentDetailRecord>(DialogParameterKeys.Record);
-                if (parameters.ContainsKey(DialogParameterKeys.ActiveUserFullName))
+                if (record != null)
                 {
-                    HandleFillBasedOnScenario(record);
-                }
-                else
-                {
-                    await HandleEditScenario(record);
+                    if (parameters.ContainsKey(DialogParameterKeys.ActiveUserFullName))
+                    {
+                        HandleFillBasedOnScenario(record);
+                    }
+                    else
+                    {
+                        await HandleEditScenario(record);
+                    }
                 }
             }
             else
@@ -407,18 +414,23 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private async Task HandleEditScenario(DocumentDetailRecord record)
         {
             DocumentRecord = record;
-            CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
-            ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
-            DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
-            Version = DocumentRecord.ESKDNumber.Version;
-            IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
+            if (DocumentRecord.ESKDNumber != null)
+            {
+                CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
+                ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
+                DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
+                Version = DocumentRecord.ESKDNumber.Version;
+                IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
 
-            var linkedAssemblies = await _documentRecordService.GetParentAssembliesForDetailAsync(DocumentRecord.Id);
-            LinkedAssemblies = new ObservableCollection<Assembly>(linkedAssemblies);
+                var linkedAssemblies = await _documentRecordService.GetParentAssembliesForDetailAsync(DocumentRecord.Id);
+                LinkedAssemblies = new ObservableCollection<Assembly>(linkedAssemblies);
+            }
         }
 
         private void HandleFillBasedOnScenario(DocumentDetailRecord record)
         {
+            if (record.ESKDNumber?.ClassNumber == null) return;
+
             DocumentRecord = new DocumentDetailRecord
             {
                 Date = DateTime.Now,
@@ -444,10 +456,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (parameters.ContainsKey(DialogParameterKeys.CompanyCode))
             {
                 CompanyCode = parameters.GetValue<string>(DialogParameterKeys.CompanyCode);
-                DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
+                if (DocumentRecord.ESKDNumber != null) DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
             }
         }
-
-        
     }
 }

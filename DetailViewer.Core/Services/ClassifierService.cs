@@ -1,7 +1,10 @@
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
@@ -9,16 +12,14 @@ namespace DetailViewer.Core.Services
     public class ClassifierService : IClassifierService
     {
         private readonly ILogger _logger;
-        private readonly IApiClient _apiClient;
         private List<ClassifierData> _allClassifiers;
 
-        public ClassifierService(ILogger logger, IApiClient apiClient)
+        public ClassifierService(ILogger logger)
         {
             _logger = logger;
-            _apiClient = apiClient;
         }
 
-        public async Task LoadClassifiersAsync(string filePath = null)
+        public async Task LoadClassifiersAsync(string filePath = "eskd_classifiers.json")
         {
             if (_allClassifiers != null)
             {
@@ -27,13 +28,27 @@ namespace DetailViewer.Core.Services
 
             try
             {
-                _logger.Log("Loading classifiers from API");
-                var rootClassifiers = await _apiClient.GetAsync<ClassifierData>(ApiEndpoints.Classifiers);
+                // Construct path relative to the application's base directory
+                string basePath = AppContext.BaseDirectory;
+                string fullPath = Path.Combine(basePath, filePath);
+
+                _logger.Log($"Loading classifiers from file: {fullPath}");
+
+                if (!File.Exists(fullPath))
+                {
+                    _logger.LogWarning($"Classifier file not found at {fullPath}");
+                    _allClassifiers = new List<ClassifierData>();
+                    return;
+                }
+
+                var json = await File.ReadAllTextAsync(fullPath);
+                var rootClassifiers = JsonSerializer.Deserialize<List<ClassifierData>>(json);
                 _allClassifiers = FlattenClassifiers(rootClassifiers);
+                _logger.Log("Classifiers loaded successfully.");
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                _logger.LogError($"Error loading classifiers from API: {ex.Message}", ex);
+                _logger.LogError($"Error loading classifiers from file: {ex.Message}", ex);
                 _allClassifiers = new List<ClassifierData>();
             }
         }

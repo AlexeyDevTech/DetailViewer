@@ -99,6 +99,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             ExportToExcelCommand = new DelegateCommand(ExportToExcel);
 
             _eventAggregator.GetEvent<SyncCompletedEvent>().Subscribe(OnSyncCompleted, ThreadOption.UIThread);
+
+            LoadData();
         }
 
         private async void OnSyncCompleted()

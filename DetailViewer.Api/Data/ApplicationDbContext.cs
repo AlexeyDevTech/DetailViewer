@@ -29,9 +29,9 @@ namespace DetailViewer.Api.Data
                 .HasForeignKey(d => d.EskdNumberId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<ESKDNumber>()
-                .HasOne(e => e.ClassNumber)
-                .WithMany()
+            modelBuilder.Entity<Classifier>()
+                .HasMany(c => c.ESKDNumbers)
+                .WithOne(e => e.ClassNumber)
                 .HasForeignKey(e => e.ClassifierId)
                 .OnDelete(DeleteBehavior.Cascade);
 

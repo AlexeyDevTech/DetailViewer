@@ -1,6 +1,7 @@
 using DetailViewer.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,11 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration)
         .WriteTo.Console()
-        .WriteTo.File("logs/log.log", rollingInterval: RollingInterval.Day));
+        .WriteTo.File("logs/app.log"));
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+});
 
 var connectionString = builder.Configuration.GetConnectionString("RemoteDatabase");
 
