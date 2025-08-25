@@ -110,9 +110,7 @@ namespace DetailViewer.Api.Controllers
             return NoContent();
         }
 
-        // POST: api/[controller]
-        [HttpPost]
-        public virtual async Task<ActionResult<TEntity>> Post(TEntity entity)
+        protected virtual async Task<ActionResult<TEntity>> Post(TEntity entity)
         {
             _logger.LogInformation($"Creating new entity of type {typeof(TEntity).Name}");
             _context.Set<TEntity>().Add(entity);

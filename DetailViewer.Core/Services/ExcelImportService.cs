@@ -67,7 +67,7 @@ namespace DetailViewer.Core.Services
                             if(assembly != null) assemblyIds.Add(assembly.Id);
                         }
                         
-                        await _documentRecordService.AddRecordAsync(record, assemblyIds);
+                        await _documentRecordService.AddRecordAsync(record, record.ESKDNumber, assemblyIds);
                         progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Обработано: {eskdNumberString}"));
                     }
                 }

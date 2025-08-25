@@ -27,9 +27,8 @@ namespace DetailViewer.Api.Controllers
             _logger.LogInformation($"Getting parent assemblies for product with id {id}");
             return await _context.ProductAssemblies
                 .Where(pa => pa.ProductId == id)
+                .Include(pa => pa.Assembly.EskdNumber.ClassNumber)
                 .Select(pa => pa.Assembly)
-                .Include(a => a.EskdNumber)
-                .ThenInclude(e => e.ClassNumber)
                 .ToListAsync();
         }
 

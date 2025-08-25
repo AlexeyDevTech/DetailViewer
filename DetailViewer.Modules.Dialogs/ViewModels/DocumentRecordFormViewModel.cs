@@ -193,7 +193,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         // --- Filtering Logic ---
         private void FilterRecords()
         {
-            if (_allRecords == null)
+            if (_allRecords == null || ClassNumberString?.Length != 6)
             {
                 FilteredRecords = new ObservableCollection<DocumentDetailRecord>();
                 return;
@@ -328,7 +328,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
             if (DocumentRecord.Id == 0)
             {
-                await _documentRecordService.AddRecordAsync(DocumentRecord, LinkedAssemblies.Select(a => a.Id).ToList());
+                await _documentRecordService.AddRecordAsync(DocumentRecord, DocumentRecord.ESKDNumber, LinkedAssemblies.Select(a => a.Id).ToList());
             }
             else
             {

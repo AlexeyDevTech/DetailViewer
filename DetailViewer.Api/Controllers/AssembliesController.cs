@@ -24,9 +24,8 @@ namespace DetailViewer.Api.Controllers
             _logger.LogInformation($"Getting parent assemblies for assembly with id {id}");
             return await _context.AssemblyParents
                 .Where(ap => ap.ChildAssemblyId == id)
+                .Include(ap => ap.ParentAssembly.EskdNumber.ClassNumber)
                 .Select(ap => ap.ParentAssembly)
-                .Include(a => a.EskdNumber)
-                .ThenInclude(e => e.ClassNumber)
                 .ToListAsync();
         }
 
@@ -36,9 +35,8 @@ namespace DetailViewer.Api.Controllers
             _logger.LogInformation($"Getting related products for assembly with id {id}");
             return await _context.ProductAssemblies
                 .Where(pa => pa.AssemblyId == id)
+                .Include(pa => pa.Product.EskdNumber.ClassNumber)
                 .Select(pa => pa.Product)
-                .Include(p => p.EskdNumber)
-                .ThenInclude(e => e.ClassNumber)
                 .ToListAsync();
         }
 
