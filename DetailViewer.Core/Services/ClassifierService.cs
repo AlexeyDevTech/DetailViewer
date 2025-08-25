@@ -2,24 +2,24 @@ using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Core.Services
 {
     public class ClassifierService : IClassifierService
     {
+        private readonly IApiClient _apiClient;
         private readonly ILogger _logger;
-        private List<ClassifierData> _allClassifiers;
+        private List<Classifier>? _allClassifiers;
 
-        public ClassifierService(ILogger logger)
+        public ClassifierService(IApiClient apiClient, ILogger logger)
         {
+            _apiClient = apiClient;
             _logger = logger;
         }
 
-        public async Task LoadClassifiersAsync(string filePath = "eskd_classifiers.json")
+        public async Task LoadClassifiersAsync()
         {
             if (_allClassifiers != null)
             {
@@ -28,55 +28,25 @@ namespace DetailViewer.Core.Services
 
             try
             {
-                // Construct path relative to the application's base directory
-                string basePath = AppContext.BaseDirectory;
-                string fullPath = Path.Combine(basePath, filePath);
-
-                _logger.Log($"Loading classifiers from file: {fullPath}");
-
-                if (!File.Exists(fullPath))
-                {
-                    _logger.LogWarning($"Classifier file not found at {fullPath}");
-                    _allClassifiers = new List<ClassifierData>();
-                    return;
-                }
-
-                var json = await File.ReadAllTextAsync(fullPath);
-                var rootClassifiers = JsonSerializer.Deserialize<List<ClassifierData>>(json);
-                _allClassifiers = FlattenClassifiers(rootClassifiers);
-                _logger.Log("Classifiers loaded successfully.");
+                _logger.Log("Loading classifiers from API");
+                _allClassifiers = await _apiClient.GetAsync<Classifier>(ApiEndpoints.Classifiers);
+                _logger.Log("Classifiers loaded successfully from API.");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error loading classifiers from file: {ex.Message}", ex);
-                _allClassifiers = new List<ClassifierData>();
+                _logger.LogError($"Error loading classifiers from API: {ex.Message}", ex);
+                _allClassifiers = new List<Classifier>();
             }
         }
 
-        public IEnumerable<ClassifierData> GetAllClassifiers()
+        public IEnumerable<Classifier> GetAllClassifiers()
         {
-            return _allClassifiers ?? Enumerable.Empty<ClassifierData>();
+            return _allClassifiers ?? Enumerable.Empty<Classifier>();
         }
 
-        public ClassifierData GetClassifierByCode(string code)
+        public Classifier? GetClassifierByNumber(int number)
         {
-            return _allClassifiers?.FirstOrDefault(c => c.Code == code);
-        }
-
-        private List<ClassifierData> FlattenClassifiers(List<ClassifierData> classifiers)
-        {
-            var flattenedList = new List<ClassifierData>();
-            if (classifiers == null) return flattenedList;
-
-            foreach (var classifier in classifiers)
-            {
-                flattenedList.Add(classifier);
-                if (classifier.Children != null && classifier.Children.Any())
-                {
-                    flattenedList.AddRange(FlattenClassifiers(classifier.Children));
-                }
-            }
-            return flattenedList;
+            return _allClassifiers?.FirstOrDefault(c => c.Number == number);
         }
     }
 }

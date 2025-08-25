@@ -66,7 +66,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
-        public async Task<T> PostAsync<T>(string endpoint, T data)
+        public async Task<TResponse> PostAsync<TRequest, TResponse>(string endpoint, TRequest data)
         {
             try
             {
@@ -75,7 +75,23 @@ namespace DetailViewer.Core.Services
                 var response = await _httpClient.PostAsync(endpoint, content);
                 response.EnsureSuccessStatusCode();
                 var responseContent = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<T>(responseContent, _jsonSerializerOptions);
+                return JsonSerializer.Deserialize<TResponse>(responseContent, _jsonSerializerOptions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error posting data to {endpoint}", ex);
+                throw;
+            }
+        }
+
+        public async Task PostAsync<TRequest>(string endpoint, TRequest data)
+        {
+            try
+            {
+                var jsonData = JsonSerializer.Serialize(data, _jsonSerializerOptions);
+                var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
+                var response = await _httpClient.PostAsync(endpoint, content);
+                response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
             {

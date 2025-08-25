@@ -92,8 +92,8 @@ namespace DetailViewer.Core.Services
         {
             var eskdNumber = new ESKDNumber().SetCode(eskdNumberString);
             // We assume classifier data is loaded and available through the service
-            var classifier = _classifierService.GetClassifierByCode(eskdNumber.ClassNumber.Number.ToString("D6"));
-            eskdNumber.ClassNumber = classifier != null ? new Classifier { Number = int.Parse(classifier.Code), Description = classifier.Description } : null;
+            var classifier = _classifierService.GetClassifierByNumber(eskdNumber.ClassNumber.Number);
+            eskdNumber.ClassNumber = classifier != null ? new Classifier { Number = classifier.Number, Description = classifier.Description } : null;
 
             return new DocumentDetailRecord
             {

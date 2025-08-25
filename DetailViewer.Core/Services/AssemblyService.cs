@@ -29,10 +29,17 @@ namespace DetailViewer.Core.Services
             await _apiClient.DeleteAsync(ApiEndpoints.Assemblies, assemblyId);
         }
 
-        public async Task AddAssemblyAsync(Assembly assembly)
+        public async Task AddAssemblyAsync(Assembly assembly, List<int> parentAssemblyIds, List<int> relatedProductIds)
         {
             _logger.Log($"Adding assembly via API: {assembly.Name}");
-            await _apiClient.PostAsync(ApiEndpoints.Assemblies, assembly);
+            var payload = new 
+            {
+                Assembly = assembly,
+                EskdNumber = assembly.EskdNumber,
+                ParentAssemblyIds = parentAssemblyIds,
+                RelatedProductIds = relatedProductIds
+            };
+            await _apiClient.PostAsync(ApiEndpoints.Assemblies, payload);
         }
 
         public async Task UpdateAssemblyAsync(Assembly assembly)
@@ -50,13 +57,13 @@ namespace DetailViewer.Core.Services
         public async Task UpdateAssemblyParentAssembliesAsync(int assemblyId, List<Assembly> parentAssemblies)
         {
             _logger.Log($"Updating parent assemblies for assembly via API: {assemblyId}");
-            await _apiClient.PutAsync($"{ApiEndpoints.Assemblies}/{assemblyId}/parents", parentAssemblies);
+            await _apiClient.PutAsync($"{ApiEndpoints.Assemblies}/{assemblyId}/parents", parentAssemblies.Select(p => p.Id).ToList());
         }
 
         public async Task UpdateAssemblyRelatedProductsAsync(int assemblyId, List<Product> relatedProducts)
         {
             _logger.Log($"Updating related products for assembly via API: {assemblyId}");
-            await _apiClient.PutAsync($"{ApiEndpoints.Assemblies}/{assemblyId}/products", relatedProducts);
+            await _apiClient.PutAsync($"{ApiEndpoints.Assemblies}/{assemblyId}/products", relatedProducts.Select(p => p.Id).ToList());
         }
 
         public async Task<List<Product>> GetRelatedProductsAsync(int assemblyId)

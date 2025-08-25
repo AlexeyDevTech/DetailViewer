@@ -8,7 +8,7 @@ namespace DetailViewer.Core.Interfaces
     {
         Task<List<Assembly>> GetAssembliesAsync();
         Task DeleteAssemblyAsync(int assemblyId);
-        Task AddAssemblyAsync(Assembly assembly);
+        Task AddAssemblyAsync(Assembly assembly, List<int> parentAssemblyIds, List<int> relatedProductIds);
         Task UpdateAssemblyAsync(Assembly assembly);
         Task<List<Assembly>> GetParentAssembliesAsync(int assemblyId);
         Task UpdateAssemblyParentAssembliesAsync(int assemblyId, List<Assembly> parentAssemblies);

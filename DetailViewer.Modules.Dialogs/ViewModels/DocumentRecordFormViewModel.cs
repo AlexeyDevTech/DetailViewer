@@ -9,9 +9,7 @@ using Prism.Services.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using ILogger = DetailViewer.Core.Interfaces.ILogger;
 
@@ -19,7 +17,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 {
     public class DocumentRecordFormViewModel : BindableBase, IDialogAware
     {
-        // Injected Services
         private readonly IDocumentRecordService _documentRecordService;
         private readonly IAssemblyService _assemblyService;
         private readonly IClassifierService _classifierService;
@@ -28,26 +25,17 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly ISettingsService _settingsService;
         private readonly IDialogService _dialogService;
 
-        // Data collections
         private List<DocumentDetailRecord>? _allRecords;
-        private ObservableCollection<ClassifierData>? _allClassifiers;
-
-        // Active User Info
+        private ObservableCollection<Classifier>? _allClassifiers;
         private string? _activeUserFullName;
 
-        public ObservableCollection<ClassifierData>? AllClassifiers { get => _allClassifiers; set => SetProperty(ref _allClassifiers, value); }
-
+        public ObservableCollection<Classifier>? AllClassifiers { get => _allClassifiers; set => SetProperty(ref _allClassifiers, value); }
         public string Title => "Форма записи документа";
         public event Action<IDialogResult>? RequestClose;
 
         private DocumentDetailRecord _documentRecord;
-        public DocumentDetailRecord DocumentRecord
-        {
-            get { return _documentRecord; }
-            set { SetProperty(ref _documentRecord, value); }
-        }
+        public DocumentDetailRecord DocumentRecord { get => _documentRecord; set => SetProperty(ref _documentRecord, value); }
 
-        // --- ESKD Number Properties ---
         private string? _companyCode, _classNumberString;
         private int _detailNumber;
         private int? _version;
@@ -61,17 +49,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             get
             {
-                if (string.IsNullOrEmpty(CompanyCode) || string.IsNullOrEmpty(ClassNumberString) || DetailNumber == 0)
-                {
-                    return string.Empty;
-                }
-
+                if (string.IsNullOrEmpty(CompanyCode) || string.IsNullOrEmpty(ClassNumberString) || DetailNumber == 0) return string.Empty;
                 string baseCode = $"{CompanyCode}.{ClassNumberString}.{DetailNumber:D3}";
                 return Version.HasValue ? $"{baseCode}-{Version.Value:D2}" : baseCode;
             }
         }
 
-        // --- UI State Properties ---
         private bool _isManualDetailNumberEnabled, _isNewVersionEnabled, _filterByFullName = true;
         public bool IsManualDetailNumberEnabled { get => _isManualDetailNumberEnabled; set => SetProperty(ref _isManualDetailNumberEnabled, value); }
         public bool IsNewVersionEnabled { get => _isNewVersionEnabled; set => SetProperty(ref _isNewVersionEnabled, value, OnIsNewVersionEnabledChanged); }
@@ -80,15 +63,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private string? _userMessage;
         public string? UserMessage { get => _userMessage; set => SetProperty(ref _userMessage, value); }
 
-        // --- Filtered Collections for UI ---
-        private ObservableCollection<ClassifierData>? _filteredClassifiers;
-        public ObservableCollection<ClassifierData>? FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
+        private ObservableCollection<Classifier>? _filteredClassifiers;
+        public ObservableCollection<Classifier>? FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
 
         private ObservableCollection<DocumentDetailRecord>? _filteredRecords;
         public ObservableCollection<DocumentDetailRecord>? FilteredRecords { get => _filteredRecords; set => SetProperty(ref _filteredRecords, value); }
 
-        private ClassifierData? _selectedClassifier;
-        public ClassifierData? SelectedClassifier
+        private bool _isUpdatingFromSelection = false;
+        private Classifier? _selectedClassifier;
+        public Classifier? SelectedClassifier
         {
             get => _selectedClassifier;
             set
@@ -97,27 +80,18 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 if (value != null)
                 {
                     _isUpdatingFromSelection = true;
-                    ClassNumberString = value.Code;
+                    ClassNumberString = value.Number.ToString("D6");
                     _isUpdatingFromSelection = false;
                 }
             }
         }
 
         private ObservableCollection<Assembly> _linkedAssemblies;
-        public ObservableCollection<Assembly> LinkedAssemblies
-        {
-            get { return _linkedAssemblies; }
-            set { SetProperty(ref _linkedAssemblies, value); }
-        }
+        public ObservableCollection<Assembly> LinkedAssemblies { get => _linkedAssemblies; set => SetProperty(ref _linkedAssemblies, value); }
 
         private Assembly? _selectedLinkedAssembly;
-        public Assembly? SelectedLinkedAssembly
-        {
-            get { return _selectedLinkedAssembly; }
-            set { SetProperty(ref _selectedLinkedAssembly, value); }
-        }
+        public Assembly? SelectedLinkedAssembly { get => _selectedLinkedAssembly; set => SetProperty(ref _selectedLinkedAssembly, value); }
 
-        private bool _isUpdatingFromSelection = false;
         private DocumentDetailRecord? _selectedRecordToCopy;
         public DocumentDetailRecord? SelectedRecordToCopy
         {
@@ -125,20 +99,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             set
             {
                 SetProperty(ref _selectedRecordToCopy, value);
-                if (value != null && IsNewVersionEnabled)
-                {
-                    CopyDataFromSelectedRecord(value);
-                }
+                if (value != null && IsNewVersionEnabled) CopyDataFromSelectedRecord(value);
             }
         }
 
-        // --- Commands ---
         public DelegateCommand SaveCommand { get; private set; }
         public DelegateCommand CancelCommand { get; private set; }
         public DelegateCommand AddAssemblyLinkCommand { get; private set; }
         public DelegateCommand RemoveAssemblyLinkCommand { get; private set; }
 
-        // --- Constructor ---
         public DocumentRecordFormViewModel(IDocumentRecordService documentRecordService, IAssemblyService assemblyService, IClassifierService classifierService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService, IDialogService dialogService)
         {
             _documentRecordService = documentRecordService;
@@ -154,11 +123,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             {
                 Date = DateTime.Now,
                 FullName = _activeUserFullName,
-                ESKDNumber = new ESKDNumber()
-                {
-                    ClassNumber = new Classifier(),
-                    CompanyCode = _settingsService.LoadSettings().DefaultCompanyCode
-                }
+                ESKDNumber = new ESKDNumber() { CompanyCode = _settingsService.LoadSettings().DefaultCompanyCode }
             };
 
             _linkedAssemblies = new ObservableCollection<Assembly>();
@@ -169,172 +134,85 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             RemoveAssemblyLinkCommand = new DelegateCommand(RemoveAssemblyLink, () => SelectedLinkedAssembly != null).ObservesProperty(() => SelectedLinkedAssembly);
 
             LoadRecords();
-            LoadClassifiers();
         }
 
-        private bool CanSave()
-        {
-            return !string.IsNullOrWhiteSpace(ClassNumberString) && ClassNumberString.Length == 6 && DetailNumber > 0;
-        }
+        private bool CanSave() => !string.IsNullOrWhiteSpace(ClassNumberString) && ClassNumberString.Length == 6 && DetailNumber > 0;
 
-        // --- Data Loading ---
-        private async void LoadRecords()
-        {
-            _allRecords = await _documentRecordService.GetAllRecordsAsync();
-            FilterRecords();
-        }
+        private async void LoadRecords() => _allRecords = await _documentRecordService.GetAllRecordsAsync();
 
-        private void LoadClassifiers()
-        {
-            AllClassifiers = new ObservableCollection<ClassifierData>(_classifierService.GetAllClassifiers());
-            FilterClassifiers();
-        }
+        private void LoadClassifiers() => AllClassifiers = new ObservableCollection<Classifier>(_classifierService.GetAllClassifiers());
 
-        // --- Filtering Logic ---
         private void FilterRecords()
         {
-            if (_allRecords == null || ClassNumberString?.Length != 6)
-            {
-                FilteredRecords = new ObservableCollection<DocumentDetailRecord>();
-                return;
-            }
-
+            if (_allRecords == null || ClassNumberString?.Length != 6) { FilteredRecords = new ObservableCollection<DocumentDetailRecord>(); return; }
             var records = _allRecords.AsEnumerable();
-
-            if (!string.IsNullOrWhiteSpace(ClassNumberString))
-            {
-                records = records.Where(r => r.ESKDNumber?.ClassNumber?.Number.ToString("D6").StartsWith(ClassNumberString) ?? false);
-            }
-
-            if (IsNewVersionEnabled && DetailNumber > 0 && SelectedRecordToCopy == null)
-            {
-                records = records.Where(r => r.ESKDNumber?.ClassNumber?.Number.ToString("D6").StartsWith(ClassNumberString ?? string.Empty) == true);
-            }
-
-            if (FilterByFullName && !string.IsNullOrEmpty(_activeUserFullName))
-            {
-                records = records.Where(r => r.FullName == _activeUserFullName);
-            }
-
+            if (!string.IsNullOrWhiteSpace(ClassNumberString)) records = records.Where(r => r.ESKDNumber?.ClassNumber?.Number.ToString("D6").StartsWith(ClassNumberString) ?? false);
+            if (IsNewVersionEnabled && DetailNumber > 0 && SelectedRecordToCopy == null) records = records.Where(r => r.ESKDNumber?.ClassNumber?.Number.ToString("D6").StartsWith(ClassNumberString ?? string.Empty) == true);
+            if (FilterByFullName && !string.IsNullOrEmpty(_activeUserFullName)) records = records.Where(r => r.FullName == _activeUserFullName);
             FilteredRecords = new ObservableCollection<DocumentDetailRecord>(records.OrderBy(r => r.ESKDNumber?.FullCode).ToList());
         }
 
         private void FilterClassifiers()
         {
-            if (AllClassifiers == null)
-            {
-                FilteredClassifiers = new ObservableCollection<ClassifierData>();
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(ClassNumberString))
-            {
-                FilteredClassifiers = new ObservableCollection<ClassifierData>(AllClassifiers);
-                return;
-            }
-
-            FilteredClassifiers = new ObservableCollection<ClassifierData>(
-                AllClassifiers.Where(c => c.Code.StartsWith(ClassNumberString, StringComparison.OrdinalIgnoreCase))
-                              .OrderBy(c => c.Code.Length)
-                              .ThenBy(c => c.Code)
-                              .ToList()
-            );
+            if (AllClassifiers == null) { FilteredClassifiers = new ObservableCollection<Classifier>(); return; }
+            if (string.IsNullOrWhiteSpace(ClassNumberString)) { FilteredClassifiers = new ObservableCollection<Classifier>(AllClassifiers); return; }
+            FilteredClassifiers = new ObservableCollection<Classifier>(AllClassifiers.Where(c => c.Number.ToString("D6").StartsWith(ClassNumberString, StringComparison.OrdinalIgnoreCase)).OrderBy(c => c.Number).ToList());
         }
 
-        // --- Event Handlers for UI changes ---
         private void OnESKDNumberPartChanged() => RaisePropertyChanged(nameof(ESKDNumberString));
+
         private void OnClassNumberStringChanged()
         {
             if (_isUpdatingFromSelection) return;
-
             FilterClassifiers();
             FilterRecords();
             if (ClassNumberString?.Length == 6) FindNextDetailNumber();
             OnESKDNumberPartChanged();
             SaveCommand.RaiseCanExecuteChanged();
         }
+
         private void OnDetailNumberChanged()
         {
             FilterRecords();
             OnESKDNumberPartChanged();
             SaveCommand.RaiseCanExecuteChanged();
         }
+
         private void OnIsNewVersionEnabledChanged()
         {
-            if (IsNewVersionEnabled)
-            {
-                IsManualDetailNumberEnabled = true;
-                UserMessage = "Выберите запись для исполнения";
-                DocumentRecord.YASTCode = null;
-                DocumentRecord.Name = null;
-                SelectedRecordToCopy = null;
-            }
-            else
-            {
-                UserMessage = null;
-            }
+            if (IsNewVersionEnabled) { IsManualDetailNumberEnabled = true; UserMessage = "Выберите запись для исполнения"; DocumentRecord.YASTCode = null; DocumentRecord.Name = null; SelectedRecordToCopy = null; } else { UserMessage = null; }
         }
 
-        // --- Business Logic ---
-        private void FindNextDetailNumber()
-        {
-            if (_allRecords == null || string.IsNullOrWhiteSpace(ClassNumberString))
-            {
-                DetailNumber = 0;
-                return;
-            }
-            DetailNumber = EskdNumberHelper.FindNextDetailNumber(_allRecords, ClassNumberString);
-        }
+        private void FindNextDetailNumber() => DetailNumber = (_allRecords == null || string.IsNullOrWhiteSpace(ClassNumberString)) ? 0 : EskdNumberHelper.FindNextDetailNumber(_allRecords, ClassNumberString);
 
-        private void FindNextVersionNumber()
-        {
-            if (_allRecords == null || SelectedRecordToCopy == null)
-            {
-                Version = null;
-                return;
-            }
-            Version = EskdNumberHelper.FindNextVersionNumber(_allRecords, SelectedRecordToCopy);
-        }
+        private void FindNextVersionNumber() => Version = (_allRecords == null || SelectedRecordToCopy == null) ? null : EskdNumberHelper.FindNextVersionNumber(_allRecords, SelectedRecordToCopy);
 
         private void CopyDataFromSelectedRecord(DocumentDetailRecord sourceRecord)
         {
             if (sourceRecord.ESKDNumber == null) return;
-
             DocumentRecord.YASTCode = sourceRecord.YASTCode;
             DocumentRecord.Name = sourceRecord.Name;
-
             CompanyCode = sourceRecord.ESKDNumber.CompanyCode;
             ClassNumberString = sourceRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
             DetailNumber = sourceRecord.ESKDNumber.DetailNumber;
             FindNextVersionNumber();
-
-            RaisePropertyChanged(string.Empty); // Refresh all properties
+            RaisePropertyChanged(string.Empty);
             UserMessage = null;
         }
 
-        // --- Dialog-related Methods ---
         private async void Save()
         {
             if (DocumentRecord.ESKDNumber == null) DocumentRecord.ESKDNumber = new ESKDNumber();
-            
             DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
-            if (int.TryParse(ClassNumberString, out int classNumber))
-            {
-                if (DocumentRecord.ESKDNumber.ClassNumber == null) DocumentRecord.ESKDNumber.ClassNumber = new Classifier();
-                DocumentRecord.ESKDNumber.ClassNumber.Number = classNumber;
-            }
             DocumentRecord.ESKDNumber.DetailNumber = DetailNumber;
             DocumentRecord.ESKDNumber.Version = Version;
-
-            if (DocumentRecord.Id == 0)
+            if (int.TryParse(ClassNumberString, out int classNumberValue))
             {
-                await _documentRecordService.AddRecordAsync(DocumentRecord, DocumentRecord.ESKDNumber, LinkedAssemblies.Select(a => a.Id).ToList());
+                var classifier = _classifierService.GetClassifierByNumber(classNumberValue);
+                if (classifier != null) { DocumentRecord.ESKDNumber.ClassifierId = classifier.Id; DocumentRecord.ESKDNumber.ClassNumber = null; }
             }
-            else
-            {
-                await _documentRecordService.UpdateRecordAsync(DocumentRecord, LinkedAssemblies.Select(a => a.Id).ToList());
-            }
-
+            if (DocumentRecord.Id == 0) await _documentRecordService.AddRecordAsync(DocumentRecord, DocumentRecord.ESKDNumber, LinkedAssemblies.Select(a => a.Id).ToList());
+            else await _documentRecordService.UpdateRecordAsync(DocumentRecord, LinkedAssemblies.Select(a => a.Id).ToList());
             RequestClose?.Invoke(BuildDialogResult());
         }
 
@@ -355,27 +233,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 if (r.Result == ButtonResult.OK && r.Parameters.ContainsKey("selectedAssemblies"))
                 {
                     var selectedAssemblies = r.Parameters.GetValue<List<Assembly>>("selectedAssemblies");
-                    if (selectedAssemblies != null)
-                    {
-                        foreach (var assembly in selectedAssemblies)
-                        {
-                            if (!LinkedAssemblies.Any(a => a.Id == assembly.Id))
-                            {
-                                LinkedAssemblies.Add(assembly);
-                            }
-                        }
-                    }
+                    if (selectedAssemblies != null) foreach (var assembly in selectedAssemblies) if (!LinkedAssemblies.Any(a => a.Id == assembly.Id)) LinkedAssemblies.Add(assembly);
                 }
             });
         }
 
-        private void RemoveAssemblyLink()
-        {
-            if (SelectedLinkedAssembly != null)
-            {
-                LinkedAssemblies.Remove(SelectedLinkedAssembly);
-            }
-        }
+        private void RemoveAssemblyLink() { if (SelectedLinkedAssembly != null) LinkedAssemblies.Remove(SelectedLinkedAssembly); }
 
         public bool CanCloseDialog() => true;
         public void OnDialogClosed() { }
@@ -384,31 +247,17 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             await _classifierService.LoadClassifiersAsync();
             LoadClassifiers();
-
             if (parameters.ContainsKey(DialogParameterKeys.Record))
             {
                 var record = parameters.GetValue<DocumentDetailRecord>(DialogParameterKeys.Record);
                 if (record != null)
                 {
-                    if (parameters.ContainsKey(DialogParameterKeys.ActiveUserFullName))
-                    {
-                        HandleFillBasedOnScenario(record);
-                    }
-                    else
-                    {
-                        await HandleEditScenario(record);
-                    }
+                    if (parameters.ContainsKey(DialogParameterKeys.ActiveUserFullName)) HandleFillBasedOnScenario(record);
+                    else await HandleEditScenario(record);
                 }
             }
-            else
-            {
-                HandleNewRecordScenario(parameters);
-            }
-
-            if (IsNewVersionEnabled)
-            {
-                UserMessage = "Выберите запись для копирования";
-            }
+            else HandleNewRecordScenario(parameters);
+            if (IsNewVersionEnabled) UserMessage = "Выберите запись для копирования";
         }
 
         private async Task HandleEditScenario(DocumentDetailRecord record)
@@ -421,7 +270,6 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 DetailNumber = DocumentRecord.ESKDNumber.DetailNumber;
                 Version = DocumentRecord.ESKDNumber.Version;
                 IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
-
                 var linkedAssemblies = await _documentRecordService.GetParentAssembliesForDetailAsync(DocumentRecord.Id);
                 LinkedAssemblies = new ObservableCollection<Assembly>(linkedAssemblies);
             }
@@ -430,20 +278,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private void HandleFillBasedOnScenario(DocumentDetailRecord record)
         {
             if (record.ESKDNumber?.ClassNumber == null) return;
-
             DocumentRecord = new DocumentDetailRecord
             {
                 Date = DateTime.Now,
                 FullName = _activeUserFullName,
                 YASTCode = record.YASTCode,
                 Name = record.Name,
-                ESKDNumber = new ESKDNumber()
-                {
-                    CompanyCode = _settingsService.LoadSettings().DefaultCompanyCode,
-                    ClassNumber = new Classifier { Number = record.ESKDNumber.ClassNumber.Number },
-                }
+                ESKDNumber = new ESKDNumber() { CompanyCode = _settingsService.LoadSettings().DefaultCompanyCode, ClassNumber = new Classifier { Number = record.ESKDNumber.ClassNumber.Number }, }
             };
-
             CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
             ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
             FindNextDetailNumber();
@@ -453,11 +295,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private void HandleNewRecordScenario(IDialogParameters parameters)
         {
-            if (parameters.ContainsKey(DialogParameterKeys.CompanyCode))
-            {
-                CompanyCode = parameters.GetValue<string>(DialogParameterKeys.CompanyCode);
-                if (DocumentRecord.ESKDNumber != null) DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
-            }
+            if (parameters.ContainsKey(DialogParameterKeys.CompanyCode)) { CompanyCode = parameters.GetValue<string>(DialogParameterKeys.CompanyCode); if (DocumentRecord.ESKDNumber != null) DocumentRecord.ESKDNumber.CompanyCode = CompanyCode; }
         }
     }
 }

@@ -1,4 +1,5 @@
 using DetailViewer.Api.Data;
+using DetailViewer.Api.DTOs;
 using DetailViewer.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,50 @@ namespace DetailViewer.Api.Controllers
         public AssembliesController(ApplicationDbContext context, ILogger<AssembliesController> logger) 
             : base(context, logger)
         {
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<Assembly>> Post(AssemblyCreateDto dto)
+        {
+            _logger.LogInformation("Creating new assembly with complex payload");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                _context.ESKDNumbers.Add(dto.EskdNumber);
+                await _context.SaveChangesAsync();
+
+                dto.Assembly.EskdNumberId = dto.EskdNumber.Id;
+                _context.Assemblies.Add(dto.Assembly);
+                await _context.SaveChangesAsync();
+
+                if (dto.ParentAssemblyIds != null && dto.ParentAssemblyIds.Any())
+                {
+                    foreach (var parentId in dto.ParentAssemblyIds)
+                    {
+                        _context.AssemblyParents.Add(new AssemblyParent { ChildAssemblyId = dto.Assembly.Id, ParentAssemblyId = parentId });
+                    }
+                }
+
+                if (dto.RelatedProductIds != null && dto.RelatedProductIds.Any())
+                {
+                    foreach (var productId in dto.RelatedProductIds)
+                    {
+                        _context.ProductAssemblies.Add(new ProductAssembly { AssemblyId = dto.Assembly.Id, ProductId = productId });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return CreatedAtAction(nameof(Get), new { id = dto.Assembly.Id }, dto.Assembly);
+            }
+            catch (System.Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error creating assembly with complex payload");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         [HttpGet("{id}/parents")]

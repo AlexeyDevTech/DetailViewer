@@ -1,4 +1,3 @@
-
 using DetailViewer.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -10,7 +9,8 @@ namespace DetailViewer.Core.Interfaces
     {
         Task<List<T>> GetAsync<T>(string endpoint);
         Task<T> GetByIdAsync<T>(string endpoint, int id);
-        Task<T> PostAsync<T>(string endpoint, T data);
+        Task<TResponse> PostAsync<TRequest, TResponse>(string endpoint, TRequest data);
+        Task PostAsync<TRequest>(string endpoint, TRequest data);
         Task PutAsync<T>(string endpoint, int id, T data);
         Task PutAsync<T>(string endpoint, T data);
         Task DeleteAsync(string endpoint, int id);

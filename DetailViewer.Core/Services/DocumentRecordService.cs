@@ -1,4 +1,3 @@
-using DetailViewer.Core.DTOs;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using System.Collections.Generic;
@@ -26,12 +25,7 @@ namespace DetailViewer.Core.Services
         public async Task AddRecordAsync(DocumentDetailRecord record, ESKDNumber eskdNumber, List<int> assemblyIds)
         {
             _logger.Log($"Adding record via API: {record.Name}");
-            var payload = new DocumentDetailRecordCreateDto
-            {
-                Record = record,
-                EskdNumber = eskdNumber,
-                AssemblyIds = assemblyIds
-            };
+            var payload = new { Record = record, EskdNumber = eskdNumber, AssemblyIds = assemblyIds };
             await _apiClient.PostAsync(ApiEndpoints.DocumentDetailRecords, payload);
         }
 
