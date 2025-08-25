@@ -28,6 +28,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private readonly IEventAggregator _eventAggregator;
 
         private string? _activeUserFullName;
+        public string? ActiveUserFullName { get => _activeUserFullName; set => SetProperty(ref _activeUserFullName, value); }
+
         private string _statusText;
         private bool _isBusy;
         private ObservableCollection<DocumentDetailRecord> _documentRecords;
@@ -88,13 +90,12 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             _parentProducts = new ObservableCollection<DocumentDetailRecord>();
             StatusText = "Готово";
 
-            _activeUserService.CurrentUserChanged += OnCurrentUserChanged;
-            OnCurrentUserChanged();
-
+            //_activeUserService.CurrentUserChanged += OnCurrentUserChanged;
+            _eventAggregator.GetEvent<UserChangedEvent>().Subscribe(OnCurrentUserChanged);
             FillFormCommand = new DelegateCommand(FillForm);
             FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null).ObservesProperty(() => SelectedRecord);
-            EditRecordCommand = new DelegateCommand(EditRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
-            DeleteRecordCommand = new DelegateCommand(DeleteRecord, () => SelectedRecord != null && SelectedRecord.FullName == _activeUserFullName).ObservesProperty(() => SelectedRecord);
+            EditRecordCommand = new DelegateCommand(EditRecord, () => SelectedRecord != null && SelectedRecord.FullName == ActiveUserFullName).ObservesProperty(() => SelectedRecord).ObservesProperty(() => ActiveUserFullName);
+            DeleteRecordCommand = new DelegateCommand(DeleteRecord, () => SelectedRecord != null && SelectedRecord.FullName == ActiveUserFullName).ObservesProperty(() => SelectedRecord).ObservesProperty(() => ActiveUserFullName);
             ImportFromExcelCommand = new DelegateCommand(ImportFromExcel);
             ExportToExcelCommand = new DelegateCommand(ExportToExcel);
 
@@ -174,7 +175,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             }
             if (OnlyMyRecordsFilter && _activeUserService.CurrentUser != null)
             {
-                filteredRecords = filteredRecords.Where(r => r.FullName == _activeUserFullName);
+                filteredRecords = filteredRecords.Where(r => r.FullName == ActiveUserFullName);
             }
 
             DocumentRecords.Clear();
@@ -198,11 +199,13 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             }
         }
 
-        private void OnCurrentUserChanged()
+        private void OnCurrentUserChanged(Profile p)
         {
             _logger.Log("Current user changed");
-            _activeUserFullName = _activeUserService.CurrentUser?.ShortName;
+            ActiveUserFullName = p?.ShortName;
             ApplyFilters();
+            EditRecordCommand.RaiseCanExecuteChanged();
+            DeleteRecordCommand.RaiseCanExecuteChanged();
         }
 
         #region Commands Logic
@@ -224,7 +227,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private void FillBasedOn()
         {
             _logger.Log("FillBasedOn command executed.");
-            var parameters = new DialogParameters { { "record", SelectedRecord }, { "activeUserFullName", _activeUserFullName } };
+            var parameters = new DialogParameters { { "record", SelectedRecord }, { "activeUserFullName", ActiveUserFullName } };
             _dialogService.ShowDialog("DocumentRecordForm", parameters, async r =>
             {
                 if (r.Result == ButtonResult.OK)
