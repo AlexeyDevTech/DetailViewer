@@ -9,11 +9,19 @@ using System.Windows;
 
 namespace DetailViewer.Views
 {
+    /// <summary>
+    /// Code-behind для главного окна приложения (MainWindow).
+    /// </summary>
     public partial class MainWindow : Window
     {
         private readonly ILogger _logger;
         private readonly IContainerProvider _containerProvider;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="MainWindow"/>.
+        /// </summary>
+        /// <param name="logger">Сервис логирования.</param>
+        /// <param name="containerProvider">Провайдер контейнера зависимостей.</param>
         public MainWindow(ILogger logger, IContainerProvider containerProvider)
         {
             _logger = logger;
@@ -22,11 +30,17 @@ namespace DetailViewer.Views
             Loaded += MainWindow_Loaded;
         }
 
+        /// <summary>
+        /// Обработчик события загрузки главного окна.
+        /// </summary>
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             await CheckForUpdatesAsync();
         }
 
+        /// <summary>
+        /// Асинхронно проверяет наличие обновлений приложения.
+        /// </summary>
         private async Task CheckForUpdatesAsync()
         {
             _logger.Log("Checking for updates");
@@ -63,9 +77,19 @@ namespace DetailViewer.Views
         }
     }
 
+    /// <summary>
+    /// Представляет информацию о версии приложения.
+    /// </summary>
     public class VersionInfo
     {
+        /// <summary>
+        /// Строка версии.
+        /// </summary>
         public string Version { get; set; }
+
+        /// <summary>
+        /// URL для загрузки новой версии.
+        /// </summary>
         public string DownloadUrl { get; set; }
     }
 }

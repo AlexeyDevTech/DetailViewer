@@ -5,24 +5,32 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace DetailViewer.Core.Services
+namespace DetailViewer.Infrastructure.Services
 {
+    /// <summary>
+    /// Реализация сервиса настроек, которая хранит данные в формате JSON в локальном файле.
+    /// </summary>
     public class JsonSettingsService : ISettingsService
     {
         private readonly string _settingsFilePath;
         private readonly ILogger _logger;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="JsonSettingsService"/>.
+        /// </summary>
+        /// <param name="logger">Сервис логирования.</param>
         public JsonSettingsService(ILogger logger)
         {
             _logger = logger;
             _settingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DetailViewer", "settings.json");
             var settingsDirectory = Path.GetDirectoryName(_settingsFilePath);
-            if (!Directory.Exists(settingsDirectory))
+            if (!string.IsNullOrEmpty(settingsDirectory) && !Directory.Exists(settingsDirectory))
             {
                 Directory.CreateDirectory(settingsDirectory);
             }
         }
 
+        /// <inheritdoc/>
         public AppSettings LoadSettings()
         {
             _logger.Log("Loading settings");
@@ -58,6 +66,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
+        /// <inheritdoc/>
         public async Task SaveSettingsAsync(AppSettings settings)
         {
             _logger.Log("Saving settings");

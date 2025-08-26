@@ -13,6 +13,7 @@
     <ProjectReference Include="..\DetailViewer.Global\DetailViewer.Global.csproj" />
     <ProjectReference Include="..\DetailViewer.Modules.Dialogs\DetailViewer.Modules.Dialogs.csproj" />
     <ProjectReference Include="..\DetailViewer.Modules.Explorer\DetailViewer.Modules.Explorer.csproj" />
+    <ProjectReference Include="..\DetailViewer.Infrastructure\DetailViewer.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\eskd_classifiers.json">

@@ -6,17 +6,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DetailViewer.Core.Services
+namespace DetailViewer.Infrastructure.Services
 {
+    /// <summary>
+    /// Реализация сервиса для экспорта данных в формат CSV.
+    /// </summary>
     public class CsvExportService : ICsvExportService
     {
         private readonly ILogger _logger;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="CsvExportService"/>.
+        /// </summary>
+        /// <param name="logger">Сервис логирования.</param>
         public CsvExportService(ILogger logger)
         {
             _logger = logger;
         }
 
+        /// <inheritdoc/>
         public async Task ExportRecordsToCsvAsync(string filePath, List<DocumentDetailRecord> records)
         {
             _logger.Log($"Exporting {records.Count()} records to CSV: {filePath}");

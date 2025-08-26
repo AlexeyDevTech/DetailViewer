@@ -8,8 +8,11 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace DetailViewer.Core.Services
+namespace DetailViewer.Infrastructure.Services
 {
+    /// <summary>
+    /// Реализация сервиса для импорта данных из Excel-файлов.
+    /// </summary>
     public class ExcelImportService : IExcelImportService
     {
         private readonly ILogger _logger;
@@ -18,6 +21,9 @@ namespace DetailViewer.Core.Services
         private readonly IProductService _productService;
         private readonly IClassifierService _classifierService;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ExcelImportService"/>.
+        /// </summary>
         public ExcelImportService(IDocumentRecordService documentRecordService, IAssemblyService assemblyService, IProductService productService, IClassifierService classifierService, ILogger logger)
         {
             _documentRecordService = documentRecordService;
@@ -28,6 +34,7 @@ namespace DetailViewer.Core.Services
             ExcelPackage.License.SetNonCommercialPersonal("My personal project");
         }
 
+        /// <inheritdoc/>
         public async Task ImportFromExcelAsync(string filePath, string sheetName, IProgress<Tuple<double, string>> progress, bool createRelationships)
         {
             _logger.Log($"Importing from Excel: {filePath}, sheet: {sheetName}");
@@ -79,6 +86,9 @@ namespace DetailViewer.Core.Services
             }
         }
 
+        /// <summary>
+        /// Заглушка для импорта сборок. Требует доработки.
+        /// </summary>
         private async Task ImportAssembliesAsync(ExcelPackage package, IProgress<Tuple<double, string>> progress)
         {
             // This logic needs to be re-evaluated as it assumes direct DB access for checking existence and adding.
@@ -88,10 +98,12 @@ namespace DetailViewer.Core.Services
             await Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Создает объект DocumentDetailRecord из строки Excel.
+        /// </summary>
         private async Task<DocumentDetailRecord> CreateRecordFromRow(ExcelWorksheet worksheet, int row, string eskdNumberString)
         {
             var eskdNumber = new ESKDNumber().SetCode(eskdNumberString);
-            // We assume classifier data is loaded and available through the service
             var classifier = _classifierService.GetClassifierByNumber(eskdNumber.ClassNumber.Number);
             eskdNumber.ClassNumber = classifier != null ? new Classifier { Number = classifier.Number, Description = classifier.Description } : null;
 
@@ -105,25 +117,28 @@ namespace DetailViewer.Core.Services
             };
         }
 
+        /// <summary>
+        /// Обрабатывает связь детали со сборкой из строки Excel.
+        /// </summary>
         private async Task<Assembly?> ProcessAssemblyRelationship(ExcelWorksheet worksheet, int row)
         {
             var assemblyNumberString = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
             if (string.IsNullOrEmpty(assemblyNumberString)) return null;
 
-            // This is a simplified logic. A real implementation would need to properly search
-            // or create assemblies via the assembly service.
             var assemblies = await _assemblyService.GetAssembliesAsync();
             var assembly = assemblies.FirstOrDefault(a => a.EskdNumber.FullCode == assemblyNumberString);
 
             if (assembly == null)
             {
-                // Placeholder for creating a new assembly if not found
                 _logger.LogWarning($"Assembly with number {assemblyNumberString} not found. Skipping relationship.");
                 return null;
             }
             return assembly;
         }
 
+        /// <summary>
+        /// Парсит дату из ячейки Excel, поддерживая числовой и строковый форматы.
+        /// </summary>
         private DateTime ParseDate(object? dateValue)
         {
             if (dateValue is double oaDate) return DateTime.FromOADate(oaDate);

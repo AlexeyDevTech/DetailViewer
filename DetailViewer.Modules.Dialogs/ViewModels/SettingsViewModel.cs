@@ -16,6 +16,9 @@ using System.IO;
 
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
+    /// <summary>
+    /// ViewModel для окна настроек приложения.
+    /// </summary>
     public class SettingsViewModel : BindableBase, IDialogAware
     {
         private readonly IProfileService _profileService;
@@ -24,6 +27,10 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly IPasswordService _passwordService;
         private readonly IExcelExportService _exportService;
         private string _defaultCompanyCode;
+
+        /// <summary>
+        /// Код компании по умолчанию.
+        /// </summary>
         public string DefaultCompanyCode
         {
             get { return _defaultCompanyCode; }
@@ -40,18 +47,27 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private string _importStatus;
         private bool _runInTray;
 
+        /// <summary>
+        /// Флаг, указывающий, запускать ли приложение в трее.
+        /// </summary>
         public bool RunInTray
         {
             get { return _runInTray; }
             set { SetProperty(ref _runInTray, value); }
         }
 
+        /// <summary>
+        /// Коллекция профилей пользователей.
+        /// </summary>
         public ObservableCollection<Profile> Profiles
         {
             get { return _profiles; }
             set { SetProperty(ref _profiles, value); }
         }
 
+        /// <summary>
+        /// Выбранный профиль пользователя.
+        /// </summary>
         public Profile? SelectedProfile
         {
             get { return _selectedProfile; }
@@ -64,72 +80,135 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
+        /// <summary>
+        /// Фамилия для нового профиля.
+        /// </summary>
         public string NewProfileLastName
         {
             get { return _newProfileLastName; }
             set { SetProperty(ref _newProfileLastName, value); }
         }
 
+        /// <summary>
+        /// Имя для нового профиля.
+        /// </summary>
         public string NewProfileFirstName
         {
             get { return _newProfileFirstName; }
             set { SetProperty(ref _newProfileFirstName, value); }
         }
 
+        /// <summary>
+        /// Отчество для нового профиля.
+        /// </summary>
         public string NewProfileMiddleName
         {
             get { return _newProfileMiddleName; }
             set { SetProperty(ref _newProfileMiddleName, value); }
         }
 
+        /// <summary>
+        /// Пароль для нового профиля.
+        /// </summary>
         public string NewProfilePassword
         {
             get { return _newProfilePassword; }
             set { SetProperty(ref _newProfilePassword, value); }
         }
 
+        /// <summary>
+        /// Прогресс импорта данных (от 0 до 100).
+        /// </summary>
         public double ImportProgress
         {
             get { return _importProgress; }
             set { SetProperty(ref _importProgress, value); }
         }
 
+        /// <summary>
+        /// Флаг, указывающий, идет ли процесс импорта.
+        /// </summary>
         public bool IsImporting
         {
             get { return _isImporting; }
             set { SetProperty(ref _isImporting, value); }
         }
 
+        /// <summary>
+        /// Статус импорта данных.
+        /// </summary>
         public string ImportStatus
         {
             get { return _importStatus; }
             set { SetProperty(ref _importStatus, value); }
         }
 
+        /// <summary>
+        /// Флаг, указывающий, является ли текущий пользователь администратором или модератором.
+        /// </summary>
         public bool IsAdminOrModerator { get; private set; }
+
+        /// <summary>
+        /// Коллекция доступных ролей пользователей.
+        /// </summary>
         public IEnumerable<Role> Roles { get; private set; }
         private Role _newProfileRole;
-        private IExcelImportService _importService;
 
+        /// <summary>
+        /// Выбранная роль для нового профиля.
+        /// </summary>
         public Role NewProfileRole
         {
             get => _newProfileRole;
             set => SetProperty(ref _newProfileRole, value);
         }
 
+        /// <summary>
+        /// Команда для запуска импорта данных.
+        /// </summary>
         public DelegateCommand ImportCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для запуска экспорта данных.
+        /// </summary>
         public DelegateCommand ExportCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для добавления нового профиля пользователя.
+        /// </summary>
         public DelegateCommand AddProfileCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для сохранения изменений в выбранном профиле.
+        /// </summary>
         public DelegateCommand SaveProfileCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для удаления выбранного профиля.
+        /// </summary>
         public DelegateCommand DeleteProfileCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для закрытия диалогового окна настроек.
+        /// </summary>
         public DelegateCommand<string> CloseDialogCommand { get; private set; }
 
+        /// <summary>
+        /// Заголовок диалогового окна.
+        /// </summary>
         public string Title => "Настройки";
 
+        /// <summary>
+        /// Событие, запрашивающее закрытие диалогового окна.
+        /// </summary>
         public event Action<IDialogResult> RequestClose;
 
-                private readonly IDialogService _dialogService;
+        private readonly IDialogService _dialogService;
+        private readonly IExcelImportService _importService;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="SettingsViewModel"/>.
+        /// </summary>
         public SettingsViewModel(IProfileService profileService, 
                                  ISettingsService settingsService, 
                                  IActiveUserService activeUserService, 
@@ -167,6 +246,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             LoadProfiles();
         }
 
+        /// <summary>
+        /// Асинхронно загружает список профилей пользователей.
+        /// </summary>
         private async void LoadProfiles()
         {
             var profiles = await _profileService.GetAllProfilesAsync();
@@ -174,6 +256,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             SelectedProfile = Profiles.FirstOrDefault(p => p.Id == _activeUserService.CurrentUser?.Id) ?? Profiles.FirstOrDefault();
         }
 
+        /// <summary>
+        /// Добавляет новый профиль пользователя.
+        /// </summary>
         private async void AddProfile()
         {
             if (!string.IsNullOrWhiteSpace(NewProfileLastName) && !string.IsNullOrWhiteSpace(NewProfilePassword))
@@ -195,6 +280,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
+        /// <summary>
+        /// Сохраняет изменения в выбранном профиле пользователя.
+        /// </summary>
         private async void SaveProfile()
         {
             if (SelectedProfile != null)
@@ -203,6 +291,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
+        /// <summary>
+        /// Удаляет выбранный профиль пользователя.
+        /// </summary>
         private async void DeleteProfile()
         {
             if (SelectedProfile != null)
@@ -212,7 +303,10 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
-                private async void Import()
+        /// <summary>
+        /// Запускает процесс импорта данных из Excel-файла.
+        /// </summary>
+        private async void Import()
         {
             var openFileDialog = new OpenFileDialog { Filter = "Excel Files|*.xlsx" };
             if (openFileDialog.ShowDialog() == true)
@@ -243,6 +337,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
+        /// <summary>
+        /// Получает названия листов из указанного Excel-файла.
+        /// </summary>
+        /// <param name="filePath">Путь к Excel-файлу.</param>
+        /// <returns>Список названий листов.</returns>
         private List<string> GetSheetNames(string filePath)
         {
             var sheetNames = new List<string>();
@@ -256,6 +355,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             return sheetNames;
         }
 
+        /// <summary>
+        /// Запускает процесс экспорта данных.
+        /// </summary>
         private async void Export()
         {
             var saveFileDialog = new SaveFileDialog { Filter = "Excel Files|*.xlsx" };
@@ -265,8 +367,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
+        /// <summary>
+        /// Определяет, можно ли закрыть диалоговое окно.
+        /// </summary>
+        /// <returns>Всегда true.</returns>
         public bool CanCloseDialog() => true;
 
+        /// <summary>
+        /// Вызывается после закрытия диалогового окна.
+        /// </summary>
         public void OnDialogClosed()
         {
             var settings = _settingsService.LoadSettings();
@@ -275,8 +384,16 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _settingsService.SaveSettingsAsync(settings);
         }
 
+        /// <summary>
+        /// Вызывается при открытии диалогового окна.
+        /// </summary>
+        /// <param name="parameters">Параметры диалогового окна.</param>
         public void OnDialogOpened(IDialogParameters parameters) { }
 
+        /// <summary>
+        /// Закрывает диалоговое окно настроек.
+        /// </summary>
+        /// <param name="parameter">Параметр, определяющий результат закрытия (например, "ok" или "cancel").</param>
         private void CloseDialog(string parameter)
         {
             ButtonResult result = ButtonResult.None;

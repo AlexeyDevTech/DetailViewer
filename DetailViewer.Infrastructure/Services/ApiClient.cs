@@ -1,3 +1,4 @@
+using DetailViewer.Core;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using System;
@@ -8,8 +9,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace DetailViewer.Core.Services
+namespace DetailViewer.Infrastructure.Services
 {
+    /// <summary>
+    /// Реализация клиента для взаимодействия с удаленным API.
+    /// </summary>
     public class ApiClient : IApiClient
     {
         private readonly HttpClient _httpClient;
@@ -17,6 +21,11 @@ namespace DetailViewer.Core.Services
         private readonly ILogger _logger;
         private readonly JsonSerializerOptions _jsonSerializerOptions;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ApiClient"/>.
+        /// </summary>
+        /// <param name="settingsService">Сервис настроек для получения URL API.</param>
+        /// <param name="logger">Сервис логирования.</param>
         public ApiClient(ISettingsService settingsService, ILogger logger)
         {
             _settingsService = settingsService;
@@ -24,7 +33,7 @@ namespace DetailViewer.Core.Services
             var settings = _settingsService.LoadSettings();
             _httpClient = new HttpClient
             {
-                BaseAddress = new Uri(settings.ApiUrl) // Assuming ApiUrl is in settings
+                BaseAddress = new Uri(settings.ApiUrl)
             };
 
             _jsonSerializerOptions = new JsonSerializerOptions
@@ -34,6 +43,7 @@ namespace DetailViewer.Core.Services
             };
         }
 
+        /// <inheritdoc/>
         public async Task<List<T>> GetAsync<T>(string endpoint)
         {
             try
@@ -50,6 +60,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
+        /// <inheritdoc/>
         public async Task<T> GetByIdAsync<T>(string endpoint, int id)
         {
             try
@@ -66,6 +77,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
+        /// <inheritdoc/>
         public async Task<TResponse> PostAsync<TRequest, TResponse>(string endpoint, TRequest data)
         {
             try
@@ -84,6 +96,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
+        /// <inheritdoc/>
         public async Task PostAsync<TRequest>(string endpoint, TRequest data)
         {
             try
@@ -100,6 +113,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
+        /// <inheritdoc/>
         public async Task PutAsync<T>(string endpoint, int id, T data)
         {
             try
@@ -116,6 +130,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
+        /// <inheritdoc/>
         public async Task PutAsync<T>(string endpoint, T data)
         {
             try
@@ -132,6 +147,7 @@ namespace DetailViewer.Core.Services
             }
         }
 
+        /// <inheritdoc/>
         public async Task DeleteAsync(string endpoint, int id)
         {
             try
@@ -146,32 +162,35 @@ namespace DetailViewer.Core.Services
             }
         }
 
-        
-
+        /// <inheritdoc/>
         public async Task<List<Assembly>> GetParentAssembliesAsync(string entity, int id)
         {
             var endpoint = ApiEndpoints.GetParentAssemblies(entity, id);
             return await GetAsync<Assembly>(endpoint);
         }
 
+        /// <inheritdoc/>
         public async Task<List<Product>> GetRelatedProductsAsync(int assemblyId)
         {
             var endpoint = ApiEndpoints.GetRelatedProducts(assemblyId);
             return await GetAsync<Product>(endpoint);
         }
 
+        /// <inheritdoc/>
         public async Task UpdateParentAssembliesAsync(string entity, int id, List<int> parentIds)
         {
             var endpoint = ApiEndpoints.GetParentAssemblies(entity, id);
             await PutAsync(endpoint, parentIds);
         }
 
+        /// <inheritdoc/>
         public async Task UpdateRelatedProductsAsync(int assemblyId, List<int> productIds)
         {
             var endpoint = ApiEndpoints.GetRelatedProducts(assemblyId);
             await PutAsync(endpoint, productIds);
         }
 
+        /// <inheritdoc/>
         public async Task<Assembly> ConvertProductToAssemblyAsync(int productId, List<int> childProductIds)
         {
             var endpoint = ApiEndpoints.ConvertProductToAssembly(productId);

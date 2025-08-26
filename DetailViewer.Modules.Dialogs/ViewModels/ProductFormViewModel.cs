@@ -14,6 +14,9 @@ using ILogger = DetailViewer.Core.Interfaces.ILogger;
 
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
+    /// <summary>
+    /// ViewModel для формы создания/редактирования продукта.
+    /// </summary>
     public class ProductFormViewModel : BindableBase, IDialogAware
     {
         private readonly IProductService _productService;
@@ -24,29 +27,71 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly IActiveUserService _activeUserService;
         private readonly IDialogService _dialogService;
 
+        /// <summary>
+        /// Заголовок диалогового окна.
+        /// </summary>
         public string Title => "Форма изделия";
+
+        /// <summary>
+        /// Событие, запрашивающее закрытие диалогового окна.
+        /// </summary>
         public event Action<IDialogResult>? RequestClose;
 
         private Product _product;
+        /// <summary>
+        /// Редактируемый или создаваемый продукт.
+        /// </summary>
         public Product Product { get => _product; set => SetProperty(ref _product, value); }
 
         private ObservableCollection<Assembly> _parentAssemblies;
+        /// <summary>
+        /// Коллекция родительских сборок для текущего продукта.
+        /// </summary>
         public ObservableCollection<Assembly> ParentAssemblies { get => _parentAssemblies; set => SetProperty(ref _parentAssemblies, value); }
 
         private ObservableCollection<Product> _parentProducts;
+        /// <summary>
+        /// Коллекция родительских продуктов для текущего продукта.
+        /// </summary>
         public ObservableCollection<Product> ParentProducts { get => _parentProducts; set => SetProperty(ref _parentProducts, value); }
 
         private string? _companyCode, _classNumberString, _productName, _productMaterial;
         private int _detailNumber;
         private int? _version;
 
+        /// <summary>
+        /// Код компании для децимального номера продукта.
+        /// </summary>
         public string? CompanyCode { get => _companyCode; set => SetProperty(ref _companyCode, value, OnESKDNumberPartChanged); }
+
+        /// <summary>
+        /// Строковое представление номера класса для децимального номера продукта.
+        /// </summary>
         public string? ClassNumberString { get => _classNumberString; set => SetProperty(ref _classNumberString, value, OnClassNumberStringChanged); }
+
+        /// <summary>
+        /// Порядковый номер детали для децимального номера продукта.
+        /// </summary>
         public int DetailNumber { get => _detailNumber; set => SetProperty(ref _detailNumber, value, OnESKDNumberPartChanged); }
+
+        /// <summary>
+        /// Номер версии для децимального номера продукта.
+        /// </summary>
         public int? Version { get => _version; set => SetProperty(ref _version, value, OnESKDNumberPartChanged); }
+
+        /// <summary>
+        /// Наименование продукта.
+        /// </summary>
         public string? ProductName { get => _productName; set => SetProperty(ref _productName, value); }
+
+        /// <summary>
+        /// Материал продукта.
+        /// </summary>
         public string? ProductMaterial { get => _productMaterial; set => SetProperty(ref _productMaterial, value); }
 
+        /// <summary>
+        /// Полное строковое представление децимального номера продукта.
+        /// </summary>
         public string ESKDNumberString
         {
             get
@@ -58,13 +103,22 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         private ObservableCollection<Classifier>? _allClassifiers;
+        /// <summary>
+        /// Все доступные классификаторы.
+        /// </summary>
         public ObservableCollection<Classifier>? AllClassifiers { get => _allClassifiers; set => SetProperty(ref _allClassifiers, value); }
 
         private ObservableCollection<Classifier>? _filteredClassifiers;
+        /// <summary>
+        /// Отфильтрованные классификаторы.
+        /// </summary>
         public ObservableCollection<Classifier>? FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
 
         private bool _isUpdatingFromSelection = false;
         private Classifier? _selectedClassifier;
+        /// <summary>
+        /// Выбранный классификатор.
+        /// </summary>
         public Classifier? SelectedClassifier
         {
             get => _selectedClassifier;
@@ -77,15 +131,44 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private List<Product>? _allProducts;
         private ObservableCollection<Product>? _filteredProducts;
+        /// <summary>
+        /// Отфильтрованные продукты.
+        /// </summary>
         public ObservableCollection<Product>? FilteredProducts { get => _filteredProducts; set => SetProperty(ref _filteredProducts, value); }
 
+        /// <summary>
+        /// Команда для сохранения продукта.
+        /// </summary>
         public DelegateCommand SaveCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для отмены изменений.
+        /// </summary>
         public DelegateCommand CancelCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для добавления родительской сборки.
+        /// </summary>
         public DelegateCommand AddParentAssemblyCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для удаления родительской сборки.
+        /// </summary>
         public DelegateCommand<Assembly> RemoveParentAssemblyCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для добавления родительского продукта.
+        /// </summary>
         public DelegateCommand AddParentProductCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для удаления родительского продукта.
+        /// </summary>
         public DelegateCommand<Product> RemoveParentProductCommand { get; private set; }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ProductFormViewModel"/>.
+        /// </summary>
         public ProductFormViewModel(IProductService productService, IAssemblyService assemblyService, IClassifierService classifierService, ILogger logger, ISettingsService settingsService, IActiveUserService activeUserService, IDialogService dialogService)
         {
             _productService = productService;
@@ -110,10 +193,19 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             LoadProducts();
         }
 
+        /// <summary>
+        /// Загружает все классификаторы.
+        /// </summary>
         private void LoadClassifiers() => AllClassifiers = new ObservableCollection<Classifier>(_classifierService.GetAllClassifiers());
 
+        /// <summary>
+        /// Асинхронно загружает все продукты.
+        /// </summary>
         private async void LoadProducts() => _allProducts = await _productService.GetProductsAsync();
 
+        /// <summary>
+        /// Фильтрует классификаторы на основе введенной строки номера класса.
+        /// </summary>
         private void FilterClassifiers()
         {
             if (AllClassifiers == null) { FilteredClassifiers = new ObservableCollection<Classifier>(); return; }
@@ -121,6 +213,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             FilteredClassifiers = new ObservableCollection<Classifier>(AllClassifiers.Where(c => c.Number.ToString("D6").StartsWith(ClassNumberString, StringComparison.OrdinalIgnoreCase)).OrderBy(c => c.Number).ToList());
         }
 
+        /// <summary>
+        /// Фильтрует продукты на основе введенной строки номера класса.
+        /// </summary>
         private void FilterProducts()
         {
             if (_allProducts == null || ClassNumberString?.Length != 6) { FilteredProducts = new ObservableCollection<Product>(); return; }
@@ -129,8 +224,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             FilteredProducts = new ObservableCollection<Product>(records.OrderBy(r => r.EskdNumber.FullCode).ToList());
         }
 
+        /// <summary>
+        /// Вызывается при изменении части децимального номера для обновления свойства ESKDNumberString.
+        /// </summary>
         private void OnESKDNumberPartChanged() => RaisePropertyChanged(nameof(ESKDNumberString));
 
+        /// <summary>
+        /// Вызывается при изменении строки номера класса.
+        /// </summary>
         private void OnClassNumberStringChanged()
         {
             if (_isUpdatingFromSelection) return;
@@ -139,6 +240,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             OnESKDNumberPartChanged();
         }
 
+        /// <summary>
+        /// Добавляет родительскую сборку к текущему продукту.
+        /// </summary>
         private void AddParentAssembly()
         {
             _dialogService.ShowDialog("SelectAssemblyDialog", new DialogParameters(), r =>
@@ -147,8 +251,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             });
         }
 
+        /// <summary>
+        /// Удаляет родительскую сборку из текущего продукта.
+        /// </summary>
+        /// <param name="assembly">Удаляемая родительская сборка.</param>
         private void RemoveParentAssembly(Assembly assembly) { if (assembly != null) ParentAssemblies.Remove(assembly); }
 
+        /// <summary>
+        /// Добавляет родительский продукт к текущему продукту.
+        /// </summary>
         private void AddParentProduct()
         {
             _dialogService.ShowDialog("SelectProductDialog", new DialogParameters(), r =>
@@ -157,8 +268,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             });
         }
 
+        /// <summary>
+        /// Удаляет родительский продукт из текущего продукта.
+        /// </summary>
+        /// <param name="product">Удаляемый родительский продукт.</param>
         private void RemoveParentProduct(Product product) { if (product != null) ParentProducts.Remove(product); }
 
+        /// <summary>
+        /// Сохраняет текущий продукт (добавляет или обновляет).
+        /// </summary>
         private async void Save()
         {
             Product.EskdNumber.CompanyCode = CompanyCode;
@@ -196,12 +314,26 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
+        /// <summary>
+        /// Отменяет изменения и закрывает диалоговое окно.
+        /// </summary>
         private void Cancel() => RequestClose?.Invoke(new DialogResult(ButtonResult.Cancel));
 
+        /// <summary>
+        /// Определяет, можно ли закрыть диалоговое окно.
+        /// </summary>
+        /// <returns>Всегда true.</returns>
         public bool CanCloseDialog() => true;
 
+        /// <summary>
+        /// Вызывается после закрытия диалогового окна.
+        /// </summary>
         public void OnDialogClosed() { }
 
+        /// <summary>
+        /// Вызывается при открытии диалогового окна.
+        /// </summary>
+        /// <param name="parameters">Параметры диалогового окна.</param>
         public async void OnDialogOpened(IDialogParameters parameters)
         {
             await _classifierService.LoadClassifiersAsync();

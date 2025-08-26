@@ -11,32 +11,59 @@ using System.Linq;
 
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
+    /// <summary>
+    /// Вспомогательный класс для представления элемента, который может быть выбран в списке.
+    /// </summary>
+    /// <typeparam name="T">Тип элемента.</typeparam>
     public class SelectableItem<T> : BindableBase
     {
         private bool _isSelected;
+        /// <summary>
+        /// Получает или задает значение, указывающее, выбран ли элемент.
+        /// </summary>
         public bool IsSelected
         {
             get { return _isSelected; }
             set { SetProperty(ref _isSelected, value); }
         }
 
+        /// <summary>
+        /// Получает сам элемент.
+        /// </summary>
         public T Item { get; private set; }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="SelectableItem{T}"/>.
+        /// </summary>
+        /// <param name="item">Элемент для обертывания.</param>
         public SelectableItem(T item)
         {
             Item = item;
         }
     }
 
+    /// <summary>
+    /// ViewModel для диалогового окна выбора сборок.
+    /// </summary>
     public class SelectAssemblyDialogViewModel : BindableBase, IDialogAware
     {
         private readonly IAssemblyService _assemblyService;
         private readonly IProductService _productService;
 
+        /// <summary>
+        /// Заголовок диалогового окна.
+        /// </summary>
         public string Title => "Выбор сборок";
+
+        /// <summary>
+        /// Событие, запрашивающее закрытие диалогового окна.
+        /// </summary>
         public event System.Action<IDialogResult>? RequestClose;
 
         private string? _searchText;
+        /// <summary>
+        /// Текст для поиска/фильтрации сборок.
+        /// </summary>
         public string? SearchText
         {
             get { return _searchText; }
@@ -45,6 +72,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
 
         private ObservableCollection<SelectableItem<Assembly>>? _allAssemblies;
         private ObservableCollection<SelectableItem<Assembly>>? _filteredAssemblies;
+        /// <summary>
+        /// Отфильтрованный список сборок для отображения.
+        /// </summary>
         public ObservableCollection<SelectableItem<Assembly>>? FilteredAssemblies
         {
             get { return _filteredAssemblies; }
@@ -52,6 +82,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         private SelectableItem<Assembly>? _selectedAssembly;
+        /// <summary>
+        /// Выбранная сборка в списке.
+        /// </summary>
         public SelectableItem<Assembly>? SelectedAssembly
         {
             get { return _selectedAssembly; }
@@ -59,15 +92,30 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         private ObservableCollection<Product> _relatedProducts;
+        /// <summary>
+        /// Продукты, связанные с выбранной сборкой.
+        /// </summary>
         public ObservableCollection<Product> RelatedProducts
         {
             get { return _relatedProducts; }
             set { SetProperty(ref _relatedProducts, value); }
         }
 
+        /// <summary>
+        /// Команда для подтверждения выбора.
+        /// </summary>
         public DelegateCommand OkCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для отмены выбора.
+        /// </summary>
         public DelegateCommand CancelCommand { get; private set; }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="SelectAssemblyDialogViewModel"/>.
+        /// </summary>
+        /// <param name="assemblyService">Сервис для работы со сборками.</param>
+        /// <param name="productService">Сервис для работы с продуктами.</param>
         public SelectAssemblyDialogViewModel(IAssemblyService assemblyService, IProductService productService)
         {
             _assemblyService = assemblyService;
@@ -78,6 +126,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             LoadAssemblies();
         }
 
+        /// <summary>
+        /// Асинхронно загружает все сборки и инициализирует список для выбора.
+        /// </summary>
         private async void LoadAssemblies()
         {
             var assemblies = await _assemblyService.GetAssembliesAsync();
@@ -85,6 +136,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             FilteredAssemblies = new ObservableCollection<SelectableItem<Assembly>>(_allAssemblies);
         }
 
+        /// <summary>
+        /// Вызывается при изменении текста поиска для фильтрации сборок.
+        /// </summary>
         private void OnSearchTextChanged()
         {
             if (_allAssemblies == null)
@@ -103,6 +157,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
+        /// <summary>
+        /// Вызывается при изменении выбранной сборки для загрузки связанных продуктов.
+        /// </summary>
         private async void OnSelectedAssemblyChanged()
         {
             RelatedProducts.Clear();
@@ -116,6 +173,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
+        /// <summary>
+        /// Обрабатывает команду OK, возвращая выбранные сборки.
+        /// </summary>
         private void Ok()
         {
             var result = new DialogResult(ButtonResult.OK);
@@ -126,15 +186,29 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             RequestClose?.Invoke(result);
         }
 
+        /// <summary>
+        /// Обрабатывает команду Cancel.
+        /// </summary>
         private void Cancel()
         {
             RequestClose?.Invoke(new DialogResult(ButtonResult.Cancel));
         }
 
+        /// <summary>
+        /// Определяет, можно ли закрыть диалоговое окно.
+        /// </summary>
+        /// <returns>Всегда true.</returns>
         public bool CanCloseDialog() => true;
 
+        /// <summary>
+        /// Вызывается после закрытия диалогового окна.
+        /// </summary>
         public void OnDialogClosed() { }
 
+        /// <summary>
+        /// Вызывается при открытии диалогового окна.
+        /// </summary>
+        /// <param name="parameters">Параметры диалогового окна.</param>
         public void OnDialogOpened(IDialogParameters parameters) { }
     }
 }

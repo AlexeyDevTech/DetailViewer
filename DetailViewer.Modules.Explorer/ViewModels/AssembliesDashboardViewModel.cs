@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 namespace DetailViewer.Modules.Explorer.ViewModels
 {
+    /// <summary>
+    /// ViewModel для панели управления сборками.
+    /// </summary>
     public class AssembliesDashboardViewModel : BindableBase
     {
         private readonly IAssemblyService _assemblyService;
@@ -22,6 +25,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private readonly IEventAggregator _eventAggregator;
 
         private string _statusText = string.Empty;
+        /// <summary>
+        /// Текст статуса, отображаемый на панели.
+        /// </summary>
         public string StatusText
         {
             get { return _statusText; }
@@ -29,6 +35,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         }
 
         private bool _isBusy;
+        /// <summary>
+        /// Флаг, указывающий, занято ли приложение выполнением операции.
+        /// </summary>
         public bool IsBusy
         {
             get { return _isBusy; }
@@ -36,6 +45,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         }
 
         private ObservableCollection<Assembly> _assemblies;
+        /// <summary>
+        /// Коллекция сборок, отображаемых на панели.
+        /// </summary>
         public ObservableCollection<Assembly> Assemblies
         {
             get { return _assemblies; }
@@ -43,6 +55,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         }
 
         private Assembly? _selectedAssembly;
+        /// <summary>
+        /// Выбранная сборка.
+        /// </summary>
         public Assembly? SelectedAssembly
         {
             get => _selectedAssembly;
@@ -52,6 +67,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private List<Assembly> _allAssemblies = new List<Assembly>();
 
         private string _eskdNumberFilter = string.Empty;
+        /// <summary>
+        /// Фильтр по децимальному номеру.
+        /// </summary>
         public string EskdNumberFilter
         {
             get { return _eskdNumberFilter; }
@@ -59,16 +77,33 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         }
 
         private string _nameFilter = string.Empty;
+        /// <summary>
+        /// Фильтр по наименованию.
+        /// </summary>
         public string NameFilter
         {
             get { return _nameFilter; }
             set { SetProperty(ref _nameFilter, value, ApplyFilters); }
         }
 
+        /// <summary>
+        /// Команда для добавления новой сборки.
+        /// </summary>
         public DelegateCommand AddAssemblyCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для редактирования выбранной сборки.
+        /// </summary>
         public DelegateCommand EditAssemblyCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для удаления выбранной сборки.
+        /// </summary>
         public DelegateCommand DeleteAssemblyCommand { get; private set; }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="AssembliesDashboardViewModel"/>.
+        /// </summary>
         public AssembliesDashboardViewModel(IAssemblyService assemblyService, IDialogService dialogService, ILogger logger, IEventAggregator eventAggregator)
         {
             _assemblyService = assemblyService;
@@ -88,11 +123,17 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             _ = LoadData();
         }
 
+        /// <summary>
+        /// Вызывается при завершении синхронизации данных.
+        /// </summary>
         private async void OnSyncCompleted()
         {
             await LoadData();
         }
 
+        /// <summary>
+        /// Открывает диалог редактирования сборки.
+        /// </summary>
         private void EditAssembly()
         {
             _logger.Log("Editing assembly");
@@ -106,6 +147,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             });
         }
 
+        /// <summary>
+        /// Удаляет выбранную сборку.
+        /// </summary>
         private void DeleteAssembly()
         {
             if (SelectedAssembly == null)
@@ -127,6 +171,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             });
         }
 
+        /// <summary>
+        /// Открывает диалог добавления новой сборки.
+        /// </summary>
         private void AddAssembly()
         {
             _logger.Log("Adding assembly");
@@ -139,6 +186,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             });
         }
 
+        /// <summary>
+        /// Асинхронно загружает данные сборок.
+        /// </summary>
         private async Task LoadData()
         {
             _logger.Log("Loading data for AssembliesDashboard");
@@ -162,6 +212,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             }
         }
 
+        /// <summary>
+        /// Применяет фильтры к списку сборок.
+        /// </summary>
         private void ApplyFilters()
         {
             _logger.Log("Applying filters to assemblies");

@@ -3,10 +3,14 @@ using DetailViewer.Core.Models;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DetailViewer.Core.Services
+namespace DetailViewer.Infrastructure.Services
 {
+    /// <summary>
+    /// Реализация сервиса для фильтрации записей документов.
+    /// </summary>
     public class DocumentFilterService : IDocumentFilterService
     {
+        /// <inheritdoc/>
         public List<DocumentDetailRecord> FilterRecords(List<DocumentDetailRecord> records, string searchTerm)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))

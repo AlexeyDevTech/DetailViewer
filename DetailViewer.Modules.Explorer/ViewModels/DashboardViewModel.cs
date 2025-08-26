@@ -16,6 +16,9 @@ using ILogger = DetailViewer.Core.Interfaces.ILogger;
 
 namespace DetailViewer.Modules.Explorer.ViewModels
 {
+    /// <summary>
+    /// ViewModel для основной панели управления, отображающей записи документов и управляющей их фильтрацией, добавлением, редактированием и удалением.
+    /// </summary>
     public class DashboardViewModel : BindableBase
     {
         private readonly IDocumentRecordService _documentRecordService;
@@ -28,6 +31,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private readonly IEventAggregator _eventAggregator;
 
         private string? _activeUserFullName;
+        /// <summary>
+        /// Полное имя текущего активного пользователя.
+        /// </summary>
         public string? ActiveUserFullName { get => _activeUserFullName; set => SetProperty(ref _activeUserFullName, value); }
 
         private string _statusText;
@@ -49,31 +55,124 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private string _importStatus;
         private bool _isImporting;
 
+        /// <summary>
+        /// Текст статуса, отображаемый на панели.
+        /// </summary>
         public string StatusText { get => _statusText; set => SetProperty(ref _statusText, value); }
+
+        /// <summary>
+        /// Флаг, указывающий, занято ли приложение выполнением операции.
+        /// </summary>
         public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
+
+        /// <summary>
+        /// Коллекция записей документов, отображаемых на панели.
+        /// </summary>
         public ObservableCollection<DocumentDetailRecord> DocumentRecords { get => _documentRecords; set => SetProperty(ref _documentRecords, value); }
+
+        /// <summary>
+        /// Выбранная запись документа.
+        /// </summary>
         public DocumentDetailRecord? SelectedRecord { get => _selectedRecord; set { if (SetProperty(ref _selectedRecord, value)) LoadParentAssembliesAndProducts(); } }
+
+        /// <summary>
+        /// Коллекция родительских сборок для выбранной записи.
+        /// </summary>
         public ObservableCollection<Assembly> ParentAssemblies { get => _parentAssemblies; set => SetProperty(ref _parentAssemblies, value); }
+
+        /// <summary>
+        /// Коллекция родительских продуктов для выбранной записи.
+        /// </summary>
         public ObservableCollection<DocumentDetailRecord> ParentProducts { get => _parentProducts; set => SetProperty(ref _parentProducts, value); }
+
+        /// <summary>
+        /// Фильтр по децимальному номеру.
+        /// </summary>
         public string EskdNumberFilter { get => _eskdNumberFilter; set => SetProperty(ref _eskdNumberFilter, value, ApplyFilters); }
+
+        /// <summary>
+        /// Фильтр по наименованию.
+        /// </summary>
         public string NameFilter { get => _nameFilter; set => SetProperty(ref _nameFilter, value, ApplyFilters); }
+
+        /// <summary>
+        /// Фильтр по полному имени автора.
+        /// </summary>
         public string FullNameFilter { get => _fullNameFilter; set => SetProperty(ref _fullNameFilter, value, ApplyFilters); }
+
+        /// <summary>
+        /// Фильтр по коду ЯСТ.
+        /// </summary>
         public string YastCodeFilter { get => _yastCodeFilter; set => SetProperty(ref _yastCodeFilter, value, ApplyFilters); }
+
+        /// <summary>
+        /// Флаг, указывающий, нужно ли отображать только записи текущего пользователя.
+        /// </summary>
         public bool OnlyMyRecordsFilter { get => _onlyMyRecordsFilter; set => SetProperty(ref _onlyMyRecordsFilter, value, ApplyFilters); }
+
+        /// <summary>
+        /// Выбранная дата для фильтрации.
+        /// </summary>
         public DateTime? SelectedDate { get => _selectedDate; set => SetProperty(ref _selectedDate, value, ApplyFilters); }
+
+        /// <summary>
+        /// Коллекция уникальных полных имен авторов.
+        /// </summary>
         public ObservableCollection<string> UniqueFullNames { get => _uniqueFullNames; set => SetProperty(ref _uniqueFullNames, value); }
+
+        /// <summary>
+        /// Выбранное полное имя автора для фильтрации.
+        /// </summary>
         public string SelectedFullName { get => _selectedFullName; set => SetProperty(ref _selectedFullName, value, ApplyFilters); }
+
+        /// <summary>
+        /// Прогресс импорта данных (от 0 до 100).
+        /// </summary>
         public double ImportProgress { get => _importProgress; set => SetProperty(ref _importProgress, value); }
+
+        /// <summary>
+        /// Статус импорта данных.
+        /// </summary>
         public string ImportStatus { get => _importStatus; set => SetProperty(ref _importStatus, value); }
+
+        /// <summary>
+        /// Флаг, указывающий, идет ли процесс импорта.
+        /// </summary>
         public bool IsImporting { get => _isImporting; set => SetProperty(ref _isImporting, value); }
 
+        /// <summary>
+        /// Команда для заполнения формы новой записи.
+        /// </summary>
         public DelegateCommand FillFormCommand { get; } 
+
+        /// <summary>
+        /// Команда для заполнения формы новой записи на основе выбранной.
+        /// </summary>
         public DelegateCommand FillBasedOnCommand { get; } 
+
+        /// <summary>
+        /// Команда для редактирования выбранной записи.
+        /// </summary>
         public DelegateCommand EditRecordCommand { get; } 
+
+        /// <summary>
+        /// Команда для удаления выбранной записи.
+        /// </summary>
         public DelegateCommand DeleteRecordCommand { get; } 
+
+        /// <summary>
+        /// Команда для импорта данных из Excel.
+        /// </summary>
         public DelegateCommand ImportFromExcelCommand { get; } 
+
+        /// <summary>
+        /// Команда для экспорта данных в Excel.
+        /// </summary>
         public DelegateCommand ExportToExcelCommand { get; } 
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="DashboardViewModel"/>.
+        /// </summary>
         public DashboardViewModel(IDocumentRecordService documentRecordService, IExcelExportService excelExportService, IExcelImportService excelImportService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService, IEventAggregator eventAggregator)
         {
             _documentRecordService = documentRecordService;
@@ -90,7 +189,6 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             _parentProducts = new ObservableCollection<DocumentDetailRecord>();
             StatusText = "Готово";
 
-            //_activeUserService.CurrentUserChanged += OnCurrentUserChanged;
             _eventAggregator.GetEvent<UserChangedEvent>().Subscribe(OnCurrentUserChanged);
             FillFormCommand = new DelegateCommand(FillForm);
             FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null).ObservesProperty(() => SelectedRecord);
@@ -104,12 +202,18 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             LoadData();
         }
 
+        /// <summary>
+        /// Вызывается при завершении синхронизации данных.
+        /// </summary>
         private async void OnSyncCompleted()
         {
             _logger.Log("Sync completed event received. Reloading data.");
             await LoadData();
         }
 
+        /// <summary>
+        /// Асинхронно загружает данные для панели управления.
+        /// </summary>
         private async Task LoadData()
         {
             _logger.Log("Loading data for Dashboard.");
@@ -142,6 +246,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             }
         }
 
+        /// <summary>
+        /// Применяет фильтры к списку записей документов.
+        /// </summary>
         private void ApplyFilters()
         {
             _logger.Log("Applying filters to records");
@@ -186,6 +293,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             StatusText = $"Отобрано записей: {DocumentRecords.Count}";
         }
 
+        /// <summary>
+        /// Асинхронно загружает родительские сборки и продукты для выбранной записи.
+        /// </summary>
         private async void LoadParentAssembliesAndProducts()
         {
             if (SelectedRecord == null) return;
@@ -199,6 +309,10 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             }
         }
 
+        /// <summary>
+        /// Вызывается при изменении текущего пользователя.
+        /// </summary>
+        /// <param name="p">Профиль нового пользователя.</param>
         private void OnCurrentUserChanged(Profile p)
         {
             _logger.Log("Current user changed");
@@ -210,6 +324,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
         #region Commands Logic
 
+        /// <summary>
+        /// Открывает форму для создания новой записи документа.
+        /// </summary>
         private void FillForm()
         {
             _logger.Log("FillForm command executed.");
@@ -224,6 +341,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             });
         }
 
+        /// <summary>
+        /// Открывает форму для создания новой записи на основе выбранной.
+        /// </summary>
         private void FillBasedOn()
         {
             _logger.Log("FillBasedOn command executed.");
@@ -237,6 +357,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             });
         }
 
+        /// <summary>
+        /// Открывает форму для редактирования выбранной записи.
+        /// </summary>
         private void EditRecord()
         {
             _logger.Log("EditRecord command executed.");
@@ -250,6 +373,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             });
         }
 
+        /// <summary>
+        /// Удаляет выбранную запись документа.
+        /// </summary>
         private void DeleteRecord()
         {
             if (SelectedRecord == null)
@@ -271,12 +397,18 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             });
         }
 
+        /// <summary>
+        /// Запускает процесс импорта данных из Excel.
+        /// </summary>
         private void ImportFromExcel()
         {
             _logger.Log("ImportFromExcel command executed.");
             // ... Implementation ...
         }
 
+        /// <summary>
+        /// Запускает процесс экспорта данных в Excel.
+        /// </summary>
         private void ExportToExcel()
         {
             _logger.Log("ExportToExcel command executed.");

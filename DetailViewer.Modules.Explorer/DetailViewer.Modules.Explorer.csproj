@@ -12,5 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DetailViewer.Core\DetailViewer.Core.csproj" />
+    <ProjectReference Include="..\DetailViewer.Infrastructure\DetailViewer.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

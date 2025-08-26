@@ -6,18 +6,26 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace DetailViewer.Core.Services
+namespace DetailViewer.Infrastructure.Services
 {
+    /// <summary>
+    /// Реализация сервиса для экспорта данных в формат Excel.
+    /// </summary>
     public class ExcelExportService : IExcelExportService
     {
         private readonly ILogger _logger;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ExcelExportService"/>.
+        /// </summary>
+        /// <param name="logger">Сервис логирования.</param>
         public ExcelExportService(ILogger logger)
         {
             _logger = logger;
             ExcelPackage.License.SetNonCommercialPersonal("My personal project");
         }
 
+        /// <inheritdoc/>
         public async Task ExportToExcelAsync(string filePath, List<DocumentDetailRecord> records)
         {
             _logger.Log($"Exporting {records.Count()} records to Excel: {filePath}");

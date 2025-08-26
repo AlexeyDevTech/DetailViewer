@@ -16,6 +16,9 @@ using System.Threading.Tasks;
 
 namespace DetailViewer.Modules.Explorer.ViewModels
 {
+    /// <summary>
+    /// ViewModel для панели управления продуктами.
+    /// </summary>
     public class ProductsDashboardViewModel : BindableBase
     {
         private readonly IProductService _productService;
@@ -24,6 +27,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private readonly IEventAggregator _eventAggregator;
 
         private string _statusText = string.Empty;
+        /// <summary>
+        /// Текст статуса, отображаемый на панели.
+        /// </summary>
         public string StatusText
         {
             get { return _statusText; }
@@ -31,6 +37,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         }
 
         private bool _isBusy;
+        /// <summary>
+        /// Флаг, указывающий, занято ли приложение выполнением операции.
+        /// </summary>
         public bool IsBusy
         {
             get { return _isBusy; }
@@ -38,6 +47,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         }
 
         private ObservableCollection<Product> _products;
+        /// <summary>
+        /// Коллекция продуктов, отображаемых на панели.
+        /// </summary>
         public ObservableCollection<Product> Products
         {
             get { return _products; }
@@ -45,6 +57,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         }
 
         private Product? _selectedProduct;
+        /// <summary>
+        /// Выбранный продукт.
+        /// </summary>
         public Product? SelectedProduct
         {
             get => _selectedProduct;
@@ -54,6 +69,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private List<Product> _allProducts = new List<Product>();
 
         private string _eskdNumberFilter = string.Empty;
+        /// <summary>
+        /// Фильтр по децимальному номеру.
+        /// </summary>
         public string EskdNumberFilter
         {
             get { return _eskdNumberFilter; }
@@ -61,16 +79,33 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         }
 
         private string _nameFilter = string.Empty;
+        /// <summary>
+        /// Фильтр по наименованию.
+        /// </summary>
         public string NameFilter
         {
             get { return _nameFilter; }
             set { SetProperty(ref _nameFilter, value, ApplyFilters); }
         }
 
+        /// <summary>
+        /// Команда для добавления нового продукта.
+        /// </summary>
         public DelegateCommand AddProductCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для редактирования выбранного продукта.
+        /// </summary>
         public DelegateCommand EditProductCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для удаления выбранного продукта.
+        /// </summary>
         public DelegateCommand DeleteProductCommand { get; private set; }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ProductsDashboardViewModel"/>.
+        /// </summary>
         public ProductsDashboardViewModel(IProductService productService, IDialogService dialogService, ILogger logger, IEventAggregator eventAggregator)
         {
             _productService = productService;
@@ -90,11 +125,17 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             _ = LoadData();
         }
 
+        /// <summary>
+        /// Вызывается при завершении синхронизации данных.
+        /// </summary>
         private async void OnSyncCompleted()
         {
             await LoadData();
         }
 
+        /// <summary>
+        /// Открывает диалог редактирования продукта.
+        /// </summary>
         private void EditProduct()
         {
             _logger.Log("Editing product");
@@ -108,24 +149,30 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             });
         }
 
+        /// <summary>
+        /// Удаляет выбранный продукт.
+        /// </summary>
         private void DeleteProduct()
-{
-    if (SelectedProduct == null)
-    {
-        return;
-    }
-
-    _logger.Log("Deleting product");
-    _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedProduct.EskdNumber.FullCode}?" } }, async r =>
-    {
-        if (r.Result == ButtonResult.OK)
         {
-            await _productService.DeleteProductAsync(SelectedProduct.Id);
-            await LoadData();
-        }
-    });
-}
+            if (SelectedProduct == null)
+            {
+                return;
+            }
 
+            _logger.Log("Deleting product");
+            _dialogService.ShowDialog("ConfirmationDialog", new DialogParameters { { "message", $"Вы уверены, что хотите удалить запись: {SelectedProduct.EskdNumber.FullCode}?" } }, async r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    await _productService.DeleteProductAsync(SelectedProduct.Id);
+                    await LoadData();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Открывает диалог добавления нового продукта.
+        /// </summary>
         private void AddProduct()
         {
             _logger.Log("Adding product");
@@ -138,6 +185,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             });
         }
 
+        /// <summary>
+        /// Асинхронно загружает данные продуктов.
+        /// </summary>
         private async Task LoadData()
         {
             _logger.Log("Loading data for ProductsDashboard");
@@ -161,6 +211,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             }
         }
 
+        /// <summary>
+        /// Применяет фильтры к списку продуктов.
+        /// </summary>
         private void ApplyFilters()
         {
             _logger.Log("Applying filters to products");

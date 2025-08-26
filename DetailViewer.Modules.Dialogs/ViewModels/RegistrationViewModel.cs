@@ -7,16 +7,28 @@ using System;
 
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
+    /// <summary>
+    /// ViewModel для формы регистрации нового пользователя.
+    /// </summary>
     public class RegistrationViewModel : BindableBase, IDialogAware
     {
         private readonly IProfileService _profileService;
         private readonly IPasswordService _passwordService;
 
+        /// <summary>
+        /// Заголовок диалогового окна.
+        /// </summary>
         public string Title => "Регистрация";
 
+        /// <summary>
+        /// Событие, запрашивающее закрытие диалогового окна.
+        /// </summary>
         public event Action<IDialogResult>? RequestClose;
 
         private string _lastName = string.Empty;
+        /// <summary>
+        /// Фамилия нового пользователя.
+        /// </summary>
         public string LastName
         {
             get { return _lastName; }
@@ -24,6 +36,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         private string _firstName = string.Empty;
+        /// <summary>
+        /// Имя нового пользователя.
+        /// </summary>
         public string FirstName
         {
             get { return _firstName; }
@@ -31,6 +46,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         private string _middleName = string.Empty;
+        /// <summary>
+        /// Отчество нового пользователя.
+        /// </summary>
         public string MiddleName
         {
             get { return _middleName; }
@@ -38,14 +56,25 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         private string _password = string.Empty;
+        /// <summary>
+        /// Пароль нового пользователя.
+        /// </summary>
         public string Password
         {
             get { return _password; }
             set { SetProperty(ref _password, value); }
         }
 
+        /// <summary>
+        /// Команда для регистрации нового пользователя.
+        /// </summary>
         public DelegateCommand RegisterCommand { get; }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="RegistrationViewModel"/>.
+        /// </summary>
+        /// <param name="profileService">Сервис для работы с профилями пользователей.</param>
+        /// <param name="passwordService">Сервис для хеширования и проверки паролей.</param>
         public RegistrationViewModel(IProfileService profileService, IPasswordService passwordService)
         {
             _profileService = profileService;
@@ -53,6 +82,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             RegisterCommand = new DelegateCommand(OnRegister);
         }
 
+        /// <summary>
+        /// Выполняет регистрацию нового пользователя.
+        /// </summary>
         private async void OnRegister()
         {
             var newProfile = new Profile
@@ -69,10 +101,21 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             RequestClose?.Invoke(new DialogResult(ButtonResult.OK));
         }
 
+        /// <summary>
+        /// Определяет, можно ли закрыть диалоговое окно.
+        /// </summary>
+        /// <returns>Всегда true.</returns>
         public bool CanCloseDialog() => true;
 
+        /// <summary>
+        /// Вызывается после закрытия диалогового окна.
+        /// </summary>
         public void OnDialogClosed() { }
 
+        /// <summary>
+        /// Вызывается при открытии диалогового окна.
+        /// </summary>
+        /// <param name="parameters">Параметры диалогового окна.</param>
         public void OnDialogOpened(IDialogParameters parameters) { }
     }
 }

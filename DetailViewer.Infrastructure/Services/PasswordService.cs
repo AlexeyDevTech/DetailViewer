@@ -2,8 +2,11 @@ using DetailViewer.Core.Interfaces;
 using System.Security.Cryptography;
 using System;
 
-namespace DetailViewer.Core.Services
+namespace DetailViewer.Infrastructure.Services
 {
+    /// <summary>
+    /// Реализация сервиса для хеширования и проверки паролей с использованием PBKDF2.
+    /// </summary>
     public class PasswordService : IPasswordService
     {
         private readonly ILogger _logger;
@@ -11,11 +14,16 @@ namespace DetailViewer.Core.Services
         private const int HashSize = 20;
         private const int Iterations = 10000;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="PasswordService"/>.
+        /// </summary>
+        /// <param name="logger">Сервис логирования.</param>
         public PasswordService(ILogger logger)
         {
             _logger = logger;
         }
 
+        /// <inheritdoc/>
         public string HashPassword(string password)
         {
             _logger.Log("Hashing password");
@@ -31,6 +39,7 @@ namespace DetailViewer.Core.Services
             return Convert.ToBase64String(hashBytes);
         }
 
+        /// <inheritdoc/>
         public bool VerifyPassword(string password, string hashedPassword)
         {
             _logger.Log("Verifying password");
@@ -52,4 +61,3 @@ namespace DetailViewer.Core.Services
         }
     }
 }
-

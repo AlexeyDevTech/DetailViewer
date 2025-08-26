@@ -1,6 +1,5 @@
 #nullable enable
 
-using DetailViewer.Core.Services;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using Prism.Commands;
@@ -15,6 +14,9 @@ using ILogger = DetailViewer.Core.Interfaces.ILogger;
 
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
+    /// <summary>
+    /// ViewModel для формы создания/редактирования записи документа (детали).
+    /// </summary>
     public class DocumentRecordFormViewModel : BindableBase, IDialogAware
     {
         private readonly IDocumentRecordService _documentRecordService;
@@ -24,27 +26,60 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly ILogger _logger;
         private readonly ISettingsService _settingsService;
         private readonly IDialogService _dialogService;
+        private readonly IEskdNumberService _eskdNumberService;
 
         private List<DocumentDetailRecord>? _allRecords;
         private ObservableCollection<Classifier>? _allClassifiers;
         private string? _activeUserFullName;
 
+        /// <summary>
+        /// Все доступные классификаторы.
+        /// </summary>
         public ObservableCollection<Classifier>? AllClassifiers { get => _allClassifiers; set => SetProperty(ref _allClassifiers, value); }
+
+        /// <summary>
+        /// Заголовок диалогового окна.
+        /// </summary>
         public string Title => "Форма записи документа";
+
+        /// <summary>
+        /// Событие, запрашивающее закрытие диалогового окна.
+        /// </summary>
         public event Action<IDialogResult>? RequestClose;
 
         private DocumentDetailRecord _documentRecord;
+        /// <summary>
+        /// Редактируемая или создаваемая запись документа.
+        /// </summary>
         public DocumentDetailRecord DocumentRecord { get => _documentRecord; set => SetProperty(ref _documentRecord, value); }
 
         private string? _companyCode, _classNumberString;
         private int _detailNumber;
         private int? _version;
 
+        /// <summary>
+        /// Код компании для децимального номера.
+        /// </summary>
         public string? CompanyCode { get => _companyCode; set => SetProperty(ref _companyCode, value, OnESKDNumberPartChanged); }
+
+        /// <summary>
+        /// Строковое представление номера класса для децимального номера.
+        /// </summary>
         public string? ClassNumberString { get => _classNumberString; set => SetProperty(ref _classNumberString, value, OnClassNumberStringChanged); }
+
+        /// <summary>
+        /// Порядковый номер детали для децимального номера.
+        /// </summary>
         public int DetailNumber { get => _detailNumber; set => SetProperty(ref _detailNumber, value, OnDetailNumberChanged); }
+
+        /// <summary>
+        /// Номер версии для децимального номера.
+        /// </summary>
         public int? Version { get => _version; set => SetProperty(ref _version, value, OnESKDNumberPartChanged); }
 
+        /// <summary>
+        /// Полное строковое представление децимального номера.
+        /// </summary>
         public string ESKDNumberString
         {
             get
@@ -56,21 +91,44 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         private bool _isManualDetailNumberEnabled, _isNewVersionEnabled, _filterByFullName = true;
+        /// <summary>
+        /// Флаг, указывающий, разрешен ли ручной ввод номера детали.
+        /// </summary>
         public bool IsManualDetailNumberEnabled { get => _isManualDetailNumberEnabled; set => SetProperty(ref _isManualDetailNumberEnabled, value); }
+
+        /// <summary>
+        /// Флаг, указывающий, создается ли новая версия документа.
+        /// </summary>
         public bool IsNewVersionEnabled { get => _isNewVersionEnabled; set => SetProperty(ref _isNewVersionEnabled, value, OnIsNewVersionEnabledChanged); }
+
+        /// <summary>
+        /// Флаг, указывающий, нужно ли фильтровать записи по полному имени пользователя.
+        /// </summary>
         public bool FilterByFullName { get => _filterByFullName; set => SetProperty(ref _filterByFullName, value, FilterRecords); }
 
         private string? _userMessage;
+        /// <summary>
+        /// Сообщение для пользователя.
+        /// </summary>
         public string? UserMessage { get => _userMessage; set => SetProperty(ref _userMessage, value); }
 
         private ObservableCollection<Classifier>? _filteredClassifiers;
+        /// <summary>
+        /// Отфильтрованные классификаторы.
+        /// </summary>
         public ObservableCollection<Classifier>? FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
 
         private ObservableCollection<DocumentDetailRecord>? _filteredRecords;
+        /// <summary>
+        /// Отфильтрованные записи документов.
+        /// </summary>
         public ObservableCollection<DocumentDetailRecord>? FilteredRecords { get => _filteredRecords; set => SetProperty(ref _filteredRecords, value); }
 
         private bool _isUpdatingFromSelection = false;
         private Classifier? _selectedClassifier;
+        /// <summary>
+        /// Выбранный классификатор.
+        /// </summary>
         public Classifier? SelectedClassifier
         {
             get => _selectedClassifier;
@@ -87,28 +145,58 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         private ObservableCollection<Assembly> _linkedAssemblies;
+        /// <summary>
+        /// Коллекция связанных сборок.
+        /// </summary>
         public ObservableCollection<Assembly> LinkedAssemblies { get => _linkedAssemblies; set => SetProperty(ref _linkedAssemblies, value); }
 
         private Assembly? _selectedLinkedAssembly;
+        /// <summary>
+        /// Выбранная связанная сборка.
+        /// </summary>
         public Assembly? SelectedLinkedAssembly { get => _selectedLinkedAssembly; set => SetProperty(ref _selectedLinkedAssembly, value); }
 
         private DocumentDetailRecord? _selectedRecordToCopy;
+        /// <summary>
+        /// Выбранная запись для копирования (для создания новой версии).
+        /// </summary>
         public DocumentDetailRecord? SelectedRecordToCopy
         {
             get => _selectedRecordToCopy;
             set
             {
                 SetProperty(ref _selectedRecordToCopy, value);
-                if (value != null && IsNewVersionEnabled) CopyDataFromSelectedRecord(value);
+                if (value != null && IsNewVersionEnabled)
+                {
+                    CopyDataFromSelectedRecord(value);
+                }
             }
         }
 
+        /// <summary>
+        /// Команда для сохранения записи документа.
+        /// </summary>
         public DelegateCommand SaveCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для отмены изменений.
+        /// </summary>
         public DelegateCommand CancelCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для добавления связи со сборкой.
+        /// </summary>
         public DelegateCommand AddAssemblyLinkCommand { get; private set; }
+
+        /// <summary>
+        /// Команда для удаления связи со сборкой.
+        /// </summary>
         public DelegateCommand RemoveAssemblyLinkCommand { get; private set; }
 
-        public DocumentRecordFormViewModel(IDocumentRecordService documentRecordService, IAssemblyService assemblyService, IClassifierService classifierService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService, IDialogService dialogService)
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="DocumentRecordFormViewModel"/>.
+        /// </summary>
+        public DocumentRecordFormViewModel(IDocumentRecordService documentRecordService, IAssemblyService assemblyService, IClassifierService classifierService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService, IDialogService dialogService, IEskdNumberService eskdNumberService)
         {
             _documentRecordService = documentRecordService;
             _assemblyService = assemblyService;
@@ -117,6 +205,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _activeUserService = activeUserService;
             _settingsService = settingsService;
             _dialogService = dialogService;
+            _eskdNumberService = eskdNumberService;
             _activeUserFullName = _activeUserService.CurrentUser?.ShortName;
 
             _documentRecord = new DocumentDetailRecord
@@ -136,12 +225,25 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             LoadRecords();
         }
 
+        /// <summary>
+        /// Определяет, можно ли сохранить запись.
+        /// </summary>
+        /// <returns>True, если запись может быть сохранена, иначе false.</returns>
         private bool CanSave() => !string.IsNullOrWhiteSpace(ClassNumberString) && ClassNumberString.Length == 6 && DetailNumber > 0;
 
+        /// <summary>
+        /// Асинхронно загружает все записи документов.
+        /// </summary>
         private async void LoadRecords() => _allRecords = await _documentRecordService.GetAllRecordsAsync();
 
+        /// <summary>
+        /// Загружает все классификаторы.
+        /// </summary>
         private void LoadClassifiers() => AllClassifiers = new ObservableCollection<Classifier>(_classifierService.GetAllClassifiers());
 
+        /// <summary>
+        /// Фильтрует записи документов на основе текущих значений фильтров.
+        /// </summary>
         private void FilterRecords()
         {
             if (_allRecords == null || ClassNumberString?.Length != 6) { FilteredRecords = new ObservableCollection<DocumentDetailRecord>(); return; }
@@ -152,6 +254,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             FilteredRecords = new ObservableCollection<DocumentDetailRecord>(records.OrderBy(r => r.ESKDNumber?.FullCode).ToList());
         }
 
+        /// <summary>
+        /// Фильтрует классификаторы на основе текущих значений фильтров.
+        /// </summary>
         private void FilterClassifiers()
         {
             if (AllClassifiers == null) { FilteredClassifiers = new ObservableCollection<Classifier>(); return; }
@@ -159,18 +264,27 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             FilteredClassifiers = new ObservableCollection<Classifier>(AllClassifiers.Where(c => c.Number.ToString("D6").StartsWith(ClassNumberString, StringComparison.OrdinalIgnoreCase)).OrderBy(c => c.Number).ToList());
         }
 
+        /// <summary>
+        /// Вызывается при изменении части децимального номера для обновления свойства ESKDNumberString.
+        /// </summary>
         private void OnESKDNumberPartChanged() => RaisePropertyChanged(nameof(ESKDNumberString));
 
-        private void OnClassNumberStringChanged()
+        /// <summary>
+        /// Вызывается при изменении строки номера класса.
+        /// </summary>
+        private async void OnClassNumberStringChanged()
         {
             if (_isUpdatingFromSelection) return;
             FilterClassifiers();
             FilterRecords();
-            if (ClassNumberString?.Length == 6) FindNextDetailNumber();
+            if (ClassNumberString?.Length == 6) await FindNextDetailNumber();
             OnESKDNumberPartChanged();
             SaveCommand.RaiseCanExecuteChanged();
         }
 
+        /// <summary>
+        /// Вызывается при изменении номера детали.
+        /// </summary>
         private void OnDetailNumberChanged()
         {
             FilterRecords();
@@ -178,16 +292,45 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             SaveCommand.RaiseCanExecuteChanged();
         }
 
+        /// <summary>
+        /// Вызывается при изменении флага IsNewVersionEnabled.
+        /// </summary>
         private void OnIsNewVersionEnabledChanged()
         {
             if (IsNewVersionEnabled) { IsManualDetailNumberEnabled = true; UserMessage = "Выберите запись для исполнения"; DocumentRecord.YASTCode = null; DocumentRecord.Name = null; SelectedRecordToCopy = null; } else { UserMessage = null; }
         }
 
-        private void FindNextDetailNumber() => DetailNumber = (_allRecords == null || string.IsNullOrWhiteSpace(ClassNumberString)) ? 0 : EskdNumberHelper.FindNextDetailNumber(_allRecords, ClassNumberString);
+        /// <summary>
+        /// Асинхронно находит следующий доступный номер детали.
+        /// </summary>
+        private async Task FindNextDetailNumber()
+        {
+            if (string.IsNullOrWhiteSpace(ClassNumberString))
+            {
+                DetailNumber = 0;
+                return;
+            }
+            DetailNumber = await _eskdNumberService.GetNextDetailNumberAsync(ClassNumberString);
+        }
 
-        private void FindNextVersionNumber() => Version = (_allRecords == null || SelectedRecordToCopy == null) ? null : EskdNumberHelper.FindNextVersionNumber(_allRecords, SelectedRecordToCopy);
+        /// <summary>
+        /// Асинхронно находит следующий доступный номер версии.
+        /// </summary>
+        private async Task FindNextVersionNumber()
+        {
+            if (SelectedRecordToCopy == null)
+            {
+                Version = null;
+                return;
+            }
+            Version = await _eskdNumberService.GetNextVersionNumberAsync(SelectedRecordToCopy);
+        }
 
-        private void CopyDataFromSelectedRecord(DocumentDetailRecord sourceRecord)
+        /// <summary>
+        /// Копирует данные из выбранной записи для создания новой версии.
+        /// </summary>
+        /// <param name="sourceRecord">Исходная запись для копирования.</param>
+        private async void CopyDataFromSelectedRecord(DocumentDetailRecord sourceRecord)
         {
             if (sourceRecord.ESKDNumber == null) return;
             DocumentRecord.YASTCode = sourceRecord.YASTCode;
@@ -195,11 +338,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             CompanyCode = sourceRecord.ESKDNumber.CompanyCode;
             ClassNumberString = sourceRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
             DetailNumber = sourceRecord.ESKDNumber.DetailNumber;
-            FindNextVersionNumber();
+            await FindNextVersionNumber();
             RaisePropertyChanged(string.Empty);
             UserMessage = null;
         }
 
+        /// <summary>
+        /// Сохраняет запись документа (добавляет или обновляет).
+        /// </summary>
         private async void Save()
         {
             if (DocumentRecord.ESKDNumber == null) DocumentRecord.ESKDNumber = new ESKDNumber();
@@ -216,6 +362,10 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             RequestClose?.Invoke(BuildDialogResult());
         }
 
+        /// <summary>
+        /// Формирует результат диалогового окна.
+        /// </summary>
+        /// <returns>Объект IDialogResult.</returns>
         private IDialogResult BuildDialogResult()
         {
             var result = new DialogResult(ButtonResult.OK);
@@ -224,8 +374,14 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             return result;
         }
 
+        /// <summary>
+        /// Отменяет изменения и закрывает диалоговое окно.
+        /// </summary>
         private void Cancel() => RequestClose?.Invoke(new DialogResult(ButtonResult.Cancel));
 
+        /// <summary>
+        /// Открывает диалог выбора сборки и добавляет выбранные сборки в список связанных.
+        /// </summary>
         private void AddAssemblyLink()
         {
             _dialogService.ShowDialog("SelectAssemblyDialog", new DialogParameters(), r =>
@@ -238,11 +394,26 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             });
         }
 
+        /// <summary>
+        /// Удаляет выбранную связанную сборку.
+        /// </summary>
         private void RemoveAssemblyLink() { if (SelectedLinkedAssembly != null) LinkedAssemblies.Remove(SelectedLinkedAssembly); }
 
+        /// <summary>
+        /// Определяет, можно ли закрыть диалоговое окно.
+        /// </summary>
+        /// <returns>Всегда true.</returns>
         public bool CanCloseDialog() => true;
+
+        /// <summary>
+        /// Вызывается после закрытия диалогового окна.
+        /// </summary>
         public void OnDialogClosed() { }
 
+        /// <summary>
+        /// Вызывается при открытии диалогового окна.
+        /// </summary>
+        /// <param name="parameters">Параметры диалогового окна.</param>
         public async void OnDialogOpened(IDialogParameters parameters)
         {
             await _classifierService.LoadClassifiersAsync();
@@ -252,14 +423,27 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 var record = parameters.GetValue<DocumentDetailRecord>(DialogParameterKeys.Record);
                 if (record != null)
                 {
-                    if (parameters.ContainsKey(DialogParameterKeys.ActiveUserFullName)) HandleFillBasedOnScenario(record);
-                    else await HandleEditScenario(record);
+                    if (parameters.ContainsKey(DialogParameterKeys.ActiveUserFullName))
+                    {
+                        await HandleFillBasedOnScenario(record);
+                    }
+                    else
+                    {
+                        await HandleEditScenario(record);
+                    }
                 }
             }
-            else HandleNewRecordScenario(parameters);
+            else
+            {
+                HandleNewRecordScenario(parameters);
+            }
             if (IsNewVersionEnabled) UserMessage = "Выберите запись для копирования";
         }
 
+        /// <summary>
+        /// Обрабатывает сценарий редактирования существующей записи.
+        /// </summary>
+        /// <param name="record">Запись для редактирования.</param>
         private async Task HandleEditScenario(DocumentDetailRecord record)
         {
             DocumentRecord = record;
@@ -275,7 +459,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
-        private void HandleFillBasedOnScenario(DocumentDetailRecord record)
+        /// <summary>
+        /// Обрабатывает сценарий заполнения новой записи на основе существующей.
+        /// </summary>
+        /// <param name="record">Исходная запись для заполнения.</param>
+        private async Task HandleFillBasedOnScenario(DocumentDetailRecord record)
         {
             if (record.ESKDNumber?.ClassNumber == null) return;
             DocumentRecord = new DocumentDetailRecord
@@ -288,11 +476,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             };
             CompanyCode = DocumentRecord.ESKDNumber.CompanyCode;
             ClassNumberString = DocumentRecord.ESKDNumber.ClassNumber?.Number.ToString("D6");
-            FindNextDetailNumber();
+            await FindNextDetailNumber();
             Version = null;
             IsManualDetailNumberEnabled = false;
         }
 
+        /// <summary>
+        /// Обрабатывает сценарий создания новой записи.
+        /// </summary>
+        /// <param name="parameters">Параметры диалогового окна.</param>
         private void HandleNewRecordScenario(IDialogParameters parameters)
         {
             if (parameters.ContainsKey(DialogParameterKeys.CompanyCode)) { CompanyCode = parameters.GetValue<string>(DialogParameterKeys.CompanyCode); if (DocumentRecord.ESKDNumber != null) DocumentRecord.ESKDNumber.CompanyCode = CompanyCode; }
