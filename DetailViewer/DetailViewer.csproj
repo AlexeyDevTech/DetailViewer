@@ -3,6 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Prism.Unity" Version="8.1.97" />
@@ -13,4 +14,10 @@
     <ProjectReference Include="..\DetailViewer.Modules.Dialogs\DetailViewer.Modules.Dialogs.csproj" />
     <ProjectReference Include="..\DetailViewer.Modules.Explorer\DetailViewer.Modules.Explorer.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\eskd_classifiers.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  
 </Project>

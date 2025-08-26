@@ -25,17 +25,30 @@ namespace DetailViewer.Core.Services
 
         public AppSettings LoadSettings()
         {
+            _logger.Log("Loading settings");
             if (!File.Exists(_settingsFilePath))
             {
-                _logger.LogInformation($"Settings file not found at {_settingsFilePath}. Returning default settings.");
-                return new AppSettings(); // Return default settings if file doesn't exist
+                _logger.LogInfo($"Settings file not found at {_settingsFilePath}. Creating a new settings file with default values.");
+                var defaultSettings = new AppSettings();
+                try
+                {
+                    var json = JsonSerializer.Serialize(defaultSettings, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(_settingsFilePath, json);
+                    _logger.LogInfo($"New settings file created at {_settingsFilePath}.");
+                    return defaultSettings;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error creating default settings file at {_settingsFilePath}: {ex.Message}", ex);
+                    return defaultSettings;
+                }
             }
 
             try
             {
                 var json = File.ReadAllText(_settingsFilePath);
                 var settings = JsonSerializer.Deserialize<AppSettings>(json);
-                _logger.LogInformation($"Settings loaded from {_settingsFilePath}.");
+                _logger.LogInfo($"Settings loaded from {_settingsFilePath}.");
                 return settings ?? new AppSettings();
             }
             catch (Exception ex)
@@ -47,11 +60,12 @@ namespace DetailViewer.Core.Services
 
         public async Task SaveSettingsAsync(AppSettings settings)
         {
+            _logger.Log("Saving settings");
             try
             {
                 var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
                 await File.WriteAllTextAsync(_settingsFilePath, json);
-                _logger.LogInformation($"Settings saved to {_settingsFilePath}.");
+                _logger.LogInfo($"Settings saved to {_settingsFilePath}.");
             }
             catch (Exception ex)
             {

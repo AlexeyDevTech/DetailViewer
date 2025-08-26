@@ -455,3 +455,10 @@ $RECYCLE.BIN/
 /.vscode
 /images
 /eskd_classifiers.json
+/build.bat
+/temp
+/DetailViewer.iss
+/install
+/DetailViewer/version.ps1
+/DetailViewer/version.txt
+/DetailViewer/temp.db
