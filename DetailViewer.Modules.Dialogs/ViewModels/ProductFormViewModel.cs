@@ -174,13 +174,18 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             {
                 if (ParentProducts.Any())
                 {
-                    if (Product.Id == 0) await _productService.AddProductAsync(Product);
+                    if (Product.Id == 0) await _productService.AddProductAsync(Product, ParentAssemblies.Select(a => a.Id).ToList());
                     await _assemblyService.ConvertProductToAssemblyAsync(Product.Id, ParentProducts.ToList());
                 }
                 else
                 {
-                    if (Product.Id == 0) await _productService.CreateProductWithAssembliesAsync(Product, ParentAssemblies.Select(a => a.Id).ToList());
-                    else { await _productService.UpdateProductAsync(Product); await _productService.UpdateProductParentAssembliesAsync(Product.Id, ParentAssemblies.ToList()); }
+                    if (Product.Id == 0) 
+                        await _productService.AddProductAsync(Product, ParentAssemblies.Select(a => a.Id).ToList());
+                    else 
+                    {
+                        await _productService.UpdateProductAsync(Product);
+                        await _productService.UpdateProductParentAssembliesAsync(Product.Id, ParentAssemblies.ToList());
+                    }
                 }
                 RequestClose?.Invoke(new DialogResult(ButtonResult.OK));
             }

@@ -1,4 +1,5 @@
 using DetailViewer.Api.Data;
+using DetailViewer.Api.DTOs;
 using DetailViewer.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,8 +19,41 @@ namespace DetailViewer.Api.Controllers
         {
         }
 
-        // The base controller's Get, Post, Put, Delete methods will be used.
-        // We only need to keep the custom methods.
+        [HttpPost]
+        public async Task<ActionResult<Product>> Post(ProductCreateDto dto)
+        {
+            _logger.LogInformation("Creating new product with complex payload");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                _context.ESKDNumbers.Add(dto.EskdNumber);
+                await _context.SaveChangesAsync();
+
+                dto.Product.EskdNumberId = dto.EskdNumber.Id;
+                _context.Products.Add(dto.Product);
+                await _context.SaveChangesAsync();
+
+                if (dto.ParentAssemblyIds != null && dto.ParentAssemblyIds.Any())
+                {
+                    foreach (var parentId in dto.ParentAssemblyIds)
+                    {
+                        _context.ProductAssemblies.Add(new ProductAssembly { ProductId = dto.Product.Id, AssemblyId = parentId });
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                await transaction.CommitAsync();
+
+                return CreatedAtAction(nameof(Get), new { id = dto.Product.Id }, dto.Product);
+            }
+            catch (System.Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error creating product with complex payload");
+                return StatusCode(500, "Internal server error");
+            }
+        }
 
         [HttpGet("{id}/parents")]
         public async Task<ActionResult<IEnumerable<Assembly>>> GetParentAssemblies(int id)

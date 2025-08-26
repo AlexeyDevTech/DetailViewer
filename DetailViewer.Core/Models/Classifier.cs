@@ -11,6 +11,7 @@ namespace DetailViewer.Core.Models
         public string Name { get; set; }
         // номер классификатора детали
         public int Number { get; set; } // например, "000001", "000002" и т.д.
+        public string Code => Number.ToString("D6");
         public string Description { get; set; }
 
         public ICollection<ESKDNumber> ESKDNumbers { get; set; }

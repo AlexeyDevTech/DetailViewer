@@ -29,10 +29,16 @@ namespace DetailViewer.Core.Services
             await _apiClient.DeleteAsync(ApiEndpoints.Products, productId);
         }
 
-        public async Task AddProductAsync(Product product)
+        public async Task AddProductAsync(Product product, List<int> parentAssemblyIds)
         {
             _logger.Log($"Adding product via API: {product.Name}");
-            await _apiClient.PostAsync(ApiEndpoints.Products, product);
+            var payload = new 
+            {
+                Product = product,
+                EskdNumber = product.EskdNumber,
+                ParentAssemblyIds = parentAssemblyIds
+            };
+            await _apiClient.PostAsync(ApiEndpoints.Products, payload);
         }
 
         public async Task UpdateProductAsync(Product product)
@@ -57,13 +63,6 @@ namespace DetailViewer.Core.Services
         {
             _logger.Log($"Getting parent assemblies for product from API: {productId}");
             return await _apiClient.GetAsync<Assembly>($"{ApiEndpoints.Products}/{productId}/parents");
-        }
-
-        public async Task CreateProductWithAssembliesAsync(Product product, List<int> parentAssemblyIds)
-        {
-            _logger.Log($"Creating product with assemblies via API: {product.Name}");
-            var payload = new { product, parentAssemblyIds };
-            await _apiClient.PostAsync(ApiEndpoints.Products + "/with-assemblies", payload);
         }
     }
 }
