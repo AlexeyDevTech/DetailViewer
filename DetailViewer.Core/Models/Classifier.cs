@@ -14,6 +14,8 @@ namespace DetailViewer.Core.Models
         public string Code => Number.ToString("D6");
         public string Description { get; set; }
 
+        public List<string>? ImagePaths { get; set; }
+
         public ICollection<ESKDNumber> ESKDNumbers { get; set; }
     }
 }
