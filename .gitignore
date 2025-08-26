@@ -463,3 +463,4 @@ $RECYCLE.BIN/
 /DetailViewer/version.txt
 /DetailViewer/temp.db
 /GEMINI.md
+/DetailViewer.Api/Dockerfile
