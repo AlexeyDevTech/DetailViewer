@@ -103,40 +103,49 @@ namespace DetailViewer.Infrastructure.Services
             var existingAssemblies = (await _assemblyService.GetAssembliesAsync()).ToDictionary(a => a.EskdNumber.FullCode, a => a);
             var rowCount = worksheet.Dimension.Rows;
             int newAssemblies = 0;
+            int serviceNumberCounter = 1;
 
             for (int row = 2; row <= rowCount; row++)
             {
-                var eskdNumberString = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
-                var dateStr = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
-                var yastCode = worksheet.Cells[row, 4].Value?.ToString()?.Trim();
-                var parentEskd = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
-                var parentName = worksheet.Cells[row, 7].Value?.ToString()?.Trim();
-                var author = worksheet.Cells[row, 8].Value?.ToString()?.Trim();
-                if (string.IsNullOrWhiteSpace(eskdNumberString) || existingAssemblies.ContainsKey(eskdNumberString))
-                {
-                    continue; // Пропустить пустые или уже существующие
-                }
-
                 var name = worksheet.Cells[row, 5].Value?.ToString()?.Trim();
-                if (string.IsNullOrWhiteSpace(name))
+                var eskdNumberString = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
+
+                // Если нет ни имени, ни номера - пропускаем строку
+                if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(eskdNumberString))
                 {
-                    continue; // Пропустить, если имя пустое
+                    continue;
                 }
 
-                var eskdNumber = new ESKDNumber().SetCode(eskdNumberString);
+                ESKDNumber eskdNumber;
+                // Если номер пуст, но есть имя - генерируем служебный номер
+                if (string.IsNullOrWhiteSpace(eskdNumberString))
+                {
+                    eskdNumberString = $"СЛУЖ.000000.{serviceNumberCounter++:D3}";
+                    eskdNumber = new ESKDNumber().SetCode(eskdNumberString);
+                }
+                else
+                {
+                    eskdNumber = new ESKDNumber().SetCode(eskdNumberString);
+                }
+
+                var fullCode = eskdNumber.GetCode();
+                if (existingAssemblies.ContainsKey(fullCode))
+                {
+                    continue;
+                }
 
                 var assembly = new Assembly
                 {
                     EskdNumber = eskdNumber,
                     Name = name,
-                    Date = ParseDate(dateStr),
-                    Author = author,
+                    Date = ParseDate(worksheet.Cells[row, 2].Value), // Добавлено чтение даты
+                    Author = worksheet.Cells[row, 8].Value?.ToString()?.Trim() // Добавлено чтение автора
                 };
 
-                await _assemblyService.AddAssemblyAsync(assembly, null, null);
-                existingAssemblies.Add(eskdNumber.FullCode, assembly); // Добавить в локальный кэш
+                await _assemblyService.AddAssemblyAsync(assembly, new List<int>(), new List<int>());
+                existingAssemblies.Add(fullCode, assembly);
                 newAssemblies++;
-                progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Импортирована сборка: {eskdNumberString}"));
+                progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Импортирована сборка: {name} ({eskdNumberString})"));
             }
 
             _logger.Log($"Assembly import completed. Added {newAssemblies} new assemblies.");

@@ -37,6 +37,23 @@ namespace DetailViewer.Api.Controllers
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                if (dto.EskdNumber.ClassNumber != null)
+                {
+                    var existingClassifier = await _context.Classifiers
+                        .FirstOrDefaultAsync(c => c.Number == dto.EskdNumber.ClassNumber.Number);
+
+                    if (existingClassifier != null)
+                    {
+                        // It exists, so attach the existing one to avoid creating a duplicate.
+                        dto.EskdNumber.ClassNumber = existingClassifier;
+                    }
+                    else
+                    {
+                        // It does not exist, so we let EF create it.
+                        _logger.LogInformation($"Classifier with number {dto.EskdNumber.ClassNumber.Number} not found. A new one will be created.");
+                    }
+                }
+
                 _context.ESKDNumbers.Add(dto.EskdNumber);
                 await _context.SaveChangesAsync();
 
