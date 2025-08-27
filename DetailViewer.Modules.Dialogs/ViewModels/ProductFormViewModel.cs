@@ -102,30 +102,30 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             }
         }
 
-        private ObservableCollection<Classifier>? _allClassifiers;
+        private ObservableCollection<ClassifierData>? _allClassifiers;
         /// <summary>
         /// Все доступные классификаторы.
         /// </summary>
-        public ObservableCollection<Classifier>? AllClassifiers { get => _allClassifiers; set => SetProperty(ref _allClassifiers, value); }
+        public ObservableCollection<ClassifierData>? AllClassifiers { get => _allClassifiers; set => SetProperty(ref _allClassifiers, value); }
 
-        private ObservableCollection<Classifier>? _filteredClassifiers;
+        private ObservableCollection<ClassifierData>? _filteredClassifiers;
         /// <summary>
         /// Отфильтрованные классификаторы.
         /// </summary>
-        public ObservableCollection<Classifier>? FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
+        public ObservableCollection<ClassifierData>? FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
 
         private bool _isUpdatingFromSelection = false;
-        private Classifier? _selectedClassifier;
+        private ClassifierData? _selectedClassifier;
         /// <summary>
         /// Выбранный классификатор.
         /// </summary>
-        public Classifier? SelectedClassifier
+        public ClassifierData? SelectedClassifier
         {
             get => _selectedClassifier;
             set
             {
                 SetProperty(ref _selectedClassifier, value);
-                if (value != null) { _isUpdatingFromSelection = true; ClassNumberString = value.Number.ToString("D6"); _isUpdatingFromSelection = false; }
+                if (value != null) { _isUpdatingFromSelection = true; ClassNumberString = value.Code; _isUpdatingFromSelection = false; }
             }
         }
 
@@ -196,7 +196,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// <summary>
         /// Загружает все классификаторы.
         /// </summary>
-        private void LoadClassifiers() => AllClassifiers = new ObservableCollection<Classifier>(_classifierService.GetAllClassifiers());
+        private void LoadClassifiers() => AllClassifiers = new ObservableCollection<ClassifierData>(_classifierService.GetAllClassifiers());
 
         /// <summary>
         /// Асинхронно загружает все продукты.
@@ -208,9 +208,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// </summary>
         private void FilterClassifiers()
         {
-            if (AllClassifiers == null) { FilteredClassifiers = new ObservableCollection<Classifier>(); return; }
-            if (string.IsNullOrWhiteSpace(ClassNumberString)) { FilteredClassifiers = new ObservableCollection<Classifier>(AllClassifiers); return; }
-            FilteredClassifiers = new ObservableCollection<Classifier>(AllClassifiers.Where(c => c.Number.ToString("D6").StartsWith(ClassNumberString, StringComparison.OrdinalIgnoreCase)).OrderBy(c => c.Number).ToList());
+            if (AllClassifiers == null) { FilteredClassifiers = new ObservableCollection<ClassifierData>(); return; }
+            if (string.IsNullOrWhiteSpace(ClassNumberString)) { FilteredClassifiers = new ObservableCollection<ClassifierData>(AllClassifiers); return; }
+            FilteredClassifiers = new ObservableCollection<ClassifierData>(AllClassifiers.Where(c => c.Code.StartsWith(ClassNumberString, StringComparison.OrdinalIgnoreCase)).OrderBy(c => c.Code).ToList());
         }
 
         /// <summary>
@@ -282,14 +282,19 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             Product.EskdNumber.CompanyCode = CompanyCode;
             Product.EskdNumber.DetailNumber = DetailNumber;
             Product.EskdNumber.Version = Version;
-            if (int.TryParse(ClassNumberString, out int classNumberValue))
+
+            if (Product.EskdNumber.ClassNumber == null) Product.EskdNumber.ClassNumber = new Classifier();
+
+            if (SelectedClassifier != null)
             {
-                var classifier = _classifierService.GetClassifierByNumber(classNumberValue);
-                if (classifier != null) 
-                { 
-                    Product.EskdNumber.ClassifierId = classifier.Id; 
-                    Product.EskdNumber.ClassNumber = classifier; 
-                }
+                Product.EskdNumber.ClassNumber.Number = int.Parse(SelectedClassifier.Code);
+                Product.EskdNumber.ClassNumber.Name = SelectedClassifier.Description;
+            }
+            else if (int.TryParse(ClassNumberString, out int classNumberValue))
+            {
+                Product.EskdNumber.ClassNumber.Number = classNumberValue;
+                var classifierData = _classifierService.GetClassifierByCode(ClassNumberString);
+                Product.EskdNumber.ClassNumber.Name = classifierData?.Description ?? "<неопознанный код>";
             }
 
             try

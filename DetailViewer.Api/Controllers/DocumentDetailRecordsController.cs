@@ -50,48 +50,56 @@ namespace DetailViewer.Api.Controllers
         {
             _logger.LogInformation("Creating new document detail record with complex payload");
 
-            if (dto.EskdNumber.ClassNumber != null)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                var existingClassifier = await _context.Classifiers
-                    .FirstOrDefaultAsync(c => c.Number == dto.EskdNumber.ClassNumber.Number);
-
-                if (existingClassifier != null)
+                // Handle the nested Classifier object
+                if (dto.EskdNumber.ClassNumber != null)
                 {
-                    // It exists, so attach the existing one to avoid creating a duplicate.
-                    dto.EskdNumber.ClassNumber = existingClassifier;
-                }
-                else
-                {
-                    // It does not exist, so we let EF create it.
-                    _logger.LogInformation($"Classifier with number {dto.EskdNumber.ClassNumber.Number} not found. A new one will be created.");
-                }
-            }
+                    var existingClassifier = await _context.Classifiers
+                        .FirstOrDefaultAsync(c => c.Number == dto.EskdNumber.ClassNumber.Number);
 
-            // 1. Save the ESKDNumber first to get its ID
-            _context.ESKDNumbers.Add(dto.EskdNumber);
-            await _context.SaveChangesAsync();
-
-            // 2. Assign the new ID to the record and save the record
-            dto.Record.EskdNumberId = dto.EskdNumber.Id;
-            _context.DocumentRecords.Add(dto.Record);
-            await _context.SaveChangesAsync();
-
-            // 3. Link assemblies
-            if (dto.AssemblyIds != null && dto.AssemblyIds.Any())
-            {
-                foreach (var assemblyId in dto.AssemblyIds)
-                {
-                    var assemblyDetail = new AssemblyDetail
+                    if (existingClassifier != null)
                     {
-                        AssemblyId = assemblyId,
-                        DetailId = dto.Record.Id
-                    };
-                    _context.AssemblyDetails.Add(assemblyDetail);
+                        dto.EskdNumber.ClassNumber = existingClassifier;
+                    }
+                    else
+                    {
+                        _logger.LogInformation($"Classifier with number {dto.EskdNumber.ClassNumber.Number} not found. A new one will be created.");
+                    }
                 }
-                await _context.SaveChangesAsync();
-            }
 
-            return CreatedAtAction("Get", new { id = dto.Record.Id }, dto.Record);
+                // Assign the EskdNumber object to the Record's navigation property.
+                // EF Core will handle inserting the new EskdNumber and fixing up the foreign key.
+                dto.Record.EskdNumber = dto.EskdNumber;
+                //TODO: доделать!
+                _context.DocumentRecords.Add(dto.Record);
+                await _context.SaveChangesAsync();
+
+                // Link assemblies
+                if (dto.AssemblyIds != null && dto.AssemblyIds.Any())
+                {
+                    foreach (var assemblyId in dto.AssemblyIds)
+                    {
+                        var assemblyDetail = new AssemblyDetail
+                        {
+                            AssemblyId = assemblyId,
+                            DetailId = dto.Record.Id
+                        };
+                        _context.AssemblyDetails.Add(assemblyDetail);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                await transaction.CommitAsync();
+                return CreatedAtAction("Get", new { id = dto.Record.Id }, dto.Record);
+            }
+            catch (System.Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error creating document detail record with complex payload");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         [HttpPut("with-assemblies/{id}")]

@@ -29,13 +29,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly IEskdNumberService _eskdNumberService;
 
         private List<DocumentDetailRecord>? _allRecords;
-        private ObservableCollection<Classifier>? _allClassifiers;
+        private ObservableCollection<ClassifierData>? _allClassifiers;
         private string? _activeUserFullName;
 
         /// <summary>
         /// Все доступные классификаторы.
         /// </summary>
-        public ObservableCollection<Classifier>? AllClassifiers { get => _allClassifiers; set => SetProperty(ref _allClassifiers, value); }
+        public ObservableCollection<ClassifierData>? AllClassifiers { get => _allClassifiers; set => SetProperty(ref _allClassifiers, value); }
 
         /// <summary>
         /// Заголовок диалогового окна.
@@ -112,11 +112,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// </summary>
         public string? UserMessage { get => _userMessage; set => SetProperty(ref _userMessage, value); }
 
-        private ObservableCollection<Classifier>? _filteredClassifiers;
+        private ObservableCollection<ClassifierData>? _filteredClassifiers;
         /// <summary>
         /// Отфильтрованные классификаторы.
         /// </summary>
-        public ObservableCollection<Classifier>? FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
+        public ObservableCollection<ClassifierData>? FilteredClassifiers { get => _filteredClassifiers; set => SetProperty(ref _filteredClassifiers, value); }
 
         private ObservableCollection<DocumentDetailRecord>? _filteredRecords;
         /// <summary>
@@ -125,11 +125,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public ObservableCollection<DocumentDetailRecord>? FilteredRecords { get => _filteredRecords; set => SetProperty(ref _filteredRecords, value); }
 
         private bool _isUpdatingFromSelection = false;
-        private Classifier? _selectedClassifier;
+        private ClassifierData? _selectedClassifier;
         /// <summary>
         /// Выбранный классификатор.
         /// </summary>
-        public Classifier? SelectedClassifier
+        public ClassifierData? SelectedClassifier
         {
             get => _selectedClassifier;
             set
@@ -138,7 +138,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 if (value != null)
                 {
                     _isUpdatingFromSelection = true;
-                    ClassNumberString = value.Number.ToString("D6");
+                    ClassNumberString = value.Code;
                     _isUpdatingFromSelection = false;
                 }
             }
@@ -239,7 +239,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// <summary>
         /// Загружает все классификаторы.
         /// </summary>
-        private void LoadClassifiers() => AllClassifiers = new ObservableCollection<Classifier>(_classifierService.GetAllClassifiers());
+        private void LoadClassifiers() => AllClassifiers = new ObservableCollection<ClassifierData>(_classifierService.GetAllClassifiers());
 
         /// <summary>
         /// Фильтрует записи документов на основе текущих значений фильтров.
@@ -259,9 +259,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// </summary>
         private void FilterClassifiers()
         {
-            if (AllClassifiers == null) { FilteredClassifiers = new ObservableCollection<Classifier>(); return; }
-            if (string.IsNullOrWhiteSpace(ClassNumberString)) { FilteredClassifiers = new ObservableCollection<Classifier>(AllClassifiers); return; }
-            FilteredClassifiers = new ObservableCollection<Classifier>(AllClassifiers.Where(c => c.Number.ToString("D6").StartsWith(ClassNumberString, StringComparison.OrdinalIgnoreCase)).OrderBy(c => c.Number).ToList());
+            if (AllClassifiers == null) { FilteredClassifiers = new ObservableCollection<ClassifierData>(); return; }
+            if (string.IsNullOrWhiteSpace(ClassNumberString)) { FilteredClassifiers = new ObservableCollection<ClassifierData>(AllClassifiers); return; }
+            FilteredClassifiers = new ObservableCollection<ClassifierData>(AllClassifiers.Where(c => c.Code.StartsWith(ClassNumberString, StringComparison.OrdinalIgnoreCase)).OrderBy(c => c.Code).ToList());
         }
 
         /// <summary>
@@ -352,11 +352,21 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             DocumentRecord.ESKDNumber.CompanyCode = CompanyCode;
             DocumentRecord.ESKDNumber.DetailNumber = DetailNumber;
             DocumentRecord.ESKDNumber.Version = Version;
-            if (int.TryParse(ClassNumberString, out int classNumberValue))
+
+            if (DocumentRecord.ESKDNumber.ClassNumber == null) DocumentRecord.ESKDNumber.ClassNumber = new Classifier();
+
+            if (SelectedClassifier != null)
             {
-                var classifier = _classifierService.GetClassifierByNumber(classNumberValue);
-                if (classifier != null) { DocumentRecord.ESKDNumber.ClassifierId = classifier.Id; DocumentRecord.ESKDNumber.ClassNumber = classifier; }
+                DocumentRecord.ESKDNumber.ClassNumber.Number = int.Parse(SelectedClassifier.Code);
+                DocumentRecord.ESKDNumber.ClassNumber.Name = SelectedClassifier.Description;
             }
+            else if (int.TryParse(ClassNumberString, out int classNumberValue))
+            {
+                DocumentRecord.ESKDNumber.ClassNumber.Number = classNumberValue;
+                var classifierData = _classifierService.GetClassifierByCode(ClassNumberString);
+                DocumentRecord.ESKDNumber.ClassNumber.Name = classifierData?.Description ?? "<неопознанный код>";
+            }
+
             if (DocumentRecord.Id == 0) await _documentRecordService.AddRecordAsync(DocumentRecord, DocumentRecord.ESKDNumber, LinkedAssemblies.Select(a => a.Id).ToList());
             else await _documentRecordService.UpdateRecordAsync(DocumentRecord, LinkedAssemblies.Select(a => a.Id).ToList());
             RequestClose?.Invoke(BuildDialogResult());

@@ -161,10 +161,16 @@ namespace DetailViewer.Infrastructure.Services
 
             if (eskdNumber.ClassNumber != null)
             {
-                var classifier = _classifierService.GetClassifierByNumber(eskdNumber.ClassNumber.Number);
-                eskdNumber.ClassNumber = classifier != null
-                    ? new Classifier { Number = classifier.Number, Description = classifier.Description }
-                    : new Classifier() { Description = "<неопознанный код>" };
+                var classifierData = _classifierService.GetClassifierByCode(eskdNumber.ClassNumber.Code);
+                if (classifierData != null)
+                {
+                    eskdNumber.ClassNumber.Name = classifierData.Description;
+                    // Здесь можно добавить и другие свойства, если они появятся в Classifier
+                }
+                else
+                {
+                    eskdNumber.ClassNumber.Name = "<неопознанный код>";
+                }
             }
 
             return new DocumentDetailRecord
