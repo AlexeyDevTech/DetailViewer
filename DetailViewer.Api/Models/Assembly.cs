@@ -14,6 +14,7 @@ namespace DetailViewer.Api.Models
         [Key]
         public int Id { get; set; }
 
+        public DateTime Date { get; set; }
         /// <summary>
         /// Получает или устанавливает внешний ключ для номера ЕСКД.
         /// </summary>

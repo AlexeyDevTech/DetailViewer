@@ -87,15 +87,60 @@ namespace DetailViewer.Infrastructure.Services
         }
 
         /// <summary>
-        /// Заглушка для импорта сборок. Требует доработки.
+        /// Импортирует сборки из листа "СБ" Excel-файла.
         /// </summary>
         private async Task ImportAssembliesAsync(ExcelPackage package, IProgress<Tuple<double, string>> progress)
         {
-            // This logic needs to be re-evaluated as it assumes direct DB access for checking existence and adding.
-            // For now, it will be a simplified version.
-            _logger.Log("Importing assemblies");
-            progress.Report(new Tuple<double, string>(0, "Импорт сборок не полностью реализован в новой архитектуре."));
-            await Task.CompletedTask;
+            _logger.Log("Starting assembly import from 'СБ' sheet.");
+            var worksheet = package.Workbook.Worksheets["СБ"];
+            if (worksheet == null)
+            {
+                _logger.LogWarning("'СБ' sheet not found. Skipping assembly import.");
+                progress.Report(new Tuple<double, string>(0, "Лист 'СБ' не найден, импорт сборок пропущен."));
+                return;
+            }
+
+            var existingAssemblies = (await _assemblyService.GetAssembliesAsync()).ToDictionary(a => a.EskdNumber.FullCode, a => a);
+            var rowCount = worksheet.Dimension.Rows;
+            int newAssemblies = 0;
+
+            for (int row = 2; row <= rowCount; row++)
+            {
+                var eskdNumberString = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
+                var dateStr = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
+                var yastCode = worksheet.Cells[row, 4].Value?.ToString()?.Trim();
+                var parentEskd = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
+                var parentName = worksheet.Cells[row, 7].Value?.ToString()?.Trim();
+                var author = worksheet.Cells[row, 8].Value?.ToString()?.Trim();
+                if (string.IsNullOrWhiteSpace(eskdNumberString) || existingAssemblies.ContainsKey(eskdNumberString))
+                {
+                    continue; // Пропустить пустые или уже существующие
+                }
+
+                var name = worksheet.Cells[row, 5].Value?.ToString()?.Trim();
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue; // Пропустить, если имя пустое
+                }
+
+                var eskdNumber = new ESKDNumber().SetCode(eskdNumberString);
+
+                var assembly = new Assembly
+                {
+                    EskdNumber = eskdNumber,
+                    Name = name,
+                    Date = ParseDate(dateStr),
+                    Author = author,
+                };
+
+                await _assemblyService.AddAssemblyAsync(assembly, null, null);
+                existingAssemblies.Add(eskdNumber.FullCode, assembly); // Добавить в локальный кэш
+                newAssemblies++;
+                progress.Report(new Tuple<double, string>((double)row / rowCount * 100, $"Импортирована сборка: {eskdNumberString}"));
+            }
+
+            _logger.Log($"Assembly import completed. Added {newAssemblies} new assemblies.");
+            progress.Report(new Tuple<double, string>(100, $"Импорт сборок завершен. Добавлено: {newAssemblies}"));
         }
 
         /// <summary>

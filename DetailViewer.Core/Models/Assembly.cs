@@ -1,5 +1,6 @@
 #pragma warning disable CS8618
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -17,6 +18,7 @@ namespace DetailViewer.Core.Models
         [Key]
         public int Id { get; set; }
 
+        public DateTime Date { get; set; }
         /// <summary>
         /// Внешний ключ для децимального номера.
         /// </summary>

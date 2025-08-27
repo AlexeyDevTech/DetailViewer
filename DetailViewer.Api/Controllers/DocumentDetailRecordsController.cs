@@ -50,6 +50,25 @@ namespace DetailViewer.Api.Controllers
         {
             _logger.LogInformation("Creating new document detail record with complex payload");
 
+            // Handle the nested Classifier object to avoid EF trying to create a duplicate.
+            if (dto.EskdNumber.ClassNumber != null)
+            {
+                var existingClassifier = await _context.Classifiers
+                    .FirstOrDefaultAsync(c => c.Number == dto.EskdNumber.ClassNumber.Number);
+
+                if (existingClassifier != null)
+                {
+                    // If it exists, attach it to the EskdNumber object.
+                    dto.EskdNumber.ClassNumber = existingClassifier;
+                }
+                else
+                {
+                    //if not -- create new!
+                    _context.Classifiers.Add(dto.EskdNumber.ClassNumber);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
             // 1. Save the ESKDNumber first to get its ID
             _context.ESKDNumbers.Add(dto.EskdNumber);
             await _context.SaveChangesAsync();
