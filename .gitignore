@@ -464,3 +464,5 @@ $RECYCLE.BIN/
 /DetailViewer/temp.db
 /GEMINI.md
 /DetailViewer.Api/Dockerfile
+/DetailViewer.Api/db
+/DetailViewer.Api/docker-compose.yml
