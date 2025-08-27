@@ -19,7 +19,7 @@ namespace DetailViewer.Api.Controllers
         /// </summary>
         /// <param name="context">Контекст базы данных приложения.</param>
         /// <param name="logger">Логгер для контроллера.</param>
-        public DocumentDetailRecordsController(ApplicationDbContext context, ILogger<DocumentDetailRecordsController> logger) 
+        public DocumentDetailRecordsController(ApplicationDbContext context, ILogger<DocumentDetailRecordsController> logger)
             : base(context, logger)
         {
         }
@@ -75,6 +75,56 @@ namespace DetailViewer.Api.Controllers
             }
 
             return CreatedAtAction("Get", new { id = dto.Record.Id }, dto.Record);
+        }
+
+        [HttpPut("with-assemblies/{id}")]
+        public async Task<IActionResult> PutWithAssemblies(int id, DocumentDetailRecordUpdateDto dto)
+        {
+            if (dto?.Record == null || id != dto.Record.Id)
+                return BadRequest("ID mismatch or empty record");
+
+            // Получаем существующую запись
+            var existingRecord = await _context.DocumentRecords.FindAsync(id);
+            if (existingRecord == null)
+                return NotFound();
+
+            // Обновляем свойства записи (кроме Id)
+            var recordProperties = typeof(DocumentDetailRecord).GetProperties()
+                .Where(p => p.Name != "Id" && p.CanWrite);
+
+            foreach (var prop in recordProperties)
+            {
+                var newValue = prop.GetValue(dto.Record);
+                if (newValue != null)
+                    prop.SetValue(existingRecord, newValue);
+            }
+
+            // Обновляем сборки
+            var existingLinks = _context.AssemblyDetails.Where(ad => ad.DetailId == id);
+            _context.AssemblyDetails.RemoveRange(existingLinks);
+
+            if (dto.AssemblyIds != null)
+            {
+                foreach (var assemblyId in dto.AssemblyIds)
+                {
+                    _context.AssemblyDetails.Add(new AssemblyDetail
+                    {
+                        DetailId = id,
+                        AssemblyId = assemblyId
+                    });
+                }
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error updating DocumentDetailRecord with id {id}");
+                throw;
+            }
         }
     }
 }

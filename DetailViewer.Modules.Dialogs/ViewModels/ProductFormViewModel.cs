@@ -285,7 +285,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (int.TryParse(ClassNumberString, out int classNumberValue))
             {
                 var classifier = _classifierService.GetClassifierByNumber(classNumberValue);
-                if (classifier != null) { Product.EskdNumber.ClassifierId = classifier.Id; Product.EskdNumber.ClassNumber = null; }
+                if (classifier != null) 
+                { 
+                    Product.EskdNumber.ClassifierId = classifier.Id; 
+                    Product.EskdNumber.ClassNumber = classifier; 
+                }
             }
 
             try

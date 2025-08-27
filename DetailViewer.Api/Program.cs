@@ -1,5 +1,6 @@
 using DetailViewer.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
 using System.Text.Json.Serialization;
 
@@ -34,10 +35,19 @@ if (!Path.IsPathRooted(dataSource))
 }
 connectionString = $"Data Source={dataSource}";
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString).AddInterceptors(new SqliteWalInterceptor()));
+builder.Services.AddDbContext<ApplicationDbContext>(options => {
+    options.UseSqlite(connectionString).AddInterceptors(new SqliteWalInterceptor());
+    //here...
+    });
 
 var app = builder.Build();
+
+// Создание базы данных
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    dbContext.Database.EnsureCreated(); // Создает базу данных, если она не существует
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

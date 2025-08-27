@@ -21,6 +21,7 @@ namespace DetailViewer.Api.Data
         /// <param name="options">Параметры для данного контекста.</param>
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
+            //Database.EnsureCreated();
         }
 
         /// <summary>

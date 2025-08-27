@@ -95,6 +95,3 @@ namespace DetailViewer.Api.Models
         }
     }
 }
-
-    }
-}

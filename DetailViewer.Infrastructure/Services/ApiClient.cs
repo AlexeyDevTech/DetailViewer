@@ -103,7 +103,7 @@ namespace DetailViewer.Infrastructure.Services
             {
                 var jsonData = JsonSerializer.Serialize(data, _jsonSerializerOptions);
                 var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync(endpoint, content);
+                var response = await _httpClient.PostAsync($"{endpoint}/add", content);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -126,6 +126,22 @@ namespace DetailViewer.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogError($"Error putting data to {endpoint}/{id}", ex);
+                throw;
+            }
+        }
+
+        public async Task UpdateRecord<T>(string endpoint, int id, T data)
+        {
+            try
+            {
+                var jsonData = JsonSerializer.Serialize(data, _jsonSerializerOptions);
+                var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
+                var response = await _httpClient.PutAsync($"{endpoint}/with-assemblies/{id}", content);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error putting data to {endpoint}/with-assemblies/{id}", ex);
                 throw;
             }
         }

@@ -256,7 +256,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// </summary>
         private void AddRelatedProduct()
         {
-            _dialogService.ShowDialog("SelectProductDialog", new DialogParameters(), r =>
+            _dialogService.ShowDialog("SelectProductDialog", new DialogParameters() { { "SelectProducts", RelatedProducts.ToList() } }, r =>
             {
                 if (r.Result == ButtonResult.OK)
                 {
@@ -283,7 +283,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (int.TryParse(ClassNumberString, out int classNumberValue))
             {
                 var classifier = _classifierService.GetClassifierByNumber(classNumberValue);
-                if (classifier != null) { Assembly.EskdNumber.ClassifierId = classifier.Id; Assembly.EskdNumber.ClassNumber = null; }
+                if (classifier != null) { Assembly.EskdNumber.ClassifierId = classifier.Id; Assembly.EskdNumber.ClassNumber = classifier; }
             }
             if (Assembly.Id == 0) await _assemblyService.AddAssemblyAsync(Assembly, ParentAssemblies.Select(a => a.Id).ToList(), RelatedProducts.Select(p => p.Id).ToList());
             else { await _assemblyService.UpdateAssemblyAsync(Assembly); await _assemblyService.UpdateAssemblyParentAssembliesAsync(Assembly.Id, ParentAssemblies.ToList()); await _assemblyService.UpdateAssemblyRelatedProductsAsync(Assembly.Id, RelatedProducts.ToList()); }

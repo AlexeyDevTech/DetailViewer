@@ -99,24 +99,54 @@ namespace DetailViewer.Api.Controllers
         /// <returns>NoContent в случае успеха, BadRequest при несоответствии ID, NotFound, если сущность не существует.</returns>
         // PUT: api/[controller]/5
         [HttpPut("{id}")]
-        public virtual async Task<IActionResult> Put(int id, TEntity entity)
+       public virtual async Task<IActionResult> Put(int id, TEntity entity)
         {
             _logger.LogInformation($"Updating entity of type {typeof(TEntity).Name} with id {id}");
-            var entityId = entity.GetType().GetProperty("Id")?.GetValue(entity, null);
-            if (entityId == null || id != (int)entityId)
+
+            // Проверяем совпадение ID
+            var entityIdProperty = entity.GetType().GetProperty("Id");
+            if (entityIdProperty == null)
             {
-                return BadRequest();
+                _logger.LogError("Entity does not have an Id property");
+                return BadRequest("Entity must have an Id property");
             }
 
-            _context.Entry(entity).State = EntityState.Modified;
+            var entityId = entityIdProperty.GetValue(entity);
+            if (entityId == null || id != (int)entityId)
+            {
+                return BadRequest("ID mismatch");
+            }
+
+            // Загружаем существующую сущность из базы
+            var existingEntity = await _context.Set<TEntity>().FindAsync(id);
+            if (existingEntity == null)
+            {
+                return NotFound();
+            }
+
+            // // Копируем значения из DTO в существующую сущность
+            // _context.Entry(existingEntity).CurrentValues.SetValues(entity);
+             // Копируем все свойства кроме Id
+            var properties = typeof(TEntity).GetProperties()
+                                            .Where(p => p.Name != "Id" && p.CanWrite);
+
+            foreach (var prop in properties)
+            {
+                var newValue = prop.GetValue(entity);
+                if (newValue != null) // Копируем только если значение передано
+                {
+                    prop.SetValue(existingEntity, newValue);
+                }
+            }
 
             try
             {
                 await _context.SaveChangesAsync();
+                _logger.LogInformation($"Entity of type {typeof(TEntity).Name} with id {id} updated successfully");
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                _logger.LogError(ex, $"Error updating entity of type {typeof(TEntity).Name} with id {id}");
+                _logger.LogError(ex, $"Concurrency error updating entity of type {typeof(TEntity).Name} with id {id}");
                 if (!await EntityExists(id))
                 {
                     return NotFound();
@@ -125,6 +155,11 @@ namespace DetailViewer.Api.Controllers
                 {
                     throw;
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Unexpected error updating entity of type {typeof(TEntity).Name} with id {id}");
+                throw;
             }
 
             return NoContent();
@@ -135,6 +170,7 @@ namespace DetailViewer.Api.Controllers
         /// </summary>
         /// <param name="entity">Объект сущности для создания.</param>
         /// <returns>Созданная сущность с ее идентификатором.</returns>
+        [HttpPost("add")]
         protected virtual async Task<ActionResult<TEntity>> Post(TEntity entity)
         {
             _logger.LogInformation($"Creating new entity of type {typeof(TEntity).Name}");

@@ -55,6 +55,8 @@ namespace DetailViewer.Core.Interfaces
         /// <returns>Задача, представляющая асинхронную операцию.</returns>
         Task PutAsync<T>(string endpoint, int id, T data);
 
+        Task UpdateRecord<T>(string endpoint, int id, T data);
+
         /// <summary>
         /// Асинхронно обновляет существующий объект методом PUT (без указания ID в URL).
         /// </summary>

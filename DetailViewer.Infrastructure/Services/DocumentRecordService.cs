@@ -45,7 +45,8 @@ namespace DetailViewer.Infrastructure.Services
         {
             _logger.Log($"Updating record via API: {record.Name}");
             var payload = new { record, assemblyIds }; // This might need a DTO as well if it causes issues
-            await _apiClient.PutAsync(ApiEndpoints.DocumentDetailRecords, record.Id, payload);
+            //await _apiClient.PutAsync(ApiEndpoints.DocumentDetailRecords, record.Id, payload);
+            await _apiClient.UpdateRecord(ApiEndpoints.DocumentDetailRecords, record.Id, payload);
         }
 
         /// <inheritdoc/>

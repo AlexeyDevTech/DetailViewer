@@ -355,7 +355,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             if (int.TryParse(ClassNumberString, out int classNumberValue))
             {
                 var classifier = _classifierService.GetClassifierByNumber(classNumberValue);
-                if (classifier != null) { DocumentRecord.ESKDNumber.ClassifierId = classifier.Id; DocumentRecord.ESKDNumber.ClassNumber = null; }
+                if (classifier != null) { DocumentRecord.ESKDNumber.ClassifierId = classifier.Id; DocumentRecord.ESKDNumber.ClassNumber = classifier; }
             }
             if (DocumentRecord.Id == 0) await _documentRecordService.AddRecordAsync(DocumentRecord, DocumentRecord.ESKDNumber, LinkedAssemblies.Select(a => a.Id).ToList());
             else await _documentRecordService.UpdateRecordAsync(DocumentRecord, LinkedAssemblies.Select(a => a.Id).ToList());

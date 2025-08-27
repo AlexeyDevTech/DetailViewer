@@ -8,6 +8,7 @@ using Prism.Services.Dialogs;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
@@ -68,17 +69,16 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _productService = productService;
             OkCommand = new DelegateCommand(Ok);
             CancelCommand = new DelegateCommand(Cancel);
-            LoadProducts();
+            //LoadProducts();
         }
 
         /// <summary>
         /// Асинхронно загружает все продукты и инициализирует список для выбора.
         /// </summary>
-        private async void LoadProducts()
+        private async Task LoadProducts()
         {
             var products = await _productService.GetProductsAsync();
-            _allProducts = new ObservableCollection<SelectableItem<Product>>(products.Select(p => new SelectableItem<Product>(p)));
-            _filteredProducts = new ObservableCollection<SelectableItem<Product>>(_allProducts);
+            FilteredProducts = new ObservableCollection<SelectableItem<Product>>(products.Select(p => new SelectableItem<Product>(p)));
         }
 
         /// <summary>
@@ -138,6 +138,19 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// Вызывается при открытии диалогового окна.
         /// </summary>
         /// <param name="parameters">Параметры диалогового окна.</param>
-        public void OnDialogOpened(IDialogParameters parameters) { }
+        public async void OnDialogOpened(IDialogParameters parameters) 
+        {
+            await LoadProducts();
+
+            var list = parameters.GetValue<List<Product>>("SelectProducts");
+            if(list != null)
+                foreach(var item in list)
+            {
+               var selItem = FilteredProducts?.FirstOrDefault(x => x.Item.Id == item.Id);
+                if (selItem != null)
+                    selItem.IsSelected = true;
+            }
+            RaisePropertyChanged(nameof(FilteredProducts));
+        }
     }
 }
