@@ -15,10 +15,19 @@ namespace DetailViewer.Api.Data
         public DbSet<ProductAssembly> ProductAssemblies { get; set; }
         public DbSet<AssemblyParent> AssemblyParents { get; set; }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ApplicationDbContext"/>.
+        /// </summary>
+        /// <param name="options">Параметры для данного контекста.</param>
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
 
+        /// <summary>
+        /// Конфигурирует модель, которая была обнаружена по соглашению из типов сущностей,
+        /// представленных в свойствах <see cref="T:Microsoft.EntityFrameworkCore.DbSet`1" /> в этом контексте.
+        /// </summary>
+        /// <param name="modelBuilder">Построитель, используемый для создания модели для этого контекста.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

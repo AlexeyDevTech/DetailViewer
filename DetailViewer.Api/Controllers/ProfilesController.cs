@@ -12,10 +12,19 @@ namespace DetailViewer.Api.Controllers
     [ApiController]
     public class ProfilesController : BaseController<Profile>
     {
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ProfilesController"/>.
+        /// </summary>
+        /// <param name="context">Контекст базы данных приложения.</param>
+        /// <param name="logger">Логгер для контроллера.</param>
         public ProfilesController(ApplicationDbContext context, ILogger<ProfilesController> logger) : base(context, logger)
         {
         }
 
+        /// <summary>
+        /// Получает все профили.
+        /// </summary>
+        /// <returns>Список всех профилей.</returns>
         [HttpGet("all")]
         public async Task<ActionResult<IEnumerable<Profile>>> GetAllProfiles()
         {

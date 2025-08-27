@@ -9,6 +9,11 @@ namespace DetailViewer.Api.Controllers
     [ApiController]
     public class AssemblyDetailsController : BaseController<AssemblyDetail>
     {
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="AssemblyDetailsController"/>.
+        /// </summary>
+        /// <param name="context">Контекст базы данных приложения.</param>
+        /// <param name="logger">Логгер для контроллера.</param>
         public AssemblyDetailsController(ApplicationDbContext context, ILogger<AssemblyDetailsController> logger) : base(context, logger)
         {
             _logger.LogInformation("AssemblyDetailsController created");

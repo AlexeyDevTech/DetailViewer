@@ -14,11 +14,21 @@ namespace DetailViewer.Api.Controllers
     [ApiController]
     public class DocumentDetailRecordsController : BaseController<DocumentDetailRecord>
     {
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="DocumentDetailRecordsController"/>.
+        /// </summary>
+        /// <param name="context">Контекст базы данных приложения.</param>
+        /// <param name="logger">Логгер для контроллера.</param>
         public DocumentDetailRecordsController(ApplicationDbContext context, ILogger<DocumentDetailRecordsController> logger) 
             : base(context, logger)
         {
         }
 
+        /// <summary>
+        /// Получает родительские сборки для данной записи о детали документа.
+        /// </summary>
+        /// <param name="id">Идентификатор записи о детали документа.</param>
+        /// <returns>Список родительских сборок.</returns>
         [HttpGet("{id}/parents")]
         public async Task<ActionResult<IEnumerable<Assembly>>> GetParentAssemblies(int id)
         {
@@ -30,6 +40,11 @@ namespace DetailViewer.Api.Controllers
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Создает новую запись о детали документа с связанным номером ЕСКД и ссылками на сборки.
+        /// </summary>
+        /// <param name="dto">DTO, содержащий данные для создания записи о детали документа.</param>
+        /// <returns>Созданная запись о детали документа.</returns>
         [HttpPost]
         public async Task<ActionResult<DocumentDetailRecord>> Post(DocumentDetailRecordCreateDto dto)
         {

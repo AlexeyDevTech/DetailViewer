@@ -7,11 +7,19 @@ namespace DetailViewer.Api.Data
     {
         private readonly string _connectionString;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ApplicationDbContextFactory"/>.
+        /// </summary>
+        /// <param name="connectionString">Строка подключения к базе данных.</param>
         public ApplicationDbContextFactory(string connectionString)
         {
             _connectionString = connectionString;
         }
 
+        /// <summary>
+        /// Создает новый экземпляр <see cref="ApplicationDbContext"/>.
+        /// </summary>
+        /// <returns>Новый экземпляр <see cref="ApplicationDbContext"/>.</returns>
         public ApplicationDbContext CreateDbContext()
         {
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();

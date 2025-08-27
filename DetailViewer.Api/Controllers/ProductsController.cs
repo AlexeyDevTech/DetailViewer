@@ -14,11 +14,21 @@ namespace DetailViewer.Api.Controllers
     [ApiController]
     public class ProductsController : BaseController<Product>
     {
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ProductsController"/>.
+        /// </summary>
+        /// <param name="context">Контекст базы данных приложения.</param>
+        /// <param name="logger">Логгер для контроллера.</param>
         public ProductsController(ApplicationDbContext context, ILogger<ProductsController> logger) 
             : base(context, logger)
         {
         }
 
+        /// <summary>
+        /// Создает новый продукт с связанным номером ЕСКД и родительскими сборками.
+        /// </summary>
+        /// <param name="dto">DTO, содержащий данные для создания продукта.</param>
+        /// <returns>Созданный продукт.</returns>
         [HttpPost]
         public async Task<ActionResult<Product>> Post(ProductCreateDto dto)
         {
@@ -55,6 +65,11 @@ namespace DetailViewer.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Получает родительские сборки для данного продукта.
+        /// </summary>
+        /// <param name="id">Идентификатор продукта.</param>
+        /// <returns>Список родительских сборок.</returns>
         [HttpGet("{id}/parents")]
         public async Task<ActionResult<IEnumerable<Assembly>>> GetParentAssemblies(int id)
         {
@@ -66,6 +81,12 @@ namespace DetailViewer.Api.Controllers
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Обновляет родительские сборки для данного продукта.
+        /// </summary>
+        /// <param name="id">Идентификатор продукта.</param>
+        /// <param name="parentIds">Список идентификаторов родительских сборок.</param>
+        /// <returns>NoContent в случае успеха, NotFound, если продукт не существует.</returns>
         [HttpPut("{id}/parents")]
         public async Task<IActionResult> UpdateParentAssemblies(int id, List<int> parentIds)
         {
@@ -92,6 +113,12 @@ namespace DetailViewer.Api.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Преобразует продукт в сборку, перенося связанный номер ЕСКД и родительско-дочерние отношения.
+        /// </summary>
+        /// <param name="id">Идентификатор продукта для преобразования.</param>
+        /// <param name="childProductIds">Список идентификаторов продуктов, которые будут связаны как дочерние с новой сборкой.</param>
+        /// <returns>Вновь созданная сборка.</returns>
         [HttpPost("{id}/convertToAssembly")]
         public async Task<ActionResult<Assembly>> ConvertToAssembly(int id, List<int> childProductIds)
         {

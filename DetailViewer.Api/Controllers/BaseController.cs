@@ -16,12 +16,21 @@ namespace DetailViewer.Api.Controllers
         protected readonly ApplicationDbContext _context;
         protected readonly ILogger<BaseController<TEntity>> _logger;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="BaseController{TEntity}"/>.
+        /// </summary>
+        /// <param name="context">Контекст базы данных приложения.</param>
+        /// <param name="logger">Логгер для контроллера.</param>
         public BaseController(ApplicationDbContext context, ILogger<BaseController<TEntity>> logger)
         {
             _context = context;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Получает все сущности типа <typeparamref name="TEntity"/>.
+        /// </summary>
+        /// <returns>Список сущностей.</returns>
         // GET: api/[controller]
         [HttpGet]
         public virtual async Task<ActionResult<IEnumerable<TEntity>>> Get()
@@ -45,6 +54,11 @@ namespace DetailViewer.Api.Controllers
             return await query.ToListAsync();
         }
 
+        /// <summary>
+        /// Получает конкретную сущность по ее идентификатору.
+        /// </summary>
+        /// <param name="id">Идентификатор сущности для получения.</param>
+        /// <returns>Сущность с указанным идентификатором, или NotFound, если не найдена.</returns>
         // GET: api/[controller]/5
         [HttpGet("{id}")]
         public virtual async Task<ActionResult<TEntity>> Get(int id)
@@ -77,6 +91,12 @@ namespace DetailViewer.Api.Controllers
             return entity;
         }
 
+        /// <summary>
+        /// Обновляет существующую сущность.
+        /// </summary>
+        /// <param name="id">Идентификатор сущности для обновления.</param>
+        /// <param name="entity">Объект сущности с обновленными значениями.</param>
+        /// <returns>NoContent в случае успеха, BadRequest при несоответствии ID, NotFound, если сущность не существует.</returns>
         // PUT: api/[controller]/5
         [HttpPut("{id}")]
         public virtual async Task<IActionResult> Put(int id, TEntity entity)
@@ -110,6 +130,11 @@ namespace DetailViewer.Api.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Создает новую сущность.
+        /// </summary>
+        /// <param name="entity">Объект сущности для создания.</param>
+        /// <returns>Созданная сущность с ее идентификатором.</returns>
         protected virtual async Task<ActionResult<TEntity>> Post(TEntity entity)
         {
             _logger.LogInformation($"Creating new entity of type {typeof(TEntity).Name}");
@@ -121,6 +146,11 @@ namespace DetailViewer.Api.Controllers
             return CreatedAtAction("Get", new { id }, entity);
         }
 
+        /// <summary>
+        /// Удаляет конкретную сущность по ее идентификатору.
+        /// </summary>
+        /// <param name="id">Идентификатор сущности для удаления.</param>
+        /// <returns>NoContent в случае успеха, NotFound, если сущность не существует.</returns>
         // DELETE: api/[controller]/5
         [HttpDelete("{id}")]
         public virtual async Task<IActionResult> Delete(int id)
@@ -140,6 +170,11 @@ namespace DetailViewer.Api.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Проверяет, существует ли сущность с указанным идентификатором.
+        /// </summary>
+        /// <param name="id">Идентификатор сущности для проверки.</param>
+        /// <returns>True, если сущность существует, иначе false.</returns>
         protected async Task<bool> EntityExists(int id)
         {
             return await _context.Set<TEntity>().AnyAsync(e => EF.Property<int>(e, "Id") == id);

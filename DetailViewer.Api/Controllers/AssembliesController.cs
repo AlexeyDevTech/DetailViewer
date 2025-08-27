@@ -14,11 +14,21 @@ namespace DetailViewer.Api.Controllers
     [ApiController]
     public class AssembliesController : BaseController<Assembly>
     {
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="AssembliesController"/>.
+        /// </summary>
+        /// <param name="context">Контекст базы данных приложения.</param>
+        /// <param name="logger">Логгер для контроллера.</param>
         public AssembliesController(ApplicationDbContext context, ILogger<AssembliesController> logger) 
             : base(context, logger)
         {
         }
 
+        /// <summary>
+        /// Создает новую сборку с связанным номером ЕСКД, родительскими сборками и связанными продуктами.
+        /// </summary>
+        /// <param name="dto">DTO, содержащий данные для создания сборки.</param>
+        /// <returns>Созданная сборка.</returns>
         [HttpPost]
         public async Task<ActionResult<Assembly>> Post(AssemblyCreateDto dto)
         {
@@ -63,6 +73,11 @@ namespace DetailViewer.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Получает родительские сборки для данной сборки.
+        /// </summary>
+        /// <param name="id">Идентификатор сборки.</param>
+        /// <returns>Список родительских сборок.</returns>
         [HttpGet("{id}/parents")]
         public async Task<ActionResult<IEnumerable<Assembly>>> GetParentAssemblies(int id)
         {
@@ -74,6 +89,11 @@ namespace DetailViewer.Api.Controllers
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Получает продукты, связанные с данной сборкой.
+        /// </summary>
+        /// <param name="id">Идентификатор сборки.</param>
+        /// <returns>Список связанных продуктов.</returns>
         [HttpGet("{id}/products")]
         public async Task<ActionResult<IEnumerable<Product>>> GetRelatedProducts(int id)
         {
@@ -85,6 +105,12 @@ namespace DetailViewer.Api.Controllers
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Обновляет родительские сборки для данной сборки.
+        /// </summary>
+        /// <param name="id">Идентификатор сборки.</param>
+        /// <param name="parentIds">Список идентификаторов родительских сборок.</param>
+        /// <returns>NoContent в случае успеха, NotFound, если сборка не существует.</returns>
         [HttpPut("{id}/parents")]
         public async Task<IActionResult> UpdateParentAssemblies(int id, List<int> parentIds)
         {
@@ -111,6 +137,12 @@ namespace DetailViewer.Api.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Обновляет продукты, связанные с данной сборкой.
+        /// </summary>
+        /// <param name="id">Идентификатор сборки.</param>
+        /// <param name="productIds">Список идентификаторов продуктов.</param>
+        /// <returns>NoContent в случае успеха, NotFound, если сборка не существует.</returns>
         [HttpPut("{id}/products")]
         public async Task<IActionResult> UpdateRelatedProducts(int id, List<int> productIds)
         {
