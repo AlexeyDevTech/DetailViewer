@@ -7,7 +7,7 @@
              xmlns:dialogs="clr-namespace:DetailViewer.Modules.Dialogs"
              mc:Ignorable="d"
              prism:ViewModelLocator.AutoWireViewModel="True"
-             d:DesignHeight="400" d:DesignWidth="600"
+             d:DesignHeight="800" d:DesignWidth="600"
              Background="{StaticResource BackgroundLightBrush}"
              Padding="15">
 

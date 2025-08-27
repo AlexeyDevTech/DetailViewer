@@ -103,7 +103,7 @@ namespace DetailViewer.Infrastructure.Services
             {
                 var jsonData = JsonSerializer.Serialize(data, _jsonSerializerOptions);
                 var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync($"{endpoint}/add", content);
+                var response = await _httpClient.PostAsync(endpoint, content);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)

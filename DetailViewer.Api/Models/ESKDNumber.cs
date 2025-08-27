@@ -65,26 +65,54 @@ namespace DetailViewer.Api.Models
         {
             try
             {
-                code = code.Replace(" ", ""); // Удаляем пробелы
-                if (string.IsNullOrEmpty(code) || (code.Length != 15 && code.Length != 18))
+                if (string.IsNullOrWhiteSpace(code))
                 {
-                    this.ClassNumber = null;
                     return this;
                 }
+
+                code = code.Trim();
                 var parts = code.Split('.');
-                if (parts.Length != 3 || parts[0] != "ДТМЛ")
+
+                if (parts.Length != 3)
                 {
+                    Debug.WriteLine($"Invalid ESKD number format: '{code}'. Expected 3 parts separated by dots.");
                     this.ClassNumber = null;
                     return this;
                 }
+
                 CompanyCode = parts[0];
-                ClassNumber = new Classifier { Number = int.Parse(parts[1]) };
-                var detailParts = parts[2].Split('-');
-                DetailNumber = int.Parse(detailParts[0]);
-                if (detailParts.Length > 1)
+
+                if (int.TryParse(parts[1], out int classNum))
                 {
-                    Version = int.Parse(detailParts[1]);
+                    ClassNumber = new Classifier { Number = classNum };
                 }
+                else
+                {
+                    Debug.WriteLine($"Invalid classifier number: '{parts[1]}'");
+                    this.ClassNumber = null;
+                    return this;
+                }
+
+                var detailParts = parts[2].Split('-');
+                if (int.TryParse(detailParts[0], out int detailNum))
+                {
+                    DetailNumber = detailNum;
+                }
+                else
+                {
+                    Debug.WriteLine($"Invalid detail number: '{detailParts[0]}'");
+                    return this;
+                }
+
+                if (detailParts.Length > 1 && int.TryParse(detailParts[1], out int versionNum))
+                {
+                    Version = versionNum;
+                }
+                else
+                {
+                    Version = null;
+                }
+
                 return this;
             }
             catch (Exception ex)

@@ -31,16 +31,11 @@ namespace DetailViewer.Api.Controllers
             _logger.LogInformation("Getting all profiles");
             return await _context.Profiles.ToListAsync();
         }
-        [HttpPost("add")]
-        protected override async Task<ActionResult<Profile>> Post(Profile entity)
-        {
-            _logger.LogInformation($"Creating new entity of type {typeof(Profile).Name}");
-            _context.Set<Profile>().Add(entity);
-            await _context.SaveChangesAsync();
 
-            var id = entity.GetType().GetProperty("Id")?.GetValue(entity, null);
-            _logger.LogInformation($"Entity of type {typeof(Profile).Name} created with id {id}");
-            return CreatedAtAction("Get", new { id }, entity);
+        [HttpPost]
+        public async Task<ActionResult<Profile>> PostProfile(Profile profile)
+        {
+            return await Post(profile);
         }
     }
 }

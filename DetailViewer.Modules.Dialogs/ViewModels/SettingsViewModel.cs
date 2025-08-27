@@ -329,7 +329,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                             ImportProgress = p.Item1;
                             ImportStatus = p.Item2;
                         });
-                        //await _importService.ImportFromExcelAsync(filePath, selectedSheet, progress, createRelationships);
+                        await _importService.ImportFromExcelAsync(filePath, selectedSheet, progress, createRelationships);
                         IsImporting = false;
                         ImportStatus = "Импорт завершен.";
                     }

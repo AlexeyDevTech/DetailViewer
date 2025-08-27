@@ -104,8 +104,14 @@ namespace DetailViewer.Infrastructure.Services
         private async Task<DocumentDetailRecord> CreateRecordFromRow(ExcelWorksheet worksheet, int row, string eskdNumberString)
         {
             var eskdNumber = new ESKDNumber().SetCode(eskdNumberString);
-            var classifier = _classifierService.GetClassifierByNumber(eskdNumber.ClassNumber.Number);
-            eskdNumber.ClassNumber = classifier != null ? new Classifier { Number = classifier.Number, Description = classifier.Description } : null;
+
+            if (eskdNumber.ClassNumber != null)
+            {
+                var classifier = _classifierService.GetClassifierByNumber(eskdNumber.ClassNumber.Number);
+                eskdNumber.ClassNumber = classifier != null
+                    ? new Classifier { Number = classifier.Number, Description = classifier.Description }
+                    : new Classifier() { Description = "<неопознанный код>" };
+            }
 
             return new DocumentDetailRecord
             {
