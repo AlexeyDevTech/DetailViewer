@@ -13,4 +13,17 @@
     <ProjectReference Include="..\DetailViewer.Modules.Dialogs\DetailViewer.Modules.Dialogs.csproj" />
     <ProjectReference Include="..\DetailViewer.Modules.Explorer\DetailViewer.Modules.Explorer.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\eskd_classifiers.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+    <Target Name="UpdateVersion" BeforeTargets="BeforeBuild">
+		<Exec Command="powershell.exe -File &quot;$(MSBuildProjectDirectory)\version.ps1&quot; -VersionFile &quot;$(MSBuildProjectDirectory)\version.txt&quot; -Configuration $(Configuration)" ConsoleToMSBuild="true">
+			<Output TaskParameter="ConsoleOutput" PropertyName="AssemblyVersion" />
+		</Exec>
+		<PropertyGroup>
+			<Version>$(AssemblyVersion)</Version>
+		</PropertyGroup>
+	</Target>
 </Project>
