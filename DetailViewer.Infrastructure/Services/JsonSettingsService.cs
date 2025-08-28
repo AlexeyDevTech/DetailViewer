@@ -1,0 +1,86 @@
+using DetailViewer.Core.Interfaces;
+using DetailViewer.Core.Models;
+using System;
+using System.IO;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+namespace DetailViewer.Infrastructure.Services
+{
+    /// <summary>
+    /// Реализация сервиса настроек, которая хранит данные в формате JSON в локальном файле.
+    /// </summary>
+    public class JsonSettingsService : ISettingsService
+    {
+        private readonly string _settingsFilePath;
+        private readonly ILogger _logger;
+
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="JsonSettingsService"/>.
+        /// </summary>
+        /// <param name="logger">Сервис логирования.</param>
+        public JsonSettingsService(ILogger logger)
+        {
+            _logger = logger;
+            _settingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DetailViewer", "settings.json");
+            var settingsDirectory = Path.GetDirectoryName(_settingsFilePath);
+            if (!string.IsNullOrEmpty(settingsDirectory) && !Directory.Exists(settingsDirectory))
+            {
+                Directory.CreateDirectory(settingsDirectory);
+            }
+        }
+
+        /// <inheritdoc/>
+        public AppSettings LoadSettings()
+        {
+            _logger.Log("Loading settings");
+            if (!File.Exists(_settingsFilePath))
+            {
+                _logger.LogInfo($"Settings file not found at {_settingsFilePath}. Creating a new settings file with default values.");
+                var defaultSettings = new AppSettings();
+                try
+                {
+                    var json = JsonSerializer.Serialize(defaultSettings, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(_settingsFilePath, json);
+                    _logger.LogInfo($"New settings file created at {_settingsFilePath}.");
+                    return defaultSettings;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error creating default settings file at {_settingsFilePath}: {ex.Message}", ex);
+                    return defaultSettings;
+                }
+            }
+
+            try
+            {
+                var json = File.ReadAllText(_settingsFilePath);
+                var settings = JsonSerializer.Deserialize<AppSettings>(json);
+                _logger.LogInfo($"Settings loaded from {_settingsFilePath}.");
+                return settings ?? new AppSettings();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error loading settings from {_settingsFilePath}: {ex.Message}", ex);
+                return new AppSettings(); // Return default settings on error
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task SaveSettingsAsync(AppSettings settings)
+        {
+            _logger.Log("Saving settings");
+            try
+            {
+                var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+                await File.WriteAllTextAsync(_settingsFilePath, json);
+                _logger.LogInfo($"Settings saved to {_settingsFilePath}.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error saving settings to {_settingsFilePath}: {ex.Message}", ex);
+                throw; // Re-throw to propagate the error
+            }
+        }
+    }
+}

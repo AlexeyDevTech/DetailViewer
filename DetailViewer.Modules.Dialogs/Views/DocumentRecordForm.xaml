@@ -6,30 +6,24 @@
     xmlns:local="clr-namespace:DetailViewer.Modules.Dialogs.Converters"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:prism="http://prismlibrary.com/"
+    MaxWidth="1000"
     d:DesignHeight="950"
     d:DesignWidth="800"
     prism:ViewModelLocator.AutoWireViewModel="True"
+    Background="{StaticResource BackgroundLightBrush}"
     mc:Ignorable="d">
     <UserControl.Resources>
         <local:ImagePathConverter x:Key="ImagePathConverter" />
-        <!--  Style for Excel-like TextBox cells  -->
-        <Style x:Key="ExcelTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Padding" Value="5" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="BorderBrush" Value="#FFDDDDDD" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Margin" Value="5" />
-            <Setter Property="Background" Value="White" />
-        </Style>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <local:InverseBooleanConverter x:Key="InverseBooleanConverter" />
     </UserControl.Resources>
-    <Grid Margin="10" Background="White">
+    <Grid Margin="10" Background="{StaticResource BackgroundWhiteBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -47,7 +41,6 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="Дата:" />
         <DatePicker
             Grid.Row="0"
@@ -60,7 +53,6 @@
             Grid.Column="0"
             Margin="5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="ЕСКД номер:" />
         <StackPanel
             Grid.Row="1"
@@ -69,23 +61,19 @@
             <TextBox
                 Width="50"
                 IsReadOnly="True"
-                Style="{StaticResource ExcelTextBoxStyle}"
                 Text="{Binding CompanyCode}" />
             <TextBlock
                 Margin="2,0"
                 VerticalAlignment="Center"
                 Text="." />
-            <TextBox
-                Width="80"
-                Style="{StaticResource ExcelTextBoxStyle}"
-                Text="{Binding ClassNumberString, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Width="80" Text="{Binding ClassNumberString, UpdateSourceTrigger=PropertyChanged}" />
             <TextBlock
                 Margin="2,0"
                 VerticalAlignment="Center"
                 Text="." />
             <TextBox
                 Width="50"
-                Style="{StaticResource ExcelTextBoxStyle}"
+                IsEnabled="{Binding IsManualDetailNumberEnabled}"
                 Text="{Binding DetailNumber, UpdateSourceTrigger=PropertyChanged}" />
             <TextBlock
                 Margin="2,0"
@@ -93,15 +81,24 @@
                 Text="-" />
             <TextBox
                 Width="50"
-                Style="{StaticResource ExcelTextBoxStyle}"
+                IsEnabled="{Binding IsNewVersionEnabled, Converter={StaticResource InverseBooleanConverter}}"
                 Text="{Binding Version, UpdateSourceTrigger=PropertyChanged}" />
+            <CheckBox
+                Margin="5,0,0,0"
+                Content="Ручной ввод"
+                IsChecked="{Binding IsManualDetailNumberEnabled}"
+                IsEnabled="{Binding IsNewVersionEnabled, Converter={StaticResource InverseBooleanConverter}}" />
+            <CheckBox
+                Margin="5,0,0,0"
+                Content="Новое исполнение"
+                IsChecked="{Binding IsNewVersionEnabled}" />
         </StackPanel>
 
         <ListBox
             Grid.Row="2"
             Grid.Column="0"
             Grid.ColumnSpan="2"
-            Height="250"
+            Height="150"
             Margin="5"
             ItemsSource="{Binding FilteredClassifiers}"
             SelectedItem="{Binding SelectedClassifier}">
@@ -137,95 +134,128 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <TextBlock
+        <CheckBox
             Grid.Row="3"
             Grid.Column="0"
             Margin="5"
-            VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
-            Text="ЯСТ код:" />
-        <TextBox
+            Content="Только мои"
+            IsChecked="{Binding FilterByFullName}" />
+        <TextBlock
             Grid.Row="3"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
+            Margin="0,0,10,0"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Center"
+            FontWeight="Bold"
+            Foreground="Red"
+            Text="{Binding UserMessage}"
+            Visibility="{Binding IsNewVersionEnabled, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+        <DataGrid
+            Grid.Row="4"
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            MinHeight="100"
+            MaxHeight="1100"
+            Margin="5"
+            VerticalAlignment="Stretch"
+            ItemsSource="{Binding FilteredRecords}"
+            SelectedItem="{Binding SelectedRecordToCopy}">
+            <DataGrid.Columns>
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding ESKDNumber.FullCode}"
+                    Header="ЕСКД" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Name}"
+                    Header="Имя" />
+                <DataGridTextColumn
+                    Width="150"
+                    Binding="{Binding FullName}"
+                    Header="ФИО" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock
+            Grid.Row="5"
+            Grid.Column="0"
+            Margin="5,10,5,5"
+            VerticalAlignment="Center"
+            Text="ЯСТ код:" />
+        <TextBox
+            Grid.Row="5"
+            Grid.Column="1"
+            Margin="5,10,5,5"
             Text="{Binding DocumentRecord.YASTCode}" />
 
         <TextBlock
-            Grid.Row="4"
+            Grid.Row="6"
             Grid.Column="0"
-            Margin="5"
+            Margin="5,10,5,5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="Имя:" />
         <TextBox
-            Grid.Row="4"
+            Grid.Row="6"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
+            Margin="5,10,5,5"
             Text="{Binding DocumentRecord.Name}" />
 
         <TextBlock
-            Grid.Row="5"
-            Grid.Column="0"
-            Margin="5"
-            VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
-            Text="Номер сборки:" />
-        <TextBox
-            Grid.Row="5"
-            Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
-            Text="{Binding DocumentRecord.AssemblyNumber}" />
-
-        <TextBlock
-            Grid.Row="6"
-            Grid.Column="0"
-            Margin="5"
-            VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
-            Text="Имя сборки:" />
-        <TextBox
-            Grid.Row="6"
-            Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
-            Text="{Binding DocumentRecord.AssemblyName}" />
-
-        <TextBlock
             Grid.Row="7"
             Grid.Column="0"
-            Margin="5"
+            Margin="5,10,5,5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
-            Text="Номер продукта:" />
-        <TextBox
+            Text="Сборка:" />
+        <DataGrid
             Grid.Row="7"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
-            Text="{Binding DocumentRecord.ProductNumber}" />
-
-        <TextBlock
-            Grid.Row="8"
-            Grid.Column="0"
+            MinHeight="100"
             Margin="5"
-            VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
-            Text="Имя продукта:" />
-        <TextBox
+            VerticalAlignment="Stretch"
+            ItemsSource="{Binding LinkedAssemblies}"
+            SelectedItem="{Binding SelectedLinkedAssembly}">
+            <DataGrid.Columns>
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding EskdNumber.FullCode}"
+                    Header="ЕСКД" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Name}"
+                    Header="Имя" />
+                <DataGridTextColumn
+                    Width="150"
+                    Binding="{Binding Author}"
+                    Header="ФИО" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel
             Grid.Row="8"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
-            Text="{Binding DocumentRecord.ProductName}" />
+            HorizontalAlignment="Right"
+            Orientation="Horizontal">
+            <Button
+                Margin="5"
+                Command="{Binding AddAssemblyLinkCommand}"
+                Content="Добавить" />
+            <Button
+                Margin="5"
+                Command="{Binding RemoveAssemblyLinkCommand}"
+                Content="Удалить" />
+        </StackPanel>
 
         <TextBlock
             Grid.Row="9"
             Grid.Column="0"
-            Margin="5"
+            Margin="5,10,5,5"
             VerticalAlignment="Center"
-            Style="{StaticResource ExcelCellStyle}"
             Text="ФИО:" />
         <TextBox
             Grid.Row="9"
             Grid.Column="1"
-            Style="{StaticResource ExcelTextBoxStyle}"
+            Margin="5,10,5,5"
             Text="{Binding DocumentRecord.FullName}" />
 
         <StackPanel
@@ -235,8 +265,14 @@
             Margin="5"
             HorizontalAlignment="Right"
             Orientation="Horizontal">
-            <Button Command="{Binding SaveCommand}" Content="Сохранить" />
-            <Button Command="{Binding CancelCommand}" Content="Отмена" />
+            <Button
+                Command="{Binding SaveCommand}"
+                Content="Сохранить"
+                Style="{StaticResource PrimaryButtonStyle}" />
+            <Button
+                Command="{Binding CancelCommand}"
+                Content="Отмена"
+                Style="{StaticResource SecondaryButtonStyle}" />
         </StackPanel>
     </Grid>
 </UserControl>

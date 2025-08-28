@@ -1,6 +1,7 @@
-﻿using Prism.Ioc;
+using DetailViewer.Core.Interfaces;
+
+using Prism.Ioc;
 using Prism.Modularity;
-using Prism.Regions;
 
 namespace DetailViewer.Core
 {
@@ -13,7 +14,7 @@ namespace DetailViewer.Core
 
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
-
+            // Registrations are now handled in the main App.xaml.cs
         }
     }
 }
