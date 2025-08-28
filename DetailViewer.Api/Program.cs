@@ -21,19 +21,20 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
 });
 
-var connectionString = builder.Configuration.GetConnectionString("RemoteDatabase");
+
+var dbPath = builder.Configuration["DB_PATH"];
+if (string.IsNullOrEmpty(dbPath))
+{
+    dbPath = "data.db";
+    Console.WriteLine("DB_PATH environment variable not set. Using default 'data.db'");
+}
+
+var connectionString = $"Data Source={dbPath}";
 
 if (string.IsNullOrEmpty(connectionString))
 {
     throw new InvalidOperationException("Connection string 'RemoteDatabase' not found.");
 }
-
-var dataSource = connectionString.Replace("Data Source=", "");
-if (!Path.IsPathRooted(dataSource))
-{
-    dataSource = Path.Combine(AppContext.BaseDirectory, dataSource);
-}
-connectionString = $"Data Source={dataSource}";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options => {
     options.UseSqlite(connectionString).AddInterceptors(new SqliteWalInterceptor());
@@ -42,11 +43,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => {
 
 var app = builder.Build();
 
-// Создание базы данных
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.EnsureCreated(); // Создает базу данных, если она не существует
+    dbContext.Database.EnsureCreated(); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 }
 
 // Configure the HTTP request pipeline.
