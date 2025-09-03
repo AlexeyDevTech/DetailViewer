@@ -14,11 +14,6 @@ namespace DetailViewer.Api.Controllers
     [ApiController]
     public class DocumentDetailRecordsController : BaseController<DocumentDetailRecord>
     {
-        /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="DocumentDetailRecordsController"/>.
-        /// </summary>
-        /// <param name="context">Контекст базы данных приложения.</param>
-        /// <param name="logger">Логгер для контроллера.</param>
         public DocumentDetailRecordsController(ApplicationDbContext context, ILogger<DocumentDetailRecordsController> logger)
             : base(context, logger)
         {
@@ -29,15 +24,41 @@ namespace DetailViewer.Api.Controllers
         /// </summary>
         /// <param name="id">Идентификатор записи о детали документа.</param>
         /// <returns>Список родительских сборок.</returns>
-        [HttpGet("{id}/parents")]
+        [HttpGet("{id}/parents/assemblies")]
         public async Task<ActionResult<IEnumerable<Assembly>>> GetParentAssemblies(int id)
         {
             _logger.LogInformation($"Getting parent assemblies for document detail record with id {id}");
-            return await _context.AssemblyDetails
-                .Where(ad => ad.DetailId == id)
-                .Include(ad => ad.Assembly.EskdNumber.ClassNumber)
-                .Select(ad => ad.Assembly)
-                .ToListAsync();
+            
+            var record = await _context.DocumentRecords
+                .Include(d => d.Assemblies)
+                    .ThenInclude(a => a.EskdNumber)
+                    .ThenInclude(e => e.ClassNumber)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (record == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(record.Assemblies);
+        }
+        [HttpGet("{id}/parents/products")]
+        public async Task<ActionResult<IEnumerable<Product>>> GetParentProducts(int id)
+        {
+            _logger.LogInformation($"Getting parent assemblies for document detail record with id {id}");
+            
+            var record = await _context.DocumentRecords
+                .Include(d => d.Products)
+                    .ThenInclude(a => a.EskdNumber)
+                    .ThenInclude(e => e.ClassNumber)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (record == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(record.Products);
         }
 
         /// <summary>
@@ -53,7 +74,6 @@ namespace DetailViewer.Api.Controllers
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Handle the nested Classifier object
                 if (dto.EskdNumber.ClassNumber != null)
                 {
                     var existingClassifier = await _context.Classifiers
@@ -69,26 +89,27 @@ namespace DetailViewer.Api.Controllers
                     }
                 }
 
-                // Assign the EskdNumber object to the Record's navigation property.
-                // EF Core will handle inserting the new EskdNumber and fixing up the foreign key.
                 dto.Record.EskdNumber = dto.EskdNumber;
-                //TODO: доделать!
                 _context.DocumentRecords.Add(dto.Record);
                 await _context.SaveChangesAsync();
 
-                // Link assemblies
                 if (dto.AssemblyIds != null && dto.AssemblyIds.Any())
                 {
-                    foreach (var assemblyId in dto.AssemblyIds)
-                    {
-                        var assemblyDetail = new AssemblyDetail
-                        {
-                            AssemblyId = assemblyId,
-                            DetailId = dto.Record.Id
-                        };
-                        _context.AssemblyDetails.Add(assemblyDetail);
-                    }
+                    var assembliesToAdd = await _context.Assemblies
+                        .Where(a => dto.AssemblyIds.Contains(a.Id))
+                        .ToListAsync();
+                    dto.Record.Assemblies = assembliesToAdd;
                     await _context.SaveChangesAsync();
+                }
+
+                // НОВЫЙ БЛОК: Обработка ProductIds
+                if (dto.ProductIds != null && dto.ProductIds.Any())
+                {
+                    var productsToAdd = await _context.Products
+                        .Where(p => dto.ProductIds.Contains(p.Id))
+                        .ToListAsync();
+                    dto.Record.Products = productsToAdd;
+                    await _context.SaveChangesAsync(); // Сохраняем изменения для ProductIds
                 }
 
                 await transaction.CommitAsync();
@@ -102,53 +123,54 @@ namespace DetailViewer.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Обновляет существующую запись о детали документа и ее связи со сборками.
+        /// </summary>
+        /// <param name="id">Идентификатор обновляемой записи.</param>
+        /// <param name="dto">DTO с обновленными данными.</param>
+        /// <returns>Результат операции.</returns>
         [HttpPut("with-assemblies/{id}")]
         public async Task<IActionResult> PutWithAssemblies(int id, DocumentDetailRecordUpdateDto dto)
         {
             if (dto?.Record == null || id != dto.Record.Id)
                 return BadRequest("ID mismatch or empty record");
 
-            // Получаем существующую запись
-            var existingRecord = await _context.DocumentRecords.FindAsync(id);
+            var existingRecord = await _context.DocumentRecords
+                .Include(d => d.Assemblies) // Включаем связанные сборки
+                .FirstOrDefaultAsync(d => d.Id == id);
+
             if (existingRecord == null)
                 return NotFound();
 
-            // Обновляем свойства записи (кроме Id)
-            var recordProperties = typeof(DocumentDetailRecord).GetProperties()
-                .Where(p => p.Name != "Id" && p.CanWrite);
+            // Обновляем основные свойства записи из DTO
+            _context.Entry(existingRecord).CurrentValues.SetValues(dto.Record);
 
-            foreach (var prop in recordProperties)
+            // Очищаем текущие связи
+            existingRecord.Assemblies.Clear();
+
+            // Добавляем новые связи, если они есть
+            if (dto.AssemblyIds != null && dto.AssemblyIds.Any())
             {
-                var newValue = prop.GetValue(dto.Record);
-                if (newValue != null)
-                    prop.SetValue(existingRecord, newValue);
-            }
-
-            // Обновляем сборки
-            var existingLinks = _context.AssemblyDetails.Where(ad => ad.DetailId == id);
-            _context.AssemblyDetails.RemoveRange(existingLinks);
-
-            if (dto.AssemblyIds != null)
-            {
-                foreach (var assemblyId in dto.AssemblyIds)
+                var assembliesToAdd = await _context.Assemblies
+                    .Where(a => dto.AssemblyIds.Contains(a.Id))
+                    .ToListAsync();
+                
+                foreach (var assembly in assembliesToAdd)
                 {
-                    _context.AssemblyDetails.Add(new AssemblyDetail
-                    {
-                        DetailId = id,
-                        AssemblyId = assemblyId
-                    });
+                    existingRecord.Assemblies.Add(assembly);
                 }
             }
 
             try
             {
+                // EF Core автоматически определит, какие записи в AssemblyDetails удалить, а какие добавить
                 await _context.SaveChangesAsync();
                 return NoContent();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error updating DocumentDetailRecord with id {id}");
-                throw;
+                throw; // В режиме разработки лучше выбрасывать исключение для детального анализа
             }
         }
     }

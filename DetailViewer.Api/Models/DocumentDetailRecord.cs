@@ -50,5 +50,15 @@ namespace DetailViewer.Api.Models
         /// </summary>
         [Timestamp]
         public byte[]? Version { get; set; }
+        
+        /// <summary>
+        /// Получает или устанавливает коллекцию сборок, в которые входит эта деталь.
+        /// </summary>
+        public ICollection<Assembly> Assemblies { get; set; } = new List<Assembly>();
+
+        /// <summary>
+        /// Получает или устанавливает коллекцию изделий, в которые входит эта деталь.
+        /// </summary>
+        public ICollection<Product> Products { get; set; } = new List<Product>();
     }
 }

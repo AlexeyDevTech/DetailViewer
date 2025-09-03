@@ -2,6 +2,7 @@
 
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
+using DetailViewer.Infrastructure.Services;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Services.Dialogs;
@@ -22,6 +23,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private readonly IAssemblyService _assemblyService;
         private readonly IProductService _productService;
         private readonly IClassifierService _classifierService;
+        private readonly IEskdNumberService _eskdNumberService;
         private readonly ILogger _logger;
         private readonly ISettingsService _settingsService;
         private readonly IActiveUserService _activeUserService;
@@ -159,11 +161,12 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="AssemblyFormViewModel"/>.
         /// </summary>
-        public AssemblyFormViewModel(IAssemblyService assemblyService, IProductService productService, IClassifierService classifierService, ILogger logger, ISettingsService settingsService, IActiveUserService activeUserService, IDialogService dialogService)
+        public AssemblyFormViewModel(IAssemblyService assemblyService, IEskdNumberService eskdNumberService, IProductService productService, IClassifierService classifierService, ILogger logger, ISettingsService settingsService, IActiveUserService activeUserService, IDialogService dialogService)
         {
             _assemblyService = assemblyService;
             _productService = productService;
             _classifierService = classifierService;
+            _eskdNumberService = eskdNumberService;
             _logger = logger;
             _settingsService = settingsService;
             _activeUserService = activeUserService;
@@ -243,6 +246,18 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                     if (selectedAssemblies != null) foreach (var assembly in selectedAssemblies) if (!ParentAssemblies.Any(p => p.Id == assembly.Id)) ParentAssemblies.Add(assembly);
                 }
             });
+        }
+        /// <summary>
+        /// Асинхронно находит следующий доступный номер детали.
+        /// </summary>
+        private async Task FindNextDetailNumber()
+        {
+            if (string.IsNullOrWhiteSpace(ClassNumberString))
+            {
+                DetailNumber = 0;
+                return;
+            }
+            DetailNumber = await _eskdNumberService.GetNextDetailNumberAsync(ClassNumberString);
         }
 
         /// <summary>

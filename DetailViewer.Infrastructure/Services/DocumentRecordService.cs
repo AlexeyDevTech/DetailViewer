@@ -60,7 +60,12 @@ namespace DetailViewer.Infrastructure.Services
         public async Task<List<Assembly>> GetParentAssembliesForDetailAsync(int detailId)
         {
             _logger.Log($"Getting parent assemblies for detail from API: {detailId}");
-            return await _apiClient.GetAsync<Assembly>($"{ApiEndpoints.DocumentDetailRecords}/{detailId}/parents");
+            return await _apiClient.GetAsync<Assembly>($"{ApiEndpoints.DocumentDetailRecords}/{detailId}/parents/assemblies");
+        }
+        public async Task<List<Assembly>> GetParentProductsForDetailAsync(int detailId)
+        {
+            _logger.Log($"Getting parent assemblies for detail from API: {detailId}");
+            return await _apiClient.GetAsync<Assembly>($"{ApiEndpoints.DocumentDetailRecords}/{detailId}/parents/products");
         }
     }
 }

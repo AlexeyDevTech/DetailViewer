@@ -14,23 +14,14 @@ namespace DetailViewer.Api.Data
         public DbSet<AssemblyDetail> AssemblyDetails { get; set; }
         public DbSet<ProductAssembly> ProductAssemblies { get; set; }
         public DbSet<AssemblyParent> AssemblyParents { get; set; }
+        public DbSet<ProductDetail> ProductDetails { get; set; } // <-- НОВОЕ DbSet
 
-        /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="ApplicationDbContext"/>.
-        /// </summary>
-        /// <param name="options">Параметры для данного контекста.</param>
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
-            //Database.EnsureCreated();
         }
 
-        /// <summary>
-        /// Конфигурирует модель, которая была обнаружена по соглашению из типов сущностей,
-        /// представленных в свойствах <see cref="T:Microsoft.EntityFrameworkCore.DbSet`1" /> в этом контексте.
-        /// </summary>
-        /// <param name="modelBuilder">Построитель, используемый для создания модели для этого контекста.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
+        { 
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<DocumentDetailRecord>()
@@ -38,6 +29,44 @@ namespace DetailViewer.Api.Data
                 .WithMany()
                 .HasForeignKey(d => d.EskdNumberId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Новая, полная конфигурация связи "многие-ко-многим" для AssemblyDetail
+            modelBuilder.Entity<DocumentDetailRecord>()
+                .HasMany(d => d.Assemblies)
+                .WithMany(a => a.DocumentDetailRecords)
+                .UsingEntity<AssemblyDetail>(
+                    j => j
+                        .HasOne(ad => ad.Assembly)
+                        .WithMany()
+                        .HasForeignKey(ad => ad.AssemblyId),
+                    j => j
+                        .HasOne(ad => ad.Detail)
+                        .WithMany()
+                        .HasForeignKey(ad => ad.DetailId),
+                    j =>
+                    {
+                        j.HasKey(t => new { t.AssemblyId, t.DetailId });
+                        j.ToTable("AssemblyDetails");
+                    });
+
+            // НОВАЯ конфигурация связи "многие-ко-многим" для ProductDetail
+            modelBuilder.Entity<DocumentDetailRecord>()
+                .HasMany(d => d.Products)
+                .WithMany(p => p.DocumentDetailRecords)
+                .UsingEntity<ProductDetail>(
+                    j => j
+                        .HasOne(pd => pd.Product)
+                        .WithMany()
+                        .HasForeignKey(pd => pd.ProductId),
+                    j => j
+                        .HasOne(pd => pd.Detail)
+                        .WithMany()
+                        .HasForeignKey(pd => pd.DetailId),
+                    j =>
+                    {
+                        j.HasKey(t => new { t.ProductId, t.DetailId });
+                        j.ToTable("ProductDetails"); // Указываем имя таблицы для связующей сущности
+                    });
 
             modelBuilder.Entity<Classifier>()
                 .HasMany(c => c.ESKDNumbers)
@@ -69,25 +98,12 @@ namespace DetailViewer.Api.Data
                 .WithMany()
                 .HasForeignKey(pa => pa.AssemblyId);
 
-            modelBuilder.Entity<AssemblyDetail>().HasKey(ad => new { ad.AssemblyId, ad.DetailId });
-
-            modelBuilder.Entity<AssemblyDetail>()
-                .HasOne(ad => ad.Assembly)
-                .WithMany()
-                .HasForeignKey(ad => ad.AssemblyId);
-
-            modelBuilder.Entity<AssemblyDetail>()
-                .HasOne(ad => ad.Detail)
-                .WithMany()
-                .HasForeignKey(ad => ad.DetailId);
-
             modelBuilder.Entity<AssemblyParent>().HasKey(ap => new { ap.ParentAssemblyId, ap.ChildAssemblyId });
 
             modelBuilder.Entity<AssemblyParent>()
                 .HasOne(ap => ap.ParentAssembly)
                 .WithMany()
-                .HasForeignKey(ap => ap.ParentAssemblyId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasForeignKey(ap => ap.ParentAssemblyId);
 
             modelBuilder.Entity<AssemblyParent>()
                 .HasOne(ap => ap.ChildAssembly)
