@@ -468,3 +468,5 @@ $RECYCLE.BIN/
 /DetailViewer.Api/docker-compose.yml
 /DetailViewer.Api/error.txt
 /DetailViewer.Api/data.db
+/DetailViewer.Api/data.db-shm
+/DetailViewer.Api/data.db-wal
