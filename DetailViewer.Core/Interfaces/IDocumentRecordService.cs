@@ -22,7 +22,7 @@ namespace DetailViewer.Core.Interfaces
         /// <param name="eskdNumber">Децимальный номер для записи.</param>
         /// <param name="assemblyIds">Список ID сборок, в которые входит деталь.</param>
         /// <returns>Задача, представляющая асинхронную операцию.</returns>
-        Task AddRecordAsync(DocumentDetailRecord record, ESKDNumber eskdNumber, List<int> assemblyIds);
+        Task AddRecordAsync(DocumentDetailRecord record, ESKDNumber eskdNumber, List<int> assemblyIds, List<int> productIds);
 
         /// <summary>
         /// Асинхронно обновляет существующую запись документа.
@@ -30,7 +30,7 @@ namespace DetailViewer.Core.Interfaces
         /// <param name="record">Запись с обновленными данными.</param>
         /// <param name="assemblyIds">Новый список ID сборок, в которые входит деталь.</param>
         /// <returns>Задача, представляющая асинхронную операцию.</returns>
-        Task UpdateRecordAsync(DocumentDetailRecord record, List<int> assemblyIds);
+        Task UpdateRecordAsync(DocumentDetailRecord record, List<int> assemblyIds, List<int> productIds);
 
         /// <summary>
         /// Асинхронно удаляет запись по ее ID.
@@ -45,5 +45,6 @@ namespace DetailViewer.Core.Interfaces
         /// <param name="detailId">Идентификатор детали.</param>
         /// <returns>Список родительских сборок.</returns>
         Task<List<Assembly>> GetParentAssembliesForDetailAsync(int detailId);
+        Task<List<Product>> GetParentProductsForDetailAsync(int detailId);
     }
 }

@@ -1,6 +1,7 @@
 using DetailViewer.Api.Data;
 using DetailViewer.Api.DTOs;
 using DetailViewer.Api.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,19 @@ namespace DetailViewer.Api.Controllers
         public DocumentDetailRecordsController(ApplicationDbContext context, ILogger<DocumentDetailRecordsController> logger)
             : base(context, logger)
         {
+        }
+
+        //API: api/DocumentDetailRecords/{CompanyCode}
+        [HttpGet("{CompanyCode}")]
+        public async Task<ActionResult<IEnumerable<DocumentDetailRecord>>> GetFromCompanyCode(string CompanyCode)
+        {
+
+            var records = await _context.DocumentRecords
+                .Include(d => d.EskdNumber)
+                .ThenInclude(s => s.ClassNumber)
+                .Where(x => x.EskdNumber.CompanyCode == CompanyCode).ToListAsync();
+            if (records == null) return NotFound();
+            else return Ok(records);
         }
 
         /// <summary>

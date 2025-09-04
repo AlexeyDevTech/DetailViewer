@@ -35,13 +35,14 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         /// Полное имя текущего активного пользователя.
         /// </summary>
         public string? ActiveUserFullName { get => _activeUserFullName; set => SetProperty(ref _activeUserFullName, value); }
+        public bool IsAdmin { get => _isAdmin; set => SetProperty(ref _isAdmin, value); }
 
         private string _statusText;
         private bool _isBusy;
         private ObservableCollection<DocumentDetailRecord> _documentRecords;
         private DocumentDetailRecord _selectedRecord;
         private ObservableCollection<Assembly> _parentAssemblies;
-        private ObservableCollection<DocumentDetailRecord> _parentProducts;
+        private ObservableCollection<Product> _parentProducts;
         private List<DocumentDetailRecord> _allRecords;
         private string _eskdNumberFilter;
         private string _nameFilter;
@@ -54,6 +55,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         private double _importProgress;
         private string _importStatus;
         private bool _isImporting;
+        private bool _isAdmin;
 
         /// <summary>
         /// Текст статуса, отображаемый на панели.
@@ -83,7 +85,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         /// <summary>
         /// Коллекция родительских продуктов для выбранной записи.
         /// </summary>
-        public ObservableCollection<DocumentDetailRecord> ParentProducts { get => _parentProducts; set => SetProperty(ref _parentProducts, value); }
+        public ObservableCollection<Product> ParentProducts { get => _parentProducts; set => SetProperty(ref _parentProducts, value); }
 
         /// <summary>
         /// Фильтр по децимальному номеру.
@@ -173,7 +175,14 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="DashboardViewModel"/>.
         /// </summary>
-        public DashboardViewModel(IDocumentRecordService documentRecordService, IExcelExportService excelExportService, IExcelImportService excelImportService, IDialogService dialogService, ILogger logger, IActiveUserService activeUserService, ISettingsService settingsService, IEventAggregator eventAggregator)
+        public DashboardViewModel(IDocumentRecordService documentRecordService, 
+            IExcelExportService excelExportService, 
+            IExcelImportService excelImportService, 
+            IDialogService dialogService, 
+            ILogger logger, 
+            IActiveUserService activeUserService,
+            ISettingsService settingsService, 
+            IEventAggregator eventAggregator)
         {
             _documentRecordService = documentRecordService;
             _excelExportService = excelExportService;
@@ -186,14 +195,14 @@ namespace DetailViewer.Modules.Explorer.ViewModels
 
             _documentRecords = new ObservableCollection<DocumentDetailRecord>();
             _parentAssemblies = new ObservableCollection<Assembly>();
-            _parentProducts = new ObservableCollection<DocumentDetailRecord>();
+            _parentProducts = new ObservableCollection<Product>();
             StatusText = "Готово";
 
             _eventAggregator.GetEvent<UserChangedEvent>().Subscribe(OnCurrentUserChanged);
             FillFormCommand = new DelegateCommand(FillForm);
             FillBasedOnCommand = new DelegateCommand(FillBasedOn, () => SelectedRecord != null).ObservesProperty(() => SelectedRecord);
-            EditRecordCommand = new DelegateCommand(EditRecord, () => SelectedRecord != null && SelectedRecord.FullName == ActiveUserFullName).ObservesProperty(() => SelectedRecord).ObservesProperty(() => ActiveUserFullName);
-            DeleteRecordCommand = new DelegateCommand(DeleteRecord, () => SelectedRecord != null && SelectedRecord.FullName == ActiveUserFullName).ObservesProperty(() => SelectedRecord).ObservesProperty(() => ActiveUserFullName);
+            EditRecordCommand = new DelegateCommand(EditRecord, () => SelectedRecord != null && (SelectedRecord.FullName == ActiveUserFullName || IsAdmin)).ObservesProperty(() => SelectedRecord).ObservesProperty(() => ActiveUserFullName).ObservesProperty(() => IsAdmin);
+            DeleteRecordCommand = new DelegateCommand(DeleteRecord, () => SelectedRecord != null && (SelectedRecord.FullName == ActiveUserFullName || IsAdmin)).ObservesProperty(() => SelectedRecord).ObservesProperty(() => ActiveUserFullName).ObservesProperty(() => IsAdmin);
             ImportFromExcelCommand = new DelegateCommand(ImportFromExcel);
             ExportToExcelCommand = new DelegateCommand(ExportToExcel);
 
@@ -222,9 +231,11 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             try
             {
                 _allRecords = await _documentRecordService.GetAllRecordsAsync();
+                //_allRecords = _allRecords.Where(x => x.ESKDNumber.CompanyCode == _settingsService.LoadSettings().DefaultCompanyCode).ToList();
                 if (_allRecords != null)
                 {
                     UniqueFullNames = new ObservableCollection<string>(_allRecords.Select(r => r.FullName).Distinct().OrderBy(n => n));
+                    UniqueFullNames.Insert(0,"<не выбрано>");
                     ApplyFilters();
                     StatusText = $"Данные успешно загружены. Записей: {_allRecords.Count}";
                     _logger.LogInfo("Data loaded successfully.");
@@ -278,7 +289,10 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             }
             if (!string.IsNullOrWhiteSpace(SelectedFullName))
             {
-                filteredRecords = filteredRecords.Where(r => r.FullName == SelectedFullName);
+                if (SelectedFullName != "<не выбрано>")
+                    filteredRecords = filteredRecords.Where(r => r.FullName == SelectedFullName);
+                else 
+                    filteredRecords = _allRecords.AsEnumerable();
             }
             if (OnlyMyRecordsFilter && _activeUserService.CurrentUser != null)
             {
@@ -303,10 +317,11 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             ParentAssemblies.Clear();
             ParentProducts.Clear();
             var parentAssemblies = await _documentRecordService.GetParentAssembliesForDetailAsync(SelectedRecord.Id);
+            var parentProducts = await _documentRecordService.GetParentProductsForDetailAsync(SelectedRecord.Id);
             foreach(var item in parentAssemblies)
-            {
                 ParentAssemblies.Add(item);
-            }
+            foreach (var item in parentProducts)
+                ParentProducts.Add(item);
         }
 
         /// <summary>
@@ -317,6 +332,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         {
             _logger.Log("Current user changed");
             ActiveUserFullName = p?.ShortName;
+            IsAdmin = p?.Role == Role.Admin;
             ApplyFilters();
             EditRecordCommand.RaiseCanExecuteChanged();
             DeleteRecordCommand.RaiseCanExecuteChanged();

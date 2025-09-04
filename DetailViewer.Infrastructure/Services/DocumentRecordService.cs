@@ -2,6 +2,7 @@ using DetailViewer.Core;
 using DetailViewer.Core.Interfaces;
 using DetailViewer.Core.Models;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace DetailViewer.Infrastructure.Services
@@ -31,20 +32,25 @@ namespace DetailViewer.Infrastructure.Services
             _logger.Log("Getting all records from API");
             return await _apiClient.GetAsync<DocumentDetailRecord>(ApiEndpoints.DocumentDetailRecords);
         }
+        public async Task<List<DocumentDetailRecord>> GetAllFromCompanyCode(string companyCode)
+        {
+            _logger.Log("Getting all record from company code");
+            return await _apiClient.GetAsync<DocumentDetailRecord>($"{ApiEndpoints.DocumentDetailRecords}/{companyCode}");
+        }
 
         /// <inheritdoc/>
-        public async Task AddRecordAsync(DocumentDetailRecord record, ESKDNumber eskdNumber, List<int> assemblyIds)
+        public async Task AddRecordAsync(DocumentDetailRecord record, ESKDNumber eskdNumber, List<int> assemblyIds, List<int> productIds)
         {
             _logger.Log($"Adding record via API: {record.Name}");
-            var payload = new { Record = record, EskdNumber = eskdNumber, AssemblyIds = assemblyIds };
+            var payload = new { Record = record, EskdNumber = eskdNumber, AssemblyIds = assemblyIds, ProductIds = productIds};
             await _apiClient.PostAsync(ApiEndpoints.DocumentDetailRecords, payload);
         }
 
         /// <inheritdoc/>
-        public async Task UpdateRecordAsync(DocumentDetailRecord record, List<int> assemblyIds)
+        public async Task UpdateRecordAsync(DocumentDetailRecord record, List<int> assemblyIds, List<int> productIds)
         {
             _logger.Log($"Updating record via API: {record.Name}");
-            var payload = new { record, assemblyIds }; // This might need a DTO as well if it causes issues
+            var payload = new { record, assemblyIds, productIds}; // This might need a DTO as well if it causes issues
             //await _apiClient.PutAsync(ApiEndpoints.DocumentDetailRecords, record.Id, payload);
             await _apiClient.UpdateRecord(ApiEndpoints.DocumentDetailRecords, record.Id, payload);
         }
@@ -62,10 +68,10 @@ namespace DetailViewer.Infrastructure.Services
             _logger.Log($"Getting parent assemblies for detail from API: {detailId}");
             return await _apiClient.GetAsync<Assembly>($"{ApiEndpoints.DocumentDetailRecords}/{detailId}/parents/assemblies");
         }
-        public async Task<List<Assembly>> GetParentProductsForDetailAsync(int detailId)
+        public async Task<List<Product>> GetParentProductsForDetailAsync(int detailId)
         {
             _logger.Log($"Getting parent assemblies for detail from API: {detailId}");
-            return await _apiClient.GetAsync<Assembly>($"{ApiEndpoints.DocumentDetailRecords}/{detailId}/parents/products");
+            return await _apiClient.GetAsync<Product>($"{ApiEndpoints.DocumentDetailRecords}/{detailId}/parents/products");
         }
     }
 }

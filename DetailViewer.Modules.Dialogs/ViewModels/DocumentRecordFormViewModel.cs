@@ -156,7 +156,17 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// </summary>
         public Assembly? SelectedLinkedAssembly { get => _selectedLinkedAssembly; set => SetProperty(ref _selectedLinkedAssembly, value); }
 
+        public ObservableCollection<Product> LinkedProducts
+        {
+            get => _linkedProducts;
+            set => SetProperty(ref _linkedProducts, value);
+        }
+        public Product? SelectedLinkedProduct { get => _selectedLinkedProduct; set => SetProperty(ref _selectedLinkedProduct, value); }
+
         private DocumentDetailRecord? _selectedRecordToCopy;
+        private ObservableCollection<Product> _linkedProducts;
+        private Product? _selectedLinkedProduct;
+
         /// <summary>
         /// Выбранная запись для копирования (для создания новой версии).
         /// </summary>

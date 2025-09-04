@@ -7,6 +7,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:DetailViewer.Core.Models;assembly=DetailViewer.Core"
     xmlns:prism="http://prismlibrary.com/"
+    xmlns:viewmodels="clr-namespace:DetailViewer.Modules.Explorer.ViewModels"
+    d:DataContext="{d:DesignInstance Type=viewmodels:DashboardViewModel}"
     d:DesignHeight="600"
     d:DesignWidth="1450"
     prism:ViewModelLocator.AutoWireViewModel="True"
