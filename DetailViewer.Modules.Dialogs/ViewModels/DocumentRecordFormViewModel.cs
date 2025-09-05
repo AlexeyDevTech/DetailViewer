@@ -377,8 +377,8 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 DocumentRecord.ESKDNumber.ClassNumber.Name = classifierData?.Description ?? "<неопознанный код>";
             }
 
-            if (DocumentRecord.Id == 0) await _documentRecordService.AddRecordAsync(DocumentRecord, DocumentRecord.ESKDNumber, LinkedAssemblies.Select(a => a.Id).ToList());
-            else await _documentRecordService.UpdateRecordAsync(DocumentRecord, LinkedAssemblies.Select(a => a.Id).ToList());
+            if (DocumentRecord.Id == 0) await _documentRecordService.AddRecordAsync(DocumentRecord, DocumentRecord.ESKDNumber, LinkedAssemblies.Select(a => a.Id).ToList(), LinkedProducts.Select(a => a.Id).ToList());
+            else await _documentRecordService.UpdateRecordAsync(DocumentRecord, LinkedAssemblies.Select(a => a.Id).ToList(), LinkedProducts.Select(a => a.Id).ToList());
             RequestClose?.Invoke(BuildDialogResult());
         }
 
@@ -414,10 +414,13 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             });
         }
 
+
+
         /// <summary>
         /// Удаляет выбранную связанную сборку.
         /// </summary>
         private void RemoveAssemblyLink() { if (SelectedLinkedAssembly != null) LinkedAssemblies.Remove(SelectedLinkedAssembly); }
+
 
         /// <summary>
         /// Определяет, можно ли закрыть диалоговое окно.
