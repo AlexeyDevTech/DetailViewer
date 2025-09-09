@@ -26,10 +26,17 @@ namespace DetailViewer.Infrastructure.Services
         }
 
         /// <inheritdoc/>
-        public async Task<List<Profile>> GetAllProfilesAsync()
+        public async Task<List<ProfileDto>> GetAllProfilesAsync()
         {
             _logger.Log("Getting all profiles from API");
-            return await _apiClient.GetAsync<Profile>(ApiEndpoints.Profiles);
+            return await _apiClient.GetAsync<ProfileDto>(ApiEndpoints.Profiles);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Profile> GetProfileByIdAsync(int id)
+        {
+            _logger.Log($"Getting profile by id {id} from API");
+            return await _apiClient.GetByIdAsync<Profile>(ApiEndpoints.Profiles, id);
         }
 
         /// <inheritdoc/>

@@ -13,6 +13,12 @@ namespace DetailViewer.Api.Models
         [Key]
         public int Id { get; set; }
 
+
+        /// <summary>
+        /// Дата создания сборки
+        /// </summary>
+        public DateTime Date { get; set; }
+
         /// <summary>
         /// Наименование сборки (может быть не задано)
         /// </summary>

@@ -319,7 +319,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             catch (Exception ex)
             {
                 _logger.LogError($"Ошибка при сохранении продукта: {ex.Message}", ex);
-                _dialogService.ShowDialog("ErrorDialog", new DialogParameters($"Message=Произошла ошибка: {ex.Message}"), null);
+                //_dialogService.ShowDialog("ErrorDialog", new DialogParameters($"Message=Произошла ошибка: {ex.Message}"), null);
             }
         }
 

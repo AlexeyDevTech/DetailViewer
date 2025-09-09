@@ -53,7 +53,7 @@ namespace DetailViewer
 
             _settingsService = Container.Resolve<ISettingsService>();
 
-            InitializeNotifyIcon();
+            //InitializeNotifyIcon();
 
             splashScreen.Close();
 

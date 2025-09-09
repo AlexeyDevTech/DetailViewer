@@ -46,10 +46,15 @@ namespace DetailViewer.Views
             _logger.Log("Checking for updates");
             try
             {
-                string versionFilePath = "http://192.168.157.29/cod2/soft/version.json";
-                using (var httpClient = new HttpClient())
+                // Преобразуем URL в UNC-путь для доступа к сетевой папке
+                string versionFilePath = @"\\192.168.157.29\cod2\soft\version.json";
+                _logger.LogInfo($"Path to search version: {versionFilePath}");
+
+                // Проверяем, существует ли файл, перед чтением
+                if (System.IO.File.Exists(versionFilePath))
                 {
-                    string content = await httpClient.GetStringAsync(versionFilePath);
+                    // Асинхронно читаем содержимое файла
+                    string content = await System.IO.File.ReadAllTextAsync(versionFilePath);
                     var remoteVersionInfo = JsonConvert.DeserializeObject<VersionInfo>(content);
 
                     var assembly = Assembly.GetExecutingAssembly();
@@ -57,17 +62,26 @@ namespace DetailViewer.Views
                     var remoteVersion = new Version(remoteVersionInfo.Version);
 
                     var localVersionThreeComponents = new Version(localVersion.Major, localVersion.Minor, localVersion.Build);
+
                     var remoteVersionThreeComponents = new Version(remoteVersion.Major, remoteVersion.Minor, remoteVersion.Build);
 
                     if (remoteVersionThreeComponents > localVersionThreeComponents)
                     {
-                        var result = MessageBox.Show($"Доступна новая версия {remoteVersionInfo.Version}. Хотите установить ее?", "Обновление", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                        var result = MessageBox.Show($"Доступна новая версия {remoteVersionInfo.Version}. Хотите установить ее ? ", "Обновление", MessageBoxButton.YesNo, MessageBoxImage.Information);
                         if (result == MessageBoxResult.Yes)
                         {
-                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(remoteVersionInfo.DownloadUrl) { UseShellExecute = true });
+                            // Убедимся, что URL для скачивания также является корректным путем
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(remoteVersionInfo.DownloadUrl)
+                            { UseShellExecute = true });
                             Application.Current.Shutdown();
                         }
                     }
+                    else _logger.LogInfo($"local version: {localVersion.Major}.{localVersion.Minor}.{localVersion.Build} -> remote version: {remoteVersion.Major}.{remoteVersion.Minor}.{remoteVersion.Build}");
+                    
+                }
+                else
+                {
+                    _logger.LogWarning($"Update file not found at path: {versionFilePath}");
                 }
             }
             catch (Exception ex)

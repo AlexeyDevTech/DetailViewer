@@ -58,21 +58,21 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         // Login properties
-        private List<Profile> _profiles = new List<Profile>();
+        private List<ProfileDto> _profiles = new List<ProfileDto>();
         /// <summary>
         /// Список доступных профилей для входа.
         /// </summary>
-        public List<Profile> Profiles
+        public List<ProfileDto> Profiles
         {
             get { return _profiles; }
             set { SetProperty(ref _profiles, value); }
         }
 
-        private Profile? _selectedProfile;
+        private ProfileDto? _selectedProfile;
         /// <summary>
         /// Выбранный профиль для входа.
         /// </summary>
-        public Profile? SelectedProfile
+        public ProfileDto? SelectedProfile
         {
             get { return _selectedProfile; }
             set
@@ -156,7 +156,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             _profileService = profileService;
             _passwordService = passwordService;
-            AuthorizeCommand = new DelegateCommand(OnAuthorize);
+            AuthorizeCommand = new DelegateCommand(async () => await OnAuthorize());
             RegisterCommand = new DelegateCommand(OnRegister);
             LoadProfiles();
         }
@@ -172,17 +172,21 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// <summary>
         /// Выполняет авторизацию пользователя.
         /// </summary>
-        private void OnAuthorize()
+        private async Task OnAuthorize()
         {
-            if (SelectedProfile != null && _passwordService.VerifyPassword(Password, SelectedProfile.PasswordHash))
+            if (SelectedProfile != null)
             {
-                var parameters = new DialogParameters { { "user", SelectedProfile } };
-                RequestClose?.Invoke(new DialogResult(ButtonResult.OK, parameters));
-            }
-            else
-            {
-                StatusMessage = "Неверный логин или пароль";
-                IsError = true;
+                var userProfile = await _profileService.GetProfileByIdAsync(SelectedProfile.Id);
+                if (userProfile != null && _passwordService.VerifyPassword(Password, userProfile.PasswordHash))
+                {
+                    var parameters = new DialogParameters { { "user", userProfile } };
+                    RequestClose?.Invoke(new DialogResult(ButtonResult.OK, parameters));
+                }
+                else
+                {
+                    StatusMessage = "Неверный логин или пароль";
+                    IsError = true;
+                }
             }
         }
 

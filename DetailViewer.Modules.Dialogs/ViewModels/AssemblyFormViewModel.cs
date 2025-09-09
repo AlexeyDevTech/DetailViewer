@@ -172,7 +172,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _activeUserService = activeUserService;
             _dialogService = dialogService;
 
-            _assembly = new Assembly { EskdNumber = new ESKDNumber(), Author = _activeUserService.CurrentUser?.ShortName };
+            _assembly = new Assembly { Date = DateTime.Now, EskdNumber = new ESKDNumber(), Author = _activeUserService.CurrentUser?.ShortName };
             _parentAssemblies = new ObservableCollection<Assembly>();
             _relatedProducts = new ObservableCollection<Product>();
 

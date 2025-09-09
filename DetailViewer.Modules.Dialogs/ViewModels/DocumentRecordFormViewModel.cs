@@ -202,6 +202,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// Команда для удаления связи со сборкой.
         /// </summary>
         public DelegateCommand RemoveAssemblyLinkCommand { get; private set; }
+        public DelegateCommand AddProductLinkCommand { get; private set; }
+        public DelegateCommand RemoveProductLinkCommand { get; private set; }
+
 
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="DocumentRecordFormViewModel"/>.
@@ -226,13 +229,34 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             };
 
             _linkedAssemblies = new ObservableCollection<Assembly>();
+            _linkedProducts = new ObservableCollection<Product>();
 
             SaveCommand = new DelegateCommand(Save, CanSave).ObservesProperty(() => ClassNumberString).ObservesProperty(() => DetailNumber);
             CancelCommand = new DelegateCommand(Cancel);
             AddAssemblyLinkCommand = new DelegateCommand(AddAssemblyLink);
             RemoveAssemblyLinkCommand = new DelegateCommand(RemoveAssemblyLink, () => SelectedLinkedAssembly != null).ObservesProperty(() => SelectedLinkedAssembly);
 
+            AddProductLinkCommand = new DelegateCommand(AddProductLink);
+            RemoveProductLinkCommand = new DelegateCommand(RemoveProductLink, () => SelectedLinkedProduct != null).ObservesProperty(() => SelectedLinkedProduct);
+
             LoadRecords();
+        }
+
+        private void RemoveProductLink()
+        {
+            
+        }
+
+        private void AddProductLink()
+        {
+            _dialogService.ShowDialog("SelectProductDialog", new DialogParameters() { { "SelectProducts", LinkedProducts.ToList() } }, r =>
+            {
+                if (r.Result == ButtonResult.OK)
+                {
+                    var selectedProducts = r.Parameters.GetValue<List<Product>>(DialogParameterKeys.SelectedProducts);
+                    if (selectedProducts != null) foreach (var product in selectedProducts) if (!LinkedProducts.Any(p => p.Id == product.Id)) LinkedProducts.Add(product);
+                }
+            });
         }
 
         /// <summary>
@@ -478,7 +502,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                 Version = DocumentRecord.ESKDNumber.Version;
                 IsManualDetailNumberEnabled = DocumentRecord.IsManualDetailNumber;
                 var linkedAssemblies = await _documentRecordService.GetParentAssembliesForDetailAsync(DocumentRecord.Id);
+                var linkedProducts = await _documentRecordService.GetParentProductsForDetailAsync(DocumentRecord.Id);
                 LinkedAssemblies = new ObservableCollection<Assembly>(linkedAssemblies);
+                LinkedProducts = new ObservableCollection<Product>(linkedProducts);
             }
         }
 

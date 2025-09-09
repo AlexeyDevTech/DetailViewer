@@ -86,6 +86,10 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn
                         Width="150"
+                        Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}"
+                        Header="Дата" />
+                    <DataGridTextColumn
+                        Width="150"
                         Binding="{Binding EskdNumber.FullCode}"
                         Header="ЕСКД номер" />
                     <DataGridTextColumn

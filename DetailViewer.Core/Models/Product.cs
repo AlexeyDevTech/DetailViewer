@@ -32,7 +32,7 @@ namespace DetailViewer.Core.Models
         /// <summary>
         /// Наименование продукта.
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// Материал продукта.

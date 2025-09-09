@@ -13,7 +13,14 @@ namespace DetailViewer.Core.Interfaces
         /// Асинхронно получает все профили пользователей.
         /// </summary>
         /// <returns>Список всех профилей.</returns>
-        Task<List<Profile>> GetAllProfilesAsync();
+        Task<List<ProfileDto>> GetAllProfilesAsync();
+
+        /// <summary>
+        /// Асинхронно получает профиль по его ID.
+        /// </summary>
+        /// <param name="id">Идентификатор профиля.</param>
+        /// <returns>Профиль.</returns>
+        Task<Profile> GetProfileByIdAsync(int id);
 
         /// <summary>
         /// Асинхронно добавляет новый профиль пользователя.
