@@ -28,19 +28,19 @@ namespace DetailViewer.Api.Controllers
         /// </summary>
         /// <returns>Список всех профилей в виде DTO.</returns>
         [HttpGet("all")]
-        public async Task<ActionResult<IEnumerable<ProfileDto>>> GetAllProfiles()
+        public async Task<ActionResult<IEnumerable<Profile>>> GetAllProfiles()
         {
             _logger.LogInformation("Getting all profiles as DTOs");
             return await _context.Profiles
-                .Select(p => new ProfileDto
-                {
-                    Id = p.Id,
-                    LastName = p.LastName,
-                    FirstName = p.FirstName,
-                    MiddleName = p.MiddleName,
-                    FullName = p.FullName,
-                    ShortName = p.ShortName
-                })
+                //.Select(p => new ProfileDto
+                //{
+                //    Id = p.Id,
+                //    LastName = p.LastName,
+                //    FirstName = p.FirstName,
+                //    MiddleName = p.MiddleName,
+                //    FullName = p.FullName,
+                //    ShortName = p.ShortName
+                //})
                 .ToListAsync();
         }
 
