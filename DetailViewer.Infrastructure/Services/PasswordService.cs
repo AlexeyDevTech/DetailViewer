@@ -29,7 +29,7 @@ namespace DetailViewer.Infrastructure.Services
             _logger.Log("Hashing password");
             byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
 
-            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
+            using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
             byte[] hash = pbkdf2.GetBytes(HashSize);
 
             byte[] hashBytes = new byte[SaltSize + HashSize];
@@ -54,16 +54,12 @@ namespace DetailViewer.Infrastructure.Services
                 byte[] salt = new byte[SaltSize];
                 Array.Copy(hashBytes, 0, salt, 0, SaltSize);
 
-                var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
+                using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
                 byte[] hash = pbkdf2.GetBytes(HashSize);
 
-                int diff = 0;
-                for (int i = 0; i < HashSize; i++)
-                {
-                    diff |= hashBytes[i + SaltSize] ^ hash[i];
-                }
+                var storedHash = new Span<byte>(hashBytes, SaltSize, HashSize);
 
-                return diff == 0;
+                return CryptographicOperations.FixedTimeEquals(hash, storedHash);
             }
             catch (Exception ex)
             {
