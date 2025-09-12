@@ -47,7 +47,7 @@
                         ItemsSource="{Binding Profiles}"
                         SelectedItem="{Binding SelectedProfile}" />
                     <TextBlock Margin="0,10,0,5" Text="Пароль:" />
-                    <PasswordBox local:PasswordBoxHelper.BoundPassword="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,20" Height="32"/>
+                    <PasswordBox x:Name="LoginPasswordBox" Margin="0,0,0,20" Height="32"/>
                     <Border
                         Margin="0,0,0,10"
                         Padding="10"
@@ -78,6 +78,7 @@
                     <Button
                         Margin="5"
                         Command="{Binding AuthorizeCommand}"
+                        CommandParameter="{Binding ElementName=LoginPasswordBox}"
                         Content="Войти"
                         IsDefault="True"
                         Style="{StaticResource PrimaryButtonStyle}" />

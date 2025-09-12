@@ -6,6 +6,7 @@ using Prism.Services.Dialogs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
+using System.Windows.Controls;
 
 namespace DetailViewer.Modules.Dialogs.ViewModels
 {
@@ -140,7 +141,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// <summary>
         /// Команда для авторизации пользователя.
         /// </summary>
-        public DelegateCommand AuthorizeCommand { get; }
+        public DelegateCommand<object> AuthorizeCommand { get; }
 
         /// <summary>
         /// Команда для регистрации нового пользователя.
@@ -156,7 +157,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         {
             _profileService = profileService;
             _passwordService = passwordService;
-            AuthorizeCommand = new DelegateCommand(async () => await OnAuthorize());
+            AuthorizeCommand = new DelegateCommand<object>(async (param) => await OnAuthorize(param));
             RegisterCommand = new DelegateCommand(OnRegister);
             LoadProfiles();
         }
@@ -172,12 +173,15 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// <summary>
         /// Выполняет авторизацию пользователя.
         /// </summary>
-        private async Task OnAuthorize()
+        private async Task OnAuthorize(object parameter)
         {
+            if (parameter is not PasswordBox passwordBox) return;
+            string password = passwordBox.Password;
+
             if (SelectedProfile != null)
             {
                 var userProfile = await _profileService.GetProfileByIdAsync(SelectedProfile.Id);
-                if (userProfile != null && _passwordService.VerifyPassword(Password, userProfile.PasswordHash))
+                if (userProfile != null && _passwordService.VerifyPassword(password, userProfile.PasswordHash))
                 {
                     var parameters = new DialogParameters { { "user", userProfile } };
                     RequestClose?.Invoke(new DialogResult(ButtonResult.OK, parameters));
