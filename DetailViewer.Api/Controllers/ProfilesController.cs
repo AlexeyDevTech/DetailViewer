@@ -49,7 +49,7 @@ namespace DetailViewer.Api.Controllers
         /// </summary>
         /// <param name="id">Идентификатор профиля.</param>
         /// <returns>Профиль.</returns>
-        [HttpGet("{id}")]
+        [HttpGet("profile/{id}")]
         public async Task<ActionResult<Profile>> GetProfile(int id)
         {
             _logger.LogInformation($"Getting profile with id {id}");

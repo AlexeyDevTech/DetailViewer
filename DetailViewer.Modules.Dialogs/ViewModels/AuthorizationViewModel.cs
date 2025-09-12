@@ -58,21 +58,21 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         }
 
         // Login properties
-        private List<ProfileDto> _profiles = new List<ProfileDto>();
+        private List<Profile> _profiles = new List<Profile>();
         /// <summary>
         /// Список доступных профилей для входа.
         /// </summary>
-        public List<ProfileDto> Profiles
+        public List<Profile> Profiles
         {
             get { return _profiles; }
             set { SetProperty(ref _profiles, value); }
         }
 
-        private ProfileDto? _selectedProfile;
+        private Profile? _selectedProfile;
         /// <summary>
         /// Выбранный профиль для входа.
         /// </summary>
-        public ProfileDto? SelectedProfile
+        public Profile? SelectedProfile
         {
             get { return _selectedProfile; }
             set

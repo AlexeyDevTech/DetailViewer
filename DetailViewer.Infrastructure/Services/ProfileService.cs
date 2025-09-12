@@ -36,7 +36,7 @@ namespace DetailViewer.Infrastructure.Services
         public async Task<Profile> GetProfileByIdAsync(int id)
         {
             _logger.Log($"Getting profile by id {id} from API");
-            return await _apiClient.GetByIdAsync<Profile>(ApiEndpoints.Profiles, id);
+            return await _apiClient.GetByIdAsync<Profile>($"{ApiEndpoints.Profiles}/profile", id);
         }
 
         /// <inheritdoc/>
