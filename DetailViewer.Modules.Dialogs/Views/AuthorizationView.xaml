@@ -110,10 +110,11 @@
                     <TextBlock Margin="0,10,0,5" Text="Отчество:" />
                     <TextBox Margin="0,0,0,10" Text="{Binding NewMiddleName}" />
                     <TextBlock Margin="0,10,0,5" Text="Пароль:" />
-                    <PasswordBox local:PasswordBoxHelper.BoundPassword="{Binding NewPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,20" Height="32"/>
+                    <PasswordBox x:Name="regPassword" Margin="0,0,0,20" Height="32"/>
                     <Button
                         Margin="5"
                         Command="{Binding RegisterCommand}"
+                        CommandParameter="{Binding ElementName=regPassword}"
                         Content="Зарегистрироваться"
                         IsDefault="True"
                         Style="{StaticResource PrimaryButtonStyle}" />

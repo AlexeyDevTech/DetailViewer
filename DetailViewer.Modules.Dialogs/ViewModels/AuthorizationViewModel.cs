@@ -143,10 +143,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// </summary>
         public DelegateCommand<object> AuthorizeCommand { get; }
 
-        /// <summary>
-        /// Команда для регистрации нового пользователя.
+                /// Команда для регистрации нового пользователя.
         /// </summary>
-        public DelegateCommand RegisterCommand { get; }
+        public DelegateCommand<object> RegisterCommand { get; }
 
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="AuthorizationViewModel"/>.
@@ -158,7 +157,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             _profileService = profileService;
             _passwordService = passwordService;
             AuthorizeCommand = new DelegateCommand<object>(async (param) => await OnAuthorize(param));
-            RegisterCommand = new DelegateCommand(OnRegister);
+            RegisterCommand = new DelegateCommand<object>(async (param) => await OnRegister(param));
             LoadProfiles();
         }
 
@@ -197,8 +196,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// <summary>
         /// Выполняет регистрацию нового пользователя.
         /// </summary>
-        private async void OnRegister()
+        private async Task OnRegister(object parameter)
         {
+            if (parameter is not PasswordBox passwordBox) return;
+            string newPassword = passwordBox.Password;
+
             try
             {
                 var newProfile = new Profile
@@ -206,7 +208,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
                     LastName = NewLastName,
                     FirstName = NewFirstName,
                     MiddleName = NewMiddleName,
-                    PasswordHash = _passwordService.HashPassword(NewPassword),
+                    PasswordHash = _passwordService.HashPassword(newPassword),
                     Role = Role.Operator
                 };
 

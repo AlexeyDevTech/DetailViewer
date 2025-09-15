@@ -151,6 +151,7 @@ namespace DetailViewer.Api.Controllers
 
             var existingRecord = await _context.DocumentRecords
                 .Include(d => d.Assemblies) // Включаем связанные сборки
+                .Include(d => d.Products) //включаем связанные продукты
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (existingRecord == null)
@@ -173,6 +174,15 @@ namespace DetailViewer.Api.Controllers
                 {
                     existingRecord.Assemblies.Add(assembly);
                 }
+            }
+            // НОВЫЙ БЛОК: Обработка ProductIds
+            if (dto.ProductIds != null && dto.ProductIds.Any())
+            {
+                var productsToAdd = await _context.Products
+                    .Where(p => dto.ProductIds.Contains(p.Id))
+                    .ToListAsync();
+                dto.Record.Products = productsToAdd;
+                await _context.SaveChangesAsync(); // Сохраняем изменения для ProductIds
             }
 
             try
