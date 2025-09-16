@@ -162,6 +162,7 @@ namespace DetailViewer.Api.Controllers
 
             // Очищаем текущие связи
             existingRecord.Assemblies.Clear();
+            existingRecord.Products.Clear();
 
             // Добавляем новые связи, если они есть
             if (dto.AssemblyIds != null && dto.AssemblyIds.Any())
@@ -181,8 +182,10 @@ namespace DetailViewer.Api.Controllers
                 var productsToAdd = await _context.Products
                     .Where(p => dto.ProductIds.Contains(p.Id))
                     .ToListAsync();
-                dto.Record.Products = productsToAdd;
-                await _context.SaveChangesAsync(); // Сохраняем изменения для ProductIds
+                foreach(var product in productsToAdd) 
+                {
+                    existingRecord.Products.Add(product);
+                }
             }
 
             try
