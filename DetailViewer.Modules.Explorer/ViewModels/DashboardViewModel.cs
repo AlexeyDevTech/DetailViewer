@@ -230,7 +230,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             StatusText = "Загрузка данных...";
             try
             {
-                _allRecords = await _documentRecordService.GetAllRecordsAsync();
+                var records = await _documentRecordService.GetAllRecordsAsync();
+                _allRecords = records.Where(r => r.ESKDNumber.CompanyCode == _settingsService.LoadSettings().DefaultCompanyCode).ToList();
                 //_allRecords = _allRecords.Where(x => x.ESKDNumber.CompanyCode == _settingsService.LoadSettings().DefaultCompanyCode).ToList();
                 if (_allRecords != null)
                 {

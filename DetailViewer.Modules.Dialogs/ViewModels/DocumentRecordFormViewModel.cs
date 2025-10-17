@@ -268,7 +268,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// <summary>
         /// Асинхронно загружает все записи документов.
         /// </summary>
-        private async void LoadRecords() => _allRecords = await _documentRecordService.GetAllRecordsAsync();
+        private async void LoadRecords()
+        {
+            var records = await _documentRecordService.GetAllRecordsAsync();
+            _allRecords = records.Where(r => r.ESKDNumber.CompanyCode == _settingsService.LoadSettings().DefaultCompanyCode).ToList();
+        }
 
         /// <summary>
         /// Загружает все классификаторы.

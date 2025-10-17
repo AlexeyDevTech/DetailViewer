@@ -11,20 +11,23 @@ namespace DetailViewer.Infrastructure.Services
     public class EskdNumberService : IEskdNumberService
     {
         private readonly IDocumentRecordService _recordService;
+        private readonly ISettingsService _settingsService;
 
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="EskdNumberService"/>.
         /// </summary>
         /// <param name="recordService">Сервис для доступа к записям документов.</param>
-        public EskdNumberService(IDocumentRecordService recordService)
+        public EskdNumberService(IDocumentRecordService recordService, ISettingsService settingsService)
         {
             _recordService = recordService;
+            _settingsService = settingsService;
         }
 
         /// <inheritdoc/>
         public async Task<int> GetNextDetailNumberAsync(string classCode)
         {
-            var allRecords = await _recordService.GetAllRecordsAsync();
+            var records = await _recordService.GetAllRecordsAsync();
+            var allRecords = records.Where(r => r.ESKDNumber.CompanyCode == _settingsService.LoadSettings().DefaultCompanyCode).ToList();
             if (!allRecords.Any() || string.IsNullOrEmpty(classCode) || classCode.Length != 6)
             {
                 return 1;

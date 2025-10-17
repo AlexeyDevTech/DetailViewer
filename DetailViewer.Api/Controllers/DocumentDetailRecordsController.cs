@@ -160,6 +160,7 @@ namespace DetailViewer.Api.Controllers
             // Обновляем основные свойства записи из DTO
             _context.Entry(existingRecord).CurrentValues.SetValues(dto.Record);
 
+            existingRecord.EskdNumber = dto.Record.EskdNumber;
             // Очищаем текущие связи
             existingRecord.Assemblies.Clear();
             existingRecord.Products.Clear();
