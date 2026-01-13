@@ -19,6 +19,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
     /// </summary>
     public class AssembliesDashboardViewModel : BindableBase
     {
+        private readonly ISettingsService _settingsService;
         private readonly IAssemblyService _assemblyService;
         private readonly IDialogService _dialogService;
         private readonly ILogger _logger;
@@ -104,8 +105,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="AssembliesDashboardViewModel"/>.
         /// </summary>
-        public AssembliesDashboardViewModel(IAssemblyService assemblyService, IDialogService dialogService, ILogger logger, IEventAggregator eventAggregator)
+        public AssembliesDashboardViewModel(IAssemblyService assemblyService, ISettingsService settingsService, IDialogService dialogService, ILogger logger, IEventAggregator eventAggregator)
         {
+            _settingsService = settingsService;
             _assemblyService = assemblyService;
             _dialogService = dialogService;
             _logger = logger;
@@ -196,7 +198,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             StatusText = "Загрузка данных...";
             try
             {
-                _allAssemblies = await _assemblyService.GetAssembliesAsync();
+                var records = await _assemblyService.GetAssembliesAsync();
+                _allAssemblies = records.Where(r => r.EskdNumber.CompanyCode == _settingsService.LoadSettings().DefaultCompanyCode).ToList();
                 ApplyFilters();
                 StatusText = $"Данные успешно загружены.";
                 _logger.LogInfo("Assemblies loaded successfully.");

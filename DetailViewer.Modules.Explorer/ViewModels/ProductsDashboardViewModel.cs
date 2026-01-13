@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Google.Apis.Sheets.v4.Data;
 
 namespace DetailViewer.Modules.Explorer.ViewModels
 {
@@ -21,6 +22,7 @@ namespace DetailViewer.Modules.Explorer.ViewModels
     /// </summary>
     public class ProductsDashboardViewModel : BindableBase
     {
+        private readonly ISettingsService _settingsService;
         private readonly IProductService _productService;
         private readonly IDialogService _dialogService;
         private readonly ILogger _logger;
@@ -106,8 +108,9 @@ namespace DetailViewer.Modules.Explorer.ViewModels
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="ProductsDashboardViewModel"/>.
         /// </summary>
-        public ProductsDashboardViewModel(IProductService productService, IDialogService dialogService, ILogger logger, IEventAggregator eventAggregator)
+        public ProductsDashboardViewModel(IProductService productService, ISettingsService settingsService, IDialogService dialogService, ILogger logger, IEventAggregator eventAggregator)
         {
+            _settingsService = settingsService;
             _productService = productService;
             _dialogService = dialogService;
             _logger = logger;
@@ -195,7 +198,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             StatusText = "Загрузка данных...";
             try
             {
-                _allProducts = await _productService.GetProductsAsync();
+                var records = await _productService.GetProductsAsync();
+                _allProducts = records.Where(r => r.EskdNumber.CompanyCode == _settingsService.LoadSettings().DefaultCompanyCode).ToList();
                 ApplyFilters();
                 StatusText = $"Данные успешно загружены.";
                 _logger.LogInfo("Products loaded successfully.");
