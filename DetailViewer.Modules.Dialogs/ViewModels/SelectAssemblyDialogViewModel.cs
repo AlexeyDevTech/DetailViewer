@@ -49,6 +49,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
     {
         private readonly IAssemblyService _assemblyService;
         private readonly IProductService _productService;
+        private readonly ISettingsService _settingsService;
 
         /// <summary>
         /// Заголовок диалогового окна.
@@ -116,10 +117,11 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// </summary>
         /// <param name="assemblyService">Сервис для работы со сборками.</param>
         /// <param name="productService">Сервис для работы с продуктами.</param>
-        public SelectAssemblyDialogViewModel(IAssemblyService assemblyService, IProductService productService)
+        public SelectAssemblyDialogViewModel(IAssemblyService assemblyService, IProductService productService, ISettingsService settingsService)
         {
             _assemblyService = assemblyService;
             _productService = productService;
+            _settingsService = settingsService;
             OkCommand = new DelegateCommand(Ok);
             CancelCommand = new DelegateCommand(Cancel);
             _relatedProducts = new ObservableCollection<Product>();
@@ -132,7 +134,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private async void LoadAssemblies()
         {
             var assemblies = await _assemblyService.GetAssembliesAsync();
-            _allAssemblies = new ObservableCollection<SelectableItem<Assembly>>(assemblies.Select(a => new SelectableItem<Assembly>(a)));
+            _allAssemblies = new ObservableCollection<SelectableItem<Assembly>>(assemblies.Select(a => new SelectableItem<Assembly>(a)).Where(r => r.Item.EskdNumber.CompanyCode == _settingsService.LoadSettings().DefaultCompanyCode));
             FilteredAssemblies = new ObservableCollection<SelectableItem<Assembly>>(_allAssemblies);
         }
 
@@ -153,7 +155,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             else
             {
                 var searchTextLower = SearchText.ToLower();
-                FilteredAssemblies = new ObservableCollection<SelectableItem<Assembly>>(_allAssemblies.Where(a => a.Item.Name.ToLower().Contains(searchTextLower) || a.Item.EskdNumber.FullCode.ToLower().Contains(searchTextLower)));
+                FilteredAssemblies = new ObservableCollection<SelectableItem<Assembly>>(_allAssemblies.Where(a => a.Item.Name != null && a.Item.Name.ToLower().Contains(searchTextLower) || a.Item.EskdNumber.FullCode.ToLower().Contains(searchTextLower)));
             }
         }
 

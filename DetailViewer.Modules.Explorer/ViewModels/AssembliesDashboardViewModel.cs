@@ -199,7 +199,8 @@ namespace DetailViewer.Modules.Explorer.ViewModels
             try
             {
                 var records = await _assemblyService.GetAssembliesAsync();
-                _allAssemblies = records.Where(r => r.EskdNumber.CompanyCode == _settingsService.LoadSettings().DefaultCompanyCode).ToList();
+                var dcc = _settingsService.LoadSettings().DefaultCompanyCode;
+                _allAssemblies = records.Where(r => r.EskdNumber.CompanyCode == dcc).ToList();
                 ApplyFilters();
                 StatusText = $"Данные успешно загружены.";
                 _logger.LogInfo("Assemblies loaded successfully.");

@@ -17,6 +17,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
     /// </summary>
     public class SelectProductDialogViewModel : BindableBase, IDialogAware
     {
+        private readonly ISettingsService _settingsService;
         private readonly IProductService _productService;
 
         /// <summary>
@@ -36,7 +37,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         public string? SearchText
         {
             get { return _searchText; }
-            set { SetProperty(ref _searchText, value, OnSearchTextChanged); }
+            set { 
+                SetProperty(ref _searchText, value, OnSearchTextChanged); 
+            }
         }
 
         private ObservableCollection<SelectableItem<Product>>? _allProducts;
@@ -64,8 +67,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         /// Инициализирует новый экземпляр класса <see cref="SelectProductDialogViewModel"/>.
         /// </summary>
         /// <param name="productService">Сервис для работы с продуктами.</param>
-        public SelectProductDialogViewModel(IProductService productService)
+        public SelectProductDialogViewModel(IProductService productService, ISettingsService settingsService)
         {
+            _settingsService = settingsService;
             _productService = productService;
             OkCommand = new DelegateCommand(Ok);
             CancelCommand = new DelegateCommand(Cancel);
@@ -78,7 +82,9 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
         private async Task LoadProducts()
         {
             var products = await _productService.GetProductsAsync();
-            FilteredProducts = new ObservableCollection<SelectableItem<Product>>(products.Select(p => new SelectableItem<Product>(p)));
+            _allProducts = new ObservableCollection<SelectableItem<Product>>(products.Select(p => new SelectableItem<Product>(p)).Where(r => 
+            r.Item.EskdNumber.CompanyCode == _settingsService.LoadSettings().DefaultCompanyCode));
+            FilteredProducts = new ObservableCollection<SelectableItem<Product>>(_allProducts);
         }
 
         /// <summary>
@@ -98,7 +104,7 @@ namespace DetailViewer.Modules.Dialogs.ViewModels
             else
             {
                 var searchTextLower = SearchText.ToLower();
-                FilteredProducts = new ObservableCollection<SelectableItem<Product>>(_allProducts.Where(p => p.Item.Name.ToLower().Contains(searchTextLower) || p.Item.EskdNumber.FullCode.ToLower().Contains(searchTextLower)));
+                FilteredProducts = new ObservableCollection<SelectableItem<Product>>(_allProducts.Where(p => p.Item.Name != null && p.Item.Name.ToLower().Contains(searchTextLower) || p.Item.EskdNumber.FullCode.ToLower().Contains(searchTextLower)));
             }
         }
 
